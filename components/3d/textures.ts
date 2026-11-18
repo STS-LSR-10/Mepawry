@@ -277,3 +277,50 @@ export function plaqueTexture(text: string, kind: 'wood' | 'stone', w = 640, h =
   g.fillText(text, w / 2, h / 2 + 3, w - 90)
   return finish(c)
 }
+
+/** Golden pastel name tag (✦ Name) for the avatar. */
+export function nameTagTexture(text: string) {
+  const w = 512, h = 112
+  const { c, g } = canvas(w, h)
+  g.font = '700 50px system-ui, sans-serif'
+  const tw = Math.min(w - 20, g.measureText(text).width + 70)
+  const x0 = (w - tw) / 2
+  const grad = g.createLinearGradient(0, 8, 0, h - 8)
+  grad.addColorStop(0, '#F3D99B'); grad.addColorStop(1, '#D9B26A')
+  g.shadowColor = 'rgba(80,50,10,.35)'; g.shadowBlur = 8; g.shadowOffsetY = 3
+  g.fillStyle = grad
+  g.beginPath(); g.roundRect(x0, 10, tw, h - 24, (h - 24) / 2); g.fill()
+  g.shadowColor = 'transparent'
+  g.strokeStyle = 'rgba(255,248,225,.85)'; g.lineWidth = 3
+  g.beginPath(); g.roundRect(x0 + 4, 14, tw - 8, h - 32, (h - 32) / 2); g.stroke()
+  g.fillStyle = '#FFFDF6'; g.shadowColor = 'rgba(120,80,20,.45)'; g.shadowBlur = 3; g.shadowOffsetY = 2
+  g.textAlign = 'center'; g.textBaseline = 'middle'
+  g.fillText(text, w / 2, h / 2 - 1, tw - 30)
+  return finish(c)
+}
+
+/** Knitted hoodie front: soft ribbing with little bones and paw prints raised in a lighter shade. */
+export function hoodieTexture(base: string, accent: string) {
+  const { c, g } = canvas(256, 256)
+  g.fillStyle = base; g.fillRect(0, 0, 256, 256)
+  for (let x = 0; x < 256; x += 5) { g.fillStyle = x % 10 ? 'rgba(0,0,0,.035)' : 'rgba(255,255,255,.06)'; g.fillRect(x, 0, 2, 256) }
+  for (let i = 0; i < 500; i++) { g.fillStyle = `rgba(${i % 2 ? '255,255,255' : '0,0,0'},.04)`; g.fillRect((i * 53.3) % 256, (i * 29.7) % 256, 2, 1) }
+  g.fillStyle = accent
+  g.shadowColor = 'rgba(0,0,0,.12)'; g.shadowBlur = 2; g.shadowOffsetY = 1.5
+  // The front of the body is the middle of the texture (the mesh is turned so the seam sits at the back)
+  const bone = (x: number, y: number, a: number) => {
+    g.save(); g.translate(x, y); g.rotate(a)
+    g.fillRect(-9, -2.5, 18, 5)
+    for (const sx of [-1, 1]) for (const sy of [-1, 1]) { g.beginPath(); g.arc(sx * 10, sy * 3, 3.4, 0, Math.PI * 2); g.fill() }
+    g.restore()
+  }
+  const paw = (x: number, y: number) => {
+    g.beginPath(); g.ellipse(x, y + 3, 6, 5, 0, 0, Math.PI * 2); g.fill()
+    for (const [dx, dy] of [[-7, -4], [-2.5, -8], [2.5, -8], [7, -4]]) { g.beginPath(); g.arc(x + dx, y + dy, 2.6, 0, Math.PI * 2); g.fill() }
+  }
+  g.save(); g.translate(128, 0); g.scale(1.35, 1.35); g.translate(-128, 0)
+  bone(108, 78, -0.5); bone(150, 92, 0.4); bone(124, 112, -0.15)
+  paw(104, 140); paw(152, 132)
+  g.restore()
+  return finish(c)
+}
