@@ -18,6 +18,7 @@ import { sanitizeLook, type AvatarLook } from '@/lib/look'
 const SPEED = 3.2           // same walking speed as Player
 const HEARTBEAT_MS = 5000
 const STALE_MS = 20000      // no heartbeat for this long: treat as gone
+const GRACE_MS = 30000      // left the channel: keep them a little in case they're only switching apps
 
 export interface Me { id: string; name: string; look: AvatarLook }
 
@@ -29,6 +30,7 @@ interface Remote {
   path: P[]                  // remaining walk, if any
   heading: number
   seen: number
+  goneSince?: number          // when they dropped out of the channel (still shown during the grace period)
 }
 
 /** Joins this floor's channel; returns the visitors to draw and a way to announce your own walks. */
@@ -39,6 +41,8 @@ export function useCrowd(floor: number, me: Me | null, myPos: React.RefObject<P>
   const [version, setVersion] = useState(0)
   const [present, setPresent] = useState(0) // everyone on this floor's channel (not just those drawn)
   const [status, setStatus] = useState<'connecting' | 'live' | 'offline'>('connecting')
+  // Bumped to rejoin from scratch (coming back to the tab after the phone slept or the tab was in the background)
+  const [attempt, setAttempt] = useState(0)
   const channel = useRef<RealtimeChannel | null>(null)
   const meRef = useRef(me)
   meRef.current = me
@@ -66,6 +70,8 @@ export function useCrowd(floor: number, me: Me | null, myPos: React.RefObject<P>
     const sb = supabase()
     if (loading || !sb || !me) return
     let lookChanged = false
+    let retry: ReturnType<typeof setTimeout> | undefined
+    let disposed = false // our own cleanup also reports CLOSED; don't treat that as a drop
     const ch = sb.channel(`hall-floor-${floor}`, { config: { presence: { key: tabKey }, broadcast: { self: false } } })
     const upsert = (id: string, d: { name?: string; look?: unknown; x?: number; z?: number }) => {
       if (id === tabRef.current || typeof d.x !== 'number' || typeof d.z !== 'number') return
@@ -86,7 +92,13 @@ export function useCrowd(floor: number, me: Me | null, myPos: React.RefObject<P>
       lookChanged = false
       for (const [id, metas] of Object.entries(state)) upsert(id, metas[metas.length - 1])
       if (lookChanged) setVersion(v => v + 1)
-      for (const id of [...remotes.current.keys()]) if (!here.has(id)) remotes.current.delete(id)
+      // Someone missing from the channel may just have switched apps or locked their phone for a moment
+      // (their tab rejoins with the same key when they come back): keep them standing for a grace period.
+      const now = Date.now()
+      for (const [id, r] of remotes.current) {
+        if (here.has(id)) r.goneSince = undefined
+        else if (r.goneSince === undefined) r.goneSince = now
+      }
       reselect()
     })
     ch.on('broadcast', { event: 'walk' }, ({ payload }) => {
@@ -100,7 +112,11 @@ export function useCrowd(floor: number, me: Me | null, myPos: React.RefObject<P>
     ch.subscribe((s, err) => {
       // Shown as the dot on "here now": green live, amber connecting, red offline (supabase-js keeps retrying)
       setStatus(s === 'SUBSCRIBED' ? 'live' : s === 'CHANNEL_ERROR' || s === 'TIMED_OUT' ? 'offline' : 'connecting')
-      if (s !== 'SUBSCRIBED') { if (err) console.warn('[hall] live visitors:', s, err.message); return }
+      if (s !== 'SUBSCRIBED') {
+        if (err) console.warn('[hall] live visitors:', s, err.message)
+        if (!disposed && (s === 'CLOSED' || s === 'CHANNEL_ERROR' || s === 'TIMED_OUT')) retry = setTimeout(() => setAttempt(a => a + 1), 4000)
+        return
+      }
       const p = myPos.current
       ch.track({ name: me.name, look: me.look, x: p.x, z: p.z })
     })
@@ -111,10 +127,15 @@ export function useCrowd(floor: number, me: Me | null, myPos: React.RefObject<P>
       if (m) ch.track({ name: m.name, look: m.look, x: Math.round(p.x * 100) / 100, z: Math.round(p.z * 100) / 100 })
       const now = Date.now()
       let dropped = false
-      for (const [id, r] of remotes.current) if (now - r.seen > STALE_MS) { remotes.current.delete(id); dropped = true }
+      for (const [id, r] of remotes.current) {
+        const gone = r.goneSince !== undefined && now - r.goneSince > GRACE_MS
+        if (gone || now - r.seen > STALE_MS + GRACE_MS) { remotes.current.delete(id); dropped = true }
+      }
       if (dropped) reselect()
     }, HEARTBEAT_MS)
     return () => {
+      disposed = true
+      clearTimeout(retry)
       clearInterval(beat)
       sb.removeChannel(ch)
       channel.current = null
@@ -123,7 +144,20 @@ export function useCrowd(floor: number, me: Me | null, myPos: React.RefObject<P>
       setVersion(v => v + 1)
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [floor, tabKey, loading, max])
+  }, [floor, tabKey, loading, max, attempt])
+
+  // Back on this tab: if the channel dropped while we were away, join again right away (and re-announce where we are)
+  useEffect(() => {
+    const back = () => {
+      if (document.visibilityState !== 'visible') return
+      const st = (channel.current as unknown as { state?: string } | null)?.state
+      if (!channel.current || st !== 'joined') setAttempt(a => a + 1)
+      else { const p = myPos.current, m = meRef.current; if (m) channel.current.track({ name: m.name, look: m.look, x: p.x, z: p.z }) }
+    }
+    document.addEventListener('visibilitychange', back)
+    window.addEventListener('online', back)
+    return () => { document.removeEventListener('visibilitychange', back); window.removeEventListener('online', back) }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Changed my look: tell everyone right away rather than at the next heartbeat
   useEffect(() => {

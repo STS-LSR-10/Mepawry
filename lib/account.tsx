@@ -71,7 +71,10 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
 
   const supabase = useCallback(() => {
     if (!client.current && config.current?.url && config.current.anonKey) {
-      client.current = createBrowserClient(config.current.url, config.current.anonKey)
+      client.current = createBrowserClient(config.current.url, config.current.anonKey, {
+        // Realtime heartbeats run in a Web Worker, so a tab in the background isn't throttled into disconnecting
+        realtime: { worker: true },
+      })
     }
     return client.current
   }, [])
