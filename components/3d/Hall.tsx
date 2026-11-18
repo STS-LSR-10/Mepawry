@@ -10,6 +10,7 @@ import {
   WALL_T, furniture, wallRects, type P, type Rect, type Slot,
 } from './layout'
 import { FurniturePiece } from './Furniture'
+import { microMap, rim } from './look'
 import { floorTexture, nightTexture, petTexture, roofTileTexture, signTexture, stoneWallTexture } from './textures'
 import { getFloorName, SPECIES_LOOK } from '@/lib/utils'
 import type { Quality } from './quality'
@@ -131,7 +132,7 @@ function StoneWall({ tex, at, size: [w, h, d] }: { tex: Texture; at: [number, nu
     <group>
       <mesh position={at} castShadow receiveShadow>
         <boxGeometry args={[w, h, d]} />
-        <meshStandardMaterial map={t} roughness={0.92} />
+        <meshStandardMaterial map={t} bumpMap={t} bumpScale={3} roughness={0.92} roughnessMap={microMap('stone')} onBeforeCompile={rim} />
       </mesh>
       {/* darker plinth along the foot of the wall */}
       <mesh position={[at[0], 0.2, at[2]]} raycast={noRay}>
@@ -159,7 +160,7 @@ function Roofs() {
       {/* Pitched roof over the lobby */}
       <mesh position={[0, H + 1.9, size(HUB).cz]} rotation={[0, Math.PI / 4, 0]}>
         <coneGeometry args={[(size(HUB).w / 2) * Math.SQRT2 + 0.6, 3.4, 4]} />
-        <meshStandardMaterial map={tiles} roughness={0.85} flatShading />
+        <meshStandardMaterial map={tiles} bumpMap={tiles} bumpScale={3} roughness={0.85} flatShading onBeforeCompile={rim} />
       </mesh>
     </group>
   )
@@ -232,7 +233,7 @@ function FloorPlane({ r, tex, repeat, onTap }: { r: Rect; tex: Texture; repeat: 
   return (
     <mesh rotation={[-Math.PI / 2, 0, 0]} position={[s.cx, 0.01, s.cz]} receiveShadow onClick={onTap}>
       <planeGeometry args={[s.w, s.d]} />
-      <meshStandardMaterial map={t} roughness={0.75} />
+      <meshStandardMaterial map={t} bumpMap={t} bumpScale={1.2} roughness={0.75} roughnessMap={microMap('grain')} />
     </mesh>
   )
 }

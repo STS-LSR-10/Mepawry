@@ -12,6 +12,7 @@ import type { LocalSky, Season } from '@/lib/sky'
 import { Nature } from './Nature'
 import { Park } from './Park'
 import { WindClock } from './wind'
+import { Polish, RIM, Vignette } from './look'
 import { lawnTexture } from './textures'
 import { useContextLossRecovery, useQuality } from './quality'
 import { Hall } from './Hall'
@@ -102,6 +103,11 @@ export default function MemorialWorld3D({ floorId, avatarName, avatarGender, sky
   const golden = sky.phase === 'dawn' || sky.phase === 'dusk'
   const overcast = sky.season === 'rainy' && daylight > 0
   const ambient = useMemo(() => new Color('#6B5E80').lerp(new Color('#FFF4E0'), daylight), [daylight])
+  // Rim light colour follows the sky: soft blue by day, golden at dawn/dusk, moonlit at night
+  useEffect(() => {
+    RIM.color.value.set(daylight === 0 ? '#7F94C8' : golden ? '#FFC890' : '#CFE0FF')
+    RIM.strength.value = 0.2 + 0.06 * daylight
+  }, [daylight, golden])
   // Haze matches the horizon so far mountains fade into the sky
   const haze = useMemo(() => {
     const c = new Color('#1E1B2B').lerp(new Color('#BFCFDF'), daylight)
@@ -114,8 +120,11 @@ export default function MemorialWorld3D({ floorId, avatarName, avatarGender, sky
         key={`${quality}-${recovery.key}`}
         camera={{ position: [0, 5.5, 22], fov: 60 }} // behind the avatar's starting spot on the park path
         // Phones: no real-time shadows, no MSAA, and a lower pixel ratio — the big memory and GPU savers
-        shadows={!low}
+        shadows={!low ? 'soft' : false}
         dpr={[1, low ? Math.min(dpr, 1.25) : dpr]}
+        // Desktop: tone mapping happens in the post-processing pass (ACES filmic), so the renderer stays linear ("flat").
+        // Phones skip post-processing; the renderer's own ACES filmic tone mapping (R3F's default) does the job there.
+        flat={!low}
         gl={{ antialias: !low, powerPreference: 'high-performance' }}
         onCreated={recovery.onCreated}
       >
@@ -123,26 +132,34 @@ export default function MemorialWorld3D({ floorId, avatarName, avatarGender, sky
         <PerformanceMonitor onDecline={() => setDpr(1)} onIncline={() => setDpr(1.5)} />
         <Suspense fallback={null}>
           <StatsProbe />
-          {/* Lighting: a warm sky/floor hemisphere does the work of many lamps for almost nothing */}
-          <ambientLight intensity={0.35 + 0.35 * daylight} color={ambient} />
-          <hemisphereLight args={['#FFE2B8', '#5A3E2B', low ? 0.9 : 0.5]} />
+          {/* Three-point light: warm golden key (the sun), cool sky fill from above, a soft cool rim from behind */}
+          <ambientLight intensity={0.26 - 0.08 * daylight} color={ambient} />
+          <hemisphereLight args={[daylight > 0.2 ? '#A5C8FF' : '#5E6E9A', '#5A4632', (low ? 0.75 : 0.55) + 0.25 * daylight]} />
           <directionalLight
             position={daylight > 0 ? [sunPos[0] / 10, Math.max(2, sunPos[1] / 10), 5] : [-5, 10, 5]}
-            intensity={0.5 + (overcast ? 0.3 : 1) * daylight}
-            color={daylight === 0 ? '#9FB2D9' : golden ? '#FFB070' : '#FFF4E0'}
+            intensity={0.45 + (overcast ? 0.5 : 1.5) * daylight}
+            color={daylight === 0 ? '#9FB2D9' : golden ? '#FFB070' : '#FFE8C2'}
             castShadow={!low}
+            shadow-mapSize={[2048, 2048]}
+            shadow-bias={-0.0004}
+            shadow-normalBias={0.03}
+            shadow-camera-left={-30}
+            shadow-camera-right={30}
+            shadow-camera-top={30}
+            shadow-camera-bottom={-30}
           />
+          {!low && <directionalLight position={[6, 8, -18]} intensity={0.25 + 0.2 * daylight} color="#A5C8FF" />}
 
           {/* Environment */}
           {overcast ? (
             <>
               <color attach="background" args={['#6E7884']} />
-              <fog attach="fog" args={['#6E7884', 20, 110]} />
+              <fogExp2 attach="fog" args={['#6E7884', 0.016]} />
             </>
           ) : (
             <>
               <Sky distance={450000} sunPosition={sunPos} rayleigh={golden ? 3 : 0.6} turbidity={golden ? 8 : 2} mieCoefficient={0.004} />
-              <fog attach="fog" args={[haze, 45, 160]} />
+              <fogExp2 attach="fog" args={[haze, 0.0105]} />
             </>
           )}
           {daylight < 0.35 && !overcast && <Stars radius={170} depth={40} count={low ? 1200 : 3000} factor={4} fade />}
@@ -196,8 +213,10 @@ export default function MemorialWorld3D({ floorId, avatarName, avatarGender, sky
             // Inside, keep the camera high enough to see over the cut-down walls
             maxPolarAngle={inside ? 1.15 : Math.PI / 2.1}
           />
+          {!low && <Polish bloom={daylight < 0.35 ? 0.9 : 0.5} />}
         </Suspense>
       </Canvas>
+      <Vignette />
 
       {recovery.lost && (
         <div className="fixed inset-0 z-30 grid place-items-center bg-[#17131B]/80 text-sm text-[#FAF7F2]/80">Reloading the hall…</div>

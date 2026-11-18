@@ -28,6 +28,8 @@ export function Player({ name, gender, pos, route, onInsideChange }: PlayerProps
   const walking = useRef(false)
   const inside = useRef(false)
   const last = useRef<P | null>(null)
+  const speed = useRef(0)                  // eased walking speed (springs toward SPEED, eases to a stop)
+  const follow = useRef<P | null>(null)    // where the camera is looking, trailing the avatar a little
 
   useEffect(() => {
     if (!route) return
@@ -45,7 +47,13 @@ export function Player({ name, gender, pos, route, onInsideChange }: PlayerProps
       const n = q[0]
       const dx = n.x - p.x, dz = n.z - p.z
       const d = Math.hypot(dx, dz)
-      const step = SPEED * Math.min(dt, 0.25) // waypoints cap each step, so big frames can't skip through walls
+      const h = Math.min(dt, 0.25)
+      // Ease in at the start and ease out over the last metre (critically damped spring on the speed)
+      let left = d
+      for (let i = 1; i < q.length; i++) left += Math.hypot(q[i].x - q[i - 1].x, q[i].z - q[i - 1].z)
+      const want = SPEED * Math.min(1, 0.25 + left / 1.2)
+      speed.current += (want - speed.current) * (1 - Math.exp(-h * 7))
+      const step = Math.max(0.2 * h, speed.current * h) // waypoints cap each step, so big frames can't skip through walls
       if (d <= step) {
         p.x = n.x; p.z = n.z
         q.shift()
@@ -64,16 +72,22 @@ export function Player({ name, gender, pos, route, onInsideChange }: PlayerProps
       const r = group.current.rotation
       r.y += (((want - r.y + Math.PI) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2) - Math.PI) * Math.min(1, dt * 12)
     }
+    if (!q.length) speed.current = 0
     walking.current = q.length > 0
     marker.current.visible = walking.current
     group.current.position.set(p.x, -0.5, p.z)
 
     // Camera keeps its angle and distance and slides along with the avatar
+    // Camera trails the avatar with a little damping (smooth starts and stops, no rigid lock)
     const orbit = controls as unknown as { target: THREE.Vector3 } | null
     if (orbit) {
-      if (!last.current) orbit.target.set(p.x, 0.6, p.z)
+      if (!last.current || !follow.current) { orbit.target.set(p.x, 0.6, p.z); follow.current = { ...p } }
       else {
-        const mx = p.x - last.current.x, mz = p.z - last.current.z
+        const f = follow.current, k = 1 - Math.exp(-Math.min(dt, 0.25) * 6)
+        // Snap if far behind (arrival on another floor), otherwise glide
+        const far = Math.hypot(p.x - f.x, p.z - f.z) > 6
+        const mx = far ? p.x - f.x : (p.x - f.x) * k, mz = far ? p.z - f.z : (p.z - f.z) * k
+        f.x += mx; f.z += mz
         camera.position.x += mx; camera.position.z += mz
         orbit.target.x += mx; orbit.target.z += mz
       }

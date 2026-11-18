@@ -13,6 +13,7 @@ import {
 } from 'three'
 import { glowTexture, midnightTexture, moonTexture, petTexture, plaqueTexture, woodTexture } from './textures'
 import { useContextLossRecovery, useQuality } from './quality'
+import { microMap, withRim } from './look'
 import type { Pet } from '@/types'
 
 const W = 2.4, H = 1.9, DP = 0.9, T = 0.08
@@ -35,7 +36,7 @@ export default function ShrineCabinet({ pet, candles, flowers }: { pet: Pet; can
   return (
     <Canvas
       key={recovery.key}
-      shadows={!low}
+      shadows={!low ? 'soft' : false}
       camera={{ position: [0, 0.25, 4.6], fov: 38 }}
       dpr={[1, low ? 1.5 : 2]}
       gl={{ antialias: true }}
@@ -99,7 +100,7 @@ function FitCamera() {
 function useMaterials(low: boolean) {
   const wood = useTex(() => woodTexture(), [])
   const mats = useMemo(() => {
-    const woodMat = new MeshStandardMaterial({ map: wood, color: '#B88A6A', roughness: 0.55, metalness: 0 })
+    const woodMat = withRim(new MeshStandardMaterial({ map: wood, bumpMap: wood, bumpScale: 2, roughnessMap: microMap('grain'), color: '#B88A6A', roughness: 0.55, metalness: 0 }), 0.6)
     const woodSide = woodMat.clone()
     woodSide.map = wood.clone(); woodSide.map.rotation = Math.PI / 2; woodSide.map.needsUpdate = true
     return {
@@ -107,8 +108,8 @@ function useMaterials(low: boolean) {
       woodSide,
       gold: new MeshStandardMaterial({ color: '#E2B64C', metalness: low ? 0.45 : 0.85, roughness: 0.3, emissive: '#4A3205', emissiveIntensity: low ? 0.6 : 0.25 }),
       brass: new MeshStandardMaterial({ color: '#C99A48', metalness: low ? 0.45 : 0.85, roughness: 0.35, emissive: '#3A2405', emissiveIntensity: low ? 0.5 : 0.2 }),
-      shelf: new MeshStandardMaterial({ color: '#F6F0E6', roughness: 0.6 }),
-      cream: new MeshStandardMaterial({ color: '#F3EADB', roughness: 0.7 }),
+      shelf: withRim(new MeshStandardMaterial({ color: '#F6F0E6', roughness: 0.6, bumpMap: microMap('fuzz'), bumpScale: 0.4 }), 0.5),
+      cream: new MeshStandardMaterial({ color: '#F3EADB', roughness: 0.7, bumpMap: microMap('fuzz'), bumpScale: 0.4 }),
       glass: new MeshPhysicalMaterial({
         color: '#EAF4FA', transparent: true, opacity: 0.16, roughness: 0.04, metalness: 0,
         clearcoat: low ? 0 : 1, depthWrite: false, side: DoubleSide,
@@ -485,7 +486,9 @@ function FairyLights({ glow, low }: { glow: Texture; low: boolean }) {
   const halos = useRef<Group>(null)
   useFrame(({ clock }) => {
     const t = clock.elapsedTime
-    mats.forEach((x, i) => { x.emissiveIntensity = 0.75 + Math.sin(t * 1.6 + i * 1.1) * 0.3 })
+    // Twinkle with a slowly drifting phase per bulb, so they never pulse in lockstep (soft glow comes from the halos;
+    // the cabinet keeps a transparent canvas, so it skips the bloom pass)
+    mats.forEach((x, i) => { x.emissiveIntensity = 0.75 + Math.sin(t * 1.6 + i * 1.1 + Math.sin(t * 0.37 + i) * 0.8) * 0.3 })
     halos.current?.children.forEach((h, i) => { ((h as Sprite).material).opacity = 0.35 + Math.sin(t * 1.6 + (i % 7) * 1.1) * 0.15 })
   })
   return (

@@ -5,8 +5,9 @@
 
 import { useEffect, useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
-import { CatmullRomCurve3, Vector3, type Group } from 'three'
+import { CatmullRomCurve3, Vector3, type Group, type Texture as THREE_Texture } from 'three'
 import { hoodieTexture, nameTagTexture } from './textures'
+import { contactShadowMap, microMap, rim } from './look'
 
 const SKIN = '#FCE4D4'
 const HAIR = '#6B4430'
@@ -16,9 +17,15 @@ const LOOK = {
   female: { hoodie: '#F6B4C6', accent: '#FCDDE6', legs: '#C7B3EA', cuff: '#DCCEF4', shoe: '#C9967A' },
 }
 
-/** Soft matte "vinyl/clay" finish. */
+/** Soft matte "vinyl/clay" finish: fine surface fuzz in the bump and roughness, plus a Fresnel rim. */
 function Clay({ color, rough = 0.78 }: { color: string; rough?: number }) {
-  return <meshStandardMaterial color={color} roughness={rough} metalness={0} />
+  const fuzz = microMap('fuzz')
+  return <meshStandardMaterial color={color} roughness={rough} metalness={0} bumpMap={fuzz} bumpScale={color === SKIN ? 0.08 : 0.5} roughnessMap={fuzz} onBeforeCompile={rim} />
+}
+
+/** Knitted fabric: the knit pattern doubles as the bump map, with velvety sheen at grazing angles. */
+function Knit({ map, sheen }: { map: THREE_Texture; sheen: string }) {
+  return <meshPhysicalMaterial map={map} bumpMap={map} bumpScale={1.4} roughness={0.95} sheen={1} sheenColor={sheen} sheenRoughness={0.75} onBeforeCompile={rim} />
 }
 
 export function CuteAvatar({ name, walking, gender = 'male' }: { name: string; walking?: React.RefObject<boolean>; gender?: 'male' | 'female' }) {
@@ -32,6 +39,10 @@ export function CuteAvatar({ name, walking, gender = 'male' }: { name: string; w
   const legL = useRef<Group>(null!)
   const legR = useRef<Group>(null!)
   const ahoge = useRef<Group>(null!)
+  const chest = useRef<Group>(null!)
+  // Random phases per avatar, so idle motions never line up in robotic sync
+  const ph = useMemo(() => Array.from({ length: 6 }, () => Math.random() * Math.PI * 2), [])
+  const blink = useRef({ next: 1 + Math.random() * 3, double: false })
   const still = useMemo(() => window.matchMedia('(prefers-reduced-motion: reduce)').matches, [])
   // Name tag drawn onto a sprite (always faces the camera); avoids drei <Html>, which errors on unmount under React 19
   const tag = useMemo(() => nameTagTexture(`✦ ${name}`), [name])
@@ -41,18 +52,27 @@ export function CuteAvatar({ name, walking, gender = 'male' }: { name: string; w
 
   useFrame(({ clock }) => {
     const t = clock.elapsedTime
-    eyes.current.scale.y = t % 4 < 0.12 ? 0.1 : 1 // blink every 4s
+    // Blink at random intervals (2.5–6s), sometimes twice in a row; each blink eases shut and open
+    const b = blink.current
+    if (t > b.next + 0.16) { b.double = !b.double && Math.random() < 0.25; b.next = t + (b.double ? 0.25 : 2.5 + Math.random() * 3.5) }
+    const k = Math.max(0, Math.min(1, (t - b.next) / 0.16))
+    eyes.current.scale.y = t >= b.next ? 1 - Math.sin(k * Math.PI) * 0.92 : 1
     if (still) return
     const walk = walking?.current
-    const swing = walk ? Math.sin(t * 10) : Math.sin(t * 2)
-    body.current.position.y = Math.abs(swing) * (walk ? 0.06 : 0.025)
-    armL.current.rotation.x = swing * (walk ? 0.7 : 0.18)
-    armR.current.rotation.x = -swing * (walk ? 0.7 : 0.18)
+    const swing = walk ? Math.sin(t * 10) : Math.sin(t * 2 + ph[0])
+    // Breathing: chest swells a touch, shoulders rise with it (two sines so it never looks mechanical)
+    const breath = Math.sin(t * 1.55 + ph[1]) * 0.6 + Math.sin(t * 0.7 + ph[2]) * 0.4
+    chest.current.scale.set(1 + breath * 0.012, 1 + breath * 0.018, 1 + breath * 0.022)
+    body.current.position.y = Math.abs(swing) * (walk ? 0.06 : 0.012) + breath * 0.006
+    armL.current.rotation.x = swing * (walk ? 0.7 : 0.12) + (walk ? 0 : Math.sin(t * 1.1 + ph[3]) * 0.04)
+    armR.current.rotation.x = -swing * (walk ? 0.7 : 0.12) + (walk ? 0 : Math.sin(t * 1.3 + ph[4]) * 0.04)
     legL.current.rotation.x = walk ? -swing * 0.6 : 0
     legR.current.rotation.x = walk ? swing * 0.6 : 0
-    head.current.rotation.y = walk ? 0 : Math.sin(t * 0.6) * 0.3
-    head.current.rotation.z = Math.sin(t * 0.9) * 0.05
-    ahoge.current.rotation.z = Math.sin(t * (walk ? 9 : 2.4)) * 0.18 // the strand bobs
+    // Head: slow look-around with a gentle, layered tilt
+    head.current.rotation.y = walk ? 0 : Math.sin(t * 0.45 + ph[5]) * 0.25 + Math.sin(t * 1.3 + ph[0]) * 0.05
+    head.current.rotation.z = Math.sin(t * 0.8 + ph[2]) * 0.04 + Math.sin(t * 2.1 + ph[4]) * 0.015
+    head.current.rotation.x = Math.sin(t * 0.6 + ph[3]) * 0.03 - breath * 0.01
+    ahoge.current.rotation.z = Math.sin(t * (walk ? 9 : 2.4) + ph[1]) * 0.18 + Math.sin(t * 5.3) * 0.04 // the strand bobs
   })
 
   // Bangs: soft chunks along the forehead
@@ -66,9 +86,9 @@ export function CuteAvatar({ name, walking, gender = 'male' }: { name: string; w
   return (
     <group>
       {/* Soft ground shadow */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.01, 0]}>
-        <circleGeometry args={[0.32, 24]} />
-        <meshBasicMaterial color="#000000" transparent opacity={0.22} />
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.012, 0]} raycast={() => null}>
+        <planeGeometry args={[0.95, 0.95]} />
+        <meshBasicMaterial map={contactShadowMap()} transparent opacity={0.7} depthWrite={false} toneMapped={false} />
       </mesh>
 
       <group ref={body}>
@@ -113,10 +133,11 @@ export function CuteAvatar({ name, walking, gender = 'male' }: { name: string; w
           </mesh>
         )}
 
+        <group ref={chest} position={[0, 0.44, 0]}><group position={[0, -0.44, 0]}>
         {/* Hoodie body (turned so the texture seam is at the back), ribbed hem, hood and drawstrings */}
         <mesh position={[0, 0.66, 0]} rotation={[0, Math.PI, 0]} scale={[1, 1, 0.86]} castShadow>
           <capsuleGeometry args={[0.215, 0.12, 8, 24]} />
-          <meshStandardMaterial map={knit} roughness={0.92} />
+          <Knit map={knit} sheen={L.accent} />
         </mesh>
         <mesh position={[0, 0.44, 0]} rotation={[Math.PI / 2, 0, 0]} scale={[1, 0.86, 1]}>
           <torusGeometry args={[0.19, 0.04, 10, 28]} />
@@ -133,12 +154,14 @@ export function CuteAvatar({ name, walking, gender = 'male' }: { name: string; w
           </group>
         ))}
 
+        </group></group>
+
         {/* Arms: sleeves with cuffs and soft round hands, pivoting at the shoulders */}
         {([[-0.24, -0.22, armL], [0.24, 0.22, armR]] as const).map(([x, z, ref]) => (
           <group key={x} ref={ref} position={[x, 0.8, 0]} rotation={[0, 0, z]}>
             <mesh position={[0, -0.14, 0]} castShadow>
               <capsuleGeometry args={[0.078, 0.18, 6, 14]} />
-              <meshStandardMaterial map={knit} roughness={0.92} />
+              <Knit map={knit} sheen={L.accent} />
             </mesh>
             <mesh position={[0, -0.27, 0]}>
               <cylinderGeometry args={[0.072, 0.072, 0.05, 16]} />

@@ -9,6 +9,7 @@ import type * as THREE from 'three'
 import type { Season } from '@/lib/sky'
 import { PARK } from './layout'
 import { windify } from './wind'
+import { contactShadowMap, microMap, withRim } from './look'
 
 /** Smooth, cheap "noise" from a few sines: enough to make shapes look grown rather than machined. */
 const wobble = (x: number, y: number, z: number) =>
@@ -167,9 +168,9 @@ function Hills({ season }: { season: Season }) {
 function Trees({ season }: { season: Season }) {
   const geo = useMemo(() => ({ trunk: trunkGeo(), cone: pineLayer(), blob: leafClump() }), [])
   const mats = useMemo(() => ({
-    trunk: windify(new MeshStandardMaterial({ vertexColors: true, roughness: 1 }), 'tree', 0.5),
-    cone: windify(new MeshStandardMaterial({ vertexColors: true, roughness: 0.9 }), 'tree', 0.8),
-    blob: windify(new MeshStandardMaterial({ vertexColors: true, roughness: 0.85 }), 'tree', 1),
+    trunk: withRim(windify(new MeshStandardMaterial({ vertexColors: true, roughness: 1, bumpMap: microMap('grain'), bumpScale: 3 }), 'tree', 0.5), 0.5),
+    cone: withRim(windify(new MeshStandardMaterial({ vertexColors: true, roughness: 0.9, bumpMap: microMap('fuzz'), bumpScale: 2 }), 'tree', 0.8), 0.5),
+    blob: withRim(windify(new MeshStandardMaterial({ vertexColors: true, roughness: 0.85, bumpMap: microMap('fuzz'), bumpScale: 2.5 }), 'tree', 1), 0.5),
   }), [])
   useEffect(() => () => { Object.values(geo).forEach(g => g.dispose()); Object.values(mats).forEach(m => m.dispose()) }, [geo, mats])
 
@@ -197,6 +198,7 @@ function Trees({ season }: { season: Season }) {
   }, [trees])
 
   const trunkRef = useRef<THREE.InstancedMesh>(null!)
+  const shadowRef = useRef<THREE.InstancedMesh>(null!)
   const coneRef = useRef<THREE.InstancedMesh>(null!)
   const blobRef = useRef<THREE.InstancedMesh>(null!)
 
@@ -222,15 +224,24 @@ function Trees({ season }: { season: Season }) {
       put(blobRef.current, i, t, [x, y, z], [w, w, w])
       blobRef.current.setColorAt(i, c.set(leaves[Math.floor(t.leaf * leaves.length + (k > 2 ? 1 : 0)) % leaves.length]).multiplyScalar(1.2))
     })
-    for (const m of [trunkRef.current, coneRef.current, blobRef.current]) {
+    // Soft dark pool under each tree, so trunks sit in the grass instead of standing on it
+    trees.forEach((t, i) => {
+      tree.position.set(t.x, 0.02, t.z); tree.rotation.set(-Math.PI / 2, 0, 0); tree.scale.setScalar(t.s * (t.pine ? 3.2 : 4)); tree.updateMatrix()
+      shadowRef.current.setMatrixAt(i, tree.matrix)
+    })
+    for (const m of [trunkRef.current, coneRef.current, blobRef.current, shadowRef.current]) {
       m.instanceMatrix.needsUpdate = true
       if (m.instanceColor) m.instanceColor.needsUpdate = true
       m.computeBoundingSphere()
     }
-  }, [parts, season])
+  }, [parts, season, trees])
 
   return (
     <>
+      <instancedMesh ref={shadowRef} args={[undefined, undefined, trees.length]} renderOrder={1}>
+        <planeGeometry args={[1, 1]} />
+        <meshBasicMaterial map={contactShadowMap()} transparent opacity={0.45} depthWrite={false} toneMapped={false} />
+      </instancedMesh>
       <instancedMesh ref={trunkRef} args={[geo.trunk, mats.trunk, Math.max(1, parts.trunk.length)]} castShadow />
       <instancedMesh ref={coneRef} args={[geo.cone, mats.cone, Math.max(1, parts.cones.length)]} castShadow />
       <instancedMesh ref={blobRef} args={[geo.blob, mats.blob, Math.max(1, parts.blobs.length)]} castShadow />

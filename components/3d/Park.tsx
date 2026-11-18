@@ -12,6 +12,8 @@ import {
 import { BBOX, PARK, inRect } from './layout'
 import { glowTexture, pavingTexture, plaqueTexture, waterTexture } from './textures'
 import { windify } from './wind'
+import { ContactShadow, microMap, rim, withRim } from './look'
+import { Sparkles } from '@react-three/drei'
 import type { Season } from '@/lib/sky'
 
 const noRay = () => null
@@ -46,6 +48,14 @@ export function Park({ season, night, low }: { season: Season; night: boolean; l
       {PARK.beds.map((b, i) => <FlowerBed key={i} {...b} season={season} seed={i} />)}
       <Grass season={season} count={low ? 1800 : 6500} />
       <ParkSign />
+      {/* Grounding: soft dark pools under everything that stands on the ground */}
+      <ContactShadow at={[PARK.fountain.x, 0.02, PARK.fountain.z]} size={[PARK.fountain.r * 2.9, PARK.fountain.r * 2.9]} opacity={0.5} />
+      {PARK.benches.map((b, i) => <ContactShadow key={i} at={[b.x, 0.025, b.z]} size={Math.abs(Math.sin(b.rot)) > 0.5 ? [1.2, 2.2] : [2.2, 1.2]} opacity={0.45} />)}
+      {PARK.lamps.map((l, i) => <ContactShadow key={i} at={[l.x, 0.025, l.z]} size={[0.9, 0.9]} opacity={0.5} />)}
+      {/* Atmosphere: fireflies drifting over the lawn at night, sunlit dust motes by day */}
+      {night
+        ? <Sparkles position={[0, 1.2, 5]} count={low ? 18 : 45} scale={[26, 2.2, 20]} size={5} speed={0.35} noise={1.5} color="#D8FF8A" opacity={0.9} />
+        : <Sparkles position={[0, 1.5, 5]} count={low ? 20 : 60} scale={[24, 3, 20]} size={1.6} speed={0.12} noise={0.6} color="#FFF3D6" opacity={0.45} />}
     </group>
   )
 }
@@ -64,7 +74,7 @@ function Paving() {
       <group>
         <mesh rotation={[-Math.PI / 2, 0, 0]} position={[(r.x0 + r.x1) / 2, y, (r.z0 + r.z1) / 2]} receiveShadow raycast={noRay}>
           <planeGeometry args={[w, d]} />
-          <meshStandardMaterial map={tex} roughness={0.9} />
+          <meshStandardMaterial map={tex} bumpMap={tex} bumpScale={2.5} roughness={0.92} roughnessMap={microMap('stone')} />
         </mesh>
         {/* kerbs along the long sides */}
         {(w > d ? [[0, r.z0], [0, r.z1]] : [[r.x0, 0], [r.x1, 0]]).map(([x, z], i) => (
@@ -82,7 +92,7 @@ function Paving() {
       {rect(PARK.cross, cross, 0.014)}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[PARK.plaza.x, 0.016, PARK.plaza.z]} receiveShadow raycast={noRay}>
         <circleGeometry args={[PARK.plaza.r, 48]} />
-        <meshStandardMaterial map={plaza} roughness={0.9} />
+        <meshStandardMaterial map={plaza} bumpMap={plaza} bumpScale={2.5} roughness={0.92} roughnessMap={microMap('stone')} />
       </mesh>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[PARK.plaza.x, 0.03, PARK.plaza.z]} raycast={noRay}>
         <ringGeometry args={[PARK.plaza.r, PARK.plaza.r + 0.14, 64]} />
@@ -127,11 +137,11 @@ function Fountain({ low }: { low: boolean }) {
       {/* Basin wall and rim */}
       <mesh position={[0, 0.25, 0]} castShadow receiveShadow raycast={noRay}>
         <cylinderGeometry args={[f.r, f.r + 0.08, 0.5, 48, 1, true]} />
-        <meshStandardMaterial color={STONE} roughness={0.9} side={DoubleSide} />
+        <meshStandardMaterial color={STONE} roughness={0.9} side={DoubleSide} bumpMap={microMap('stone')} bumpScale={3} onBeforeCompile={rim} />
       </mesh>
       <mesh position={[0, 0.5, 0]} rotation={[Math.PI / 2, 0, 0]} raycast={noRay} castShadow>
         <torusGeometry args={[f.r, 0.11, 10, 64]} />
-        <meshStandardMaterial color="#CFC5B2" roughness={0.8} />
+        <meshStandardMaterial color="#CFC5B2" roughness={0.8} bumpMap={microMap('stone')} bumpScale={2} onBeforeCompile={rim} />
       </mesh>
       {/* Water */}
       <mesh position={[0, 0.4, 0]} rotation={[-Math.PI / 2, 0, 0]} raycast={noRay}>
@@ -168,13 +178,13 @@ function Bench({ x, z, rot }: { x: number; z: number; rot: number }) {
       {[0, 1, 2].map(i => (
         <mesh key={i} position={[0, 0.45, -0.12 + i * 0.13]} castShadow raycast={noRay}>
           <boxGeometry args={[1.6, 0.05, 0.11]} />
-          <meshStandardMaterial color="#9A6A42" roughness={0.75} />
+          <meshStandardMaterial color="#9A6A42" roughness={0.75} bumpMap={microMap('grain')} bumpScale={1.5} roughnessMap={microMap('grain')} onBeforeCompile={rim} />
         </mesh>
       ))}
       {[0, 1].map(i => (
         <mesh key={i} position={[0, 0.65 + i * 0.16, -0.22 - i * 0.03]} rotation={[-0.2, 0, 0]} castShadow raycast={noRay}>
           <boxGeometry args={[1.6, 0.11, 0.04]} />
-          <meshStandardMaterial color="#9A6A42" roughness={0.75} />
+          <meshStandardMaterial color="#9A6A42" roughness={0.75} bumpMap={microMap('grain')} bumpScale={1.5} roughnessMap={microMap('grain')} onBeforeCompile={rim} />
         </mesh>
       ))}
       {[-0.7, 0.7].map(lx => (
@@ -197,7 +207,7 @@ function Lamp({ x, z, night, low }: { x: number; z: number; night: boolean; low:
       <mesh position={[0, 1.4, 0]} castShadow raycast={noRay}><cylinderGeometry args={[0.045, 0.06, 2.6, 10]} /><meshStandardMaterial color={IRON} metalness={0.6} roughness={0.5} /></mesh>
       <group position={[0, 2.85, 0]}>
         <mesh raycast={noRay}><cylinderGeometry args={[0.13, 0.1, 0.32, 6]} />
-          <meshStandardMaterial color="#FFE3A8" emissive="#FFB85C" emissiveIntensity={night ? 2.2 : 0.3} roughness={0.3} />
+          <meshStandardMaterial color="#FFE3A8" emissive="#FFB85C" emissiveIntensity={night ? 3.2 : 0.3} roughness={0.3} />
         </mesh>
         <mesh position={[0, 0.22, 0]} raycast={noRay}><coneGeometry args={[0.2, 0.16, 6]} /><meshStandardMaterial color={IRON} metalness={0.6} roughness={0.5} /></mesh>
         {night && !low && (
@@ -214,8 +224,8 @@ function Lamp({ x, z, night, low }: { x: number; z: number; night: boolean; low:
 function FlowerBed({ x, z, r, season, seed }: { x: number; z: number; r: number; season: Season; seed: number }) {
   const flowers = useRef<InstancedMesh>(null!)
   const leaves = useRef<InstancedMesh>(null!)
-  const matF = useMemo(() => windify(new MeshStandardMaterial({ roughness: 0.6 }), 'grass', 6), [])
-  const matL = useMemo(() => windify(new MeshStandardMaterial({ color: '#4E8A3A', roughness: 0.8 }), 'grass', 3), [])
+  const matF = useMemo(() => withRim(windify(new MeshStandardMaterial({ roughness: 0.6 }), 'grass', 6), 0.8), [])
+  const matL = useMemo(() => withRim(windify(new MeshStandardMaterial({ color: '#4E8A3A', roughness: 0.8 }), 'grass', 3), 0.8), [])
   useEffect(() => () => { matF.dispose(); matL.dispose() }, [matF, matL])
   const NF = 70, NL = 26
   useLayoutEffect(() => {
@@ -262,7 +272,7 @@ function Grass({ season, count }: { season: Season; count: number }) {
     for (let i = 0; i < p.count; i++) p.setX(i, p.getX(i) * (1 - p.getY(i) / 0.42)) // taper to a tip
     return g
   }, [])
-  const mat = useMemo(() => windify(new MeshStandardMaterial({ roughness: 0.9, side: DoubleSide }), 'grass', 1), [])
+  const mat = useMemo(() => withRim(windify(new MeshStandardMaterial({ roughness: 0.9, side: DoubleSide }), 'grass', 1), 0.6), [])
   useEffect(() => () => { geo.dispose(); mat.dispose() }, [geo, mat])
 
   useLayoutEffect(() => {
@@ -304,7 +314,7 @@ function ParkSign() {
       </mesh>
       <mesh position={[0, 0.38, 0.18]} raycast={noRay}>
         <planeGeometry args={[2.1, 0.42]} />
-        <meshStandardMaterial map={tex} roughness={0.95} transparent alphaTest={0.5} />
+        <meshStandardMaterial map={tex} bumpMap={tex} bumpScale={2} roughness={0.95} transparent alphaTest={0.5} />
       </mesh>
     </group>
   )
