@@ -15,3 +15,8 @@ out/
 # OS / editor
 .DS_Store
 *.log
+
+# Cloudflare build output and local secrets
+.open-next/
+.wrangler/
+.dev.vars*

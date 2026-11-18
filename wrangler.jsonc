@@ -1,0 +1,12 @@
+// Cloudflare Workers config for Paw Memorial (built by @opennextjs/cloudflare).
+// Secrets (SUPABASE_SERVICE_ROLE_KEY etc.) are not kept here: set them with `npx wrangler secret put NAME`.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "mepawry",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-11-01",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "assets": { "directory": ".open-next/assets", "binding": "ASSETS" },
+  "services": [{ "binding": "WORKER_SELF_REFERENCE", "service": "mepawry" }],
+  "observability": { "enabled": true }
+}
