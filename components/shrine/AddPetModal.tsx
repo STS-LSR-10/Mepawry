@@ -1,13 +1,15 @@
 'use client'
 // components/shrine/AddPetModal.tsx — Pet Creation Flow (S03)
 
-import { useState, useRef } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { cn } from '@/lib/utils'
 import { photoToDataUrl, saveEditToken } from '@/lib/photo'
-import { AuthGate } from '@/components/account/AuthGate'
+import { useAccount } from '@/lib/account'
+import { LoginPanel } from '@/components/account/AuthGate'
+import { CountryPicker } from '@/components/shrine/CountryPicker'
 import { SlotPicker, type SlotChoice } from '@/components/shrine/SlotPicker'
 import type { Species } from '@/types'
 
@@ -42,6 +44,22 @@ export function AddPetModal({ open, onClose }: AddPetModalProps) {
   })
   const [slot, setSlot] = useState<SlotChoice>(null)
   const [slotsVersion, setSlotsVersion] = useState(0)
+  const account = useAccount()
+  const [country, setCountry] = useState('XX')
+  const [showFlag, setShowFlag] = useState(true)
+  const [email, setEmail] = useState('')
+  const [emailNote, setEmailNote] = useState<'sent' | 'failed' | null>(null)
+  const [needLogin, setNeedLogin] = useState(false) // guest sign-in unavailable: fall back to a real sign-in
+  // A real account (not a guest) already keeps their memorials on every device
+  const needsEmail = !account.user || (account.user.isAnonymous && !account.user.email)
+
+  // Pre-fill the country: where this visit comes from, else their profile, else the browser's region setting
+  useEffect(() => {
+    if (!open) return
+    let c = account.country ?? account.profile?.country_code ?? ''
+    if (!c) try { c = new Intl.Locale(navigator.language).maximize().region ?? '' } catch {}
+    setCountry(/^[A-Z]{2}$/.test(c) ? c : 'XX')
+  }, [open, account.country, account.profile])
 
   const handlePhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -64,6 +82,9 @@ export function AddPetModal({ open, onClose }: AddPetModalProps) {
     setLoading(true)
     setError(null)
     try {
+      // No account? Start a guest one, so this browser can edit the memorial later
+      const sessionError = await account.ensureSession()
+      if (sessionError) { setNeedLogin(true); return }
       const res = await fetch('/api/pets', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -71,6 +92,8 @@ export function AddPetModal({ open, onClose }: AddPetModalProps) {
           name: form.name.trim(),
           species: form.species,
           slot,
+          country_code: country,
+          show_flag: showFlag,
           birth_year: form.birth_year ? Number(form.birth_year) : null,
           death_year: form.death_year ? Number(form.death_year) : null,
           epitaph: form.epitaph.trim() || null,
@@ -81,6 +104,12 @@ export function AddPetModal({ open, onClose }: AddPetModalProps) {
       if (res.status === 409) { setSlot(null); setSlotsVersion(v => v + 1) } // shelf just taken: show the new picture
       if (!res.ok) throw new Error(data.error)
       saveEditToken(data.pet.id, data.editToken)
+      // Email given: attach it to the guest account; confirming it lets them sign in anywhere later
+      if (email.trim() && needsEmail) {
+        const { error } = await account.supabase()?.auth.updateUser({ email: email.trim() }, { emailRedirectTo: `${window.location.origin}/me` })
+          ?? { error: new Error('no client') }
+        setEmailNote(error ? 'failed' : 'sent')
+      }
       setCreatedSlug(data.pet.slug)
       setStep('success')
     } catch (err) {
@@ -98,6 +127,10 @@ export function AddPetModal({ open, onClose }: AddPetModalProps) {
     setExpanded(false)
     setForm({ name: '', species: 'dog', birth_year: '', death_year: '', epitaph: '' })
     setSlot(null)
+    setEmail('')
+    setEmailNote(null)
+    setNeedLogin(false)
+    setShowFlag(true)
     onClose()
   }
 
@@ -106,10 +139,17 @@ export function AddPetModal({ open, onClose }: AddPetModalProps) {
       {step === 'success' ? (
         <SuccessView
           name={form.name}
+          note={emailNote === 'sent' ? `We sent a link to ${email}. Tap it to keep ${form.name} safe on any phone.`
+            : account.user?.isAnonymous ? 'We’ll remember you on this device. Add your email in My memorials to keep them on any phone.'
+            : 'You can edit it anytime from My memorials.'}
           onClose={() => { const slug = createdSlug; handleClose(); if (slug) router.push(`/${slug}`) }}
         />
+      ) : needLogin && !account.user ? (
+        <div className="space-y-3">
+          <LoginPanel title="Sign in to place their shrine" />
+          <button onClick={() => setNeedLogin(false)} className="w-full text-xs text-[#C67129] underline">Back to the form</button>
+        </div>
       ) : (
-        <AuthGate title="Sign in to give your pet a place">
         <form onSubmit={handleSubmit} className="space-y-5">
           {/* Photo Upload */}
           <div>
@@ -193,6 +233,24 @@ export function AddPetModal({ open, onClose }: AddPetModalProps) {
           </div>
 
 
+          {/* Email (guests only) */}
+          {needsEmail && (
+            <div>
+              <label htmlFor="pet-email" className="block text-sm font-medium text-[#2A1E17] mb-1.5">
+                Your email — so you never lose them <span className="font-normal text-[#8E8278]">(optional)</span>
+              </label>
+              <input
+                id="pet-email" type="email" autoComplete="email" placeholder="you@example.com"
+                value={email} onChange={e => setEmail(e.target.value)}
+                className="w-full rounded-xl border border-[#D4C9BF] bg-white px-4 py-2.5 text-sm text-[#2A1E17] placeholder:text-[#B5A99F] focus:outline-none focus:ring-2 focus:ring-[#D9823B]"
+              />
+              <p className="mt-1 text-center text-xs text-[#8E8278]">We’ll send you one link to get back to them from any phone. No password, no spam.</p>
+            </div>
+          )}
+
+          {/* Country */}
+          <CountryPicker value={country} onChange={setCountry} showFlag={showFlag} onShowFlag={setShowFlag} />
+
           {/* Expandable details */}
           <div>
             <button
@@ -266,14 +324,16 @@ export function AddPetModal({ open, onClose }: AddPetModalProps) {
           <Button type="submit" size="lg" loading={loading} className="w-full">
             🕯️ Place their shrine
           </Button>
+          <p className="text-center text-xs text-[#8E8278]">
+            Free · {account.user && !account.user.isAnonymous ? 'Saved to your account' : 'No sign-up'} · You can change it anytime
+          </p>
         </form>
-        </AuthGate>
       )}
     </Modal>
   )
 }
 
-function SuccessView({ name, onClose }: { name: string; onClose: () => void }) {
+function SuccessView({ name, note, onClose }: { name: string; note: string; onClose: () => void }) {
   return (
     <div className="text-center space-y-4 py-4">
       <div className="text-6xl float-anim">🕯️</div>
@@ -282,7 +342,7 @@ function SuccessView({ name, onClose }: { name: string; onClose: () => void }) {
       </h3>
       <p className="text-[#5C5046] text-sm leading-relaxed">
         They now have a place in the memorial hall, forever.
-        You can edit it anytime from <b>My memorials</b>.
+        {note}
       </p>
       <Button onClick={onClose} variant="secondary" size="lg" className="w-full">
         Visit their shrine →

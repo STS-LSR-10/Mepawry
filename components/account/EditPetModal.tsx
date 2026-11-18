@@ -6,12 +6,13 @@ import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { cn } from '@/lib/utils'
 import { photoToDataUrl } from '@/lib/photo'
+import { CountryPicker } from '@/components/shrine/CountryPicker'
 import type { Pet, Species } from '@/types'
 
 const field = 'w-full rounded-xl border border-[#D4C9BF] bg-white px-3 py-2 text-sm text-[#2A1E17] placeholder:text-[#B5A99F] focus:outline-none focus:ring-2 focus:ring-[#D9823B]'
 
 export function EditPetModal({ pet, onClose, onSaved }: { pet: Pet | null; onClose: () => void; onSaved: (p: Pet) => void }) {
-  const [form, setForm] = useState({ name: '', species: 'dog' as Species, birth_year: '', death_year: '', epitaph: '' })
+  const [form, setForm] = useState({ name: '', species: 'dog' as Species, birth_year: '', death_year: '', epitaph: '', country_code: 'XX', show_flag: true })
   const [photo, setPhoto] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
@@ -19,7 +20,7 @@ export function EditPetModal({ pet, onClose, onSaved }: { pet: Pet | null; onClo
 
   useEffect(() => {
     if (!pet) return
-    setForm({ name: pet.name, species: pet.species, birth_year: pet.birth_year ? String(pet.birth_year) : '', death_year: pet.death_year ? String(pet.death_year) : '', epitaph: pet.epitaph ?? '' })
+    setForm({ name: pet.name, species: pet.species, birth_year: pet.birth_year ? String(pet.birth_year) : '', death_year: pet.death_year ? String(pet.death_year) : '', epitaph: pet.epitaph ?? '', country_code: pet.country_code, show_flag: pet.show_flag !== false })
     setPhoto(null); setError('')
   }, [pet])
 
@@ -37,7 +38,7 @@ export function EditPetModal({ pet, onClose, onSaved }: { pet: Pet | null; onClo
     const res = await fetch(`/api/pets/${pet.id}`, {
       method: 'PATCH', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        name: form.name.trim(), species: form.species, epitaph: form.epitaph,
+        name: form.name.trim(), species: form.species, epitaph: form.epitaph, country_code: form.country_code, show_flag: form.show_flag,
         birth_year: form.birth_year ? Number(form.birth_year) : null,
         death_year: form.death_year ? Number(form.death_year) : null,
         photo,
@@ -87,6 +88,7 @@ export function EditPetModal({ pet, onClose, onSaved }: { pet: Pet | null; onClo
           <label htmlFor="edit-epitaph" className="mb-1 block text-xs font-medium text-[#2A1E17]">A few words about them</label>
           <textarea id="edit-epitaph" rows={3} maxLength={500} value={form.epitaph} onChange={e => setForm(f => ({ ...f, epitaph: e.target.value }))} className={cn(field, 'resize-none')} />
         </div>
+        <CountryPicker value={form.country_code} onChange={c => setForm(f => ({ ...f, country_code: c }))} showFlag={form.show_flag} onShowFlag={v => setForm(f => ({ ...f, show_flag: v }))} />
         {error && <p role="alert" className="text-sm text-[#C0392B]">{error}</p>}
         <Button type="submit" size="lg" loading={busy} className="w-full">Save changes</Button>
       </form>

@@ -36,6 +36,7 @@ export interface Pet {
   created_at: string
   updated_at: string
   owner_id?: string | null
+  show_flag?: boolean
   // เพิ่มเฉพาะ owner view
   edit_token?: string
   edit_token_expires_at?: string

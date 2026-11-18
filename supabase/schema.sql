@@ -179,6 +179,8 @@ grant all on profiles to service_role;
 -- Who owns each memorial (lets them edit or delete it from any device)
 alter table pets add column if not exists owner_id uuid references auth.users on delete set null;
 create index if not exists pets_owner_idx on pets (owner_id);
+-- Owners can hide their pet's country flag on the plaque
+alter table pets add column if not exists show_flag boolean not null default true;
 
 -- ── Photos: a public bucket (anyone can view a memorial photo; only the server uploads) ──
 

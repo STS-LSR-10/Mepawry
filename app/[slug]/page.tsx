@@ -31,7 +31,7 @@ export default async function ShrinePage({ params }: ShrinePageProps) {
   const pet = await getPetBySlug((await params).slug)
   if (!pet) notFound()
 
-  const flag = flagEmoji(pet.country_code)
+  const flag = pet.show_flag === false ? '' : flagEmoji(pet.country_code)
   const years = formatYears(pet.birth_year, pet.death_year)
   const age = calculateAge(pet.birth_year, pet.death_year)
   const look = SPECIES_LOOK[pet.species]

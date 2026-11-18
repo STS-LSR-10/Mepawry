@@ -104,6 +104,8 @@ function petFields(data: Partial<Pet>) {
     birth_year: year(data.birth_year),
     death_year: year(data.death_year),
     epitaph: data.epitaph ? String(data.epitaph).trim().slice(0, 500) || null : null,
+    ...(/^[A-Z]{2}$/.test(String(data.country_code)) ? { country_code: String(data.country_code) } : {}),
+    ...(typeof data.show_flag === 'boolean' ? { show_flag: data.show_flag } : {}),
   }
 }
 
@@ -137,9 +139,9 @@ export async function createPet(
     }
     const { data: pet, error } = await db().from('pets').insert({
       id,
+      country_code: /^[A-Z]{2}$/.test(owner.country) ? owner.country : 'XX', // the form's choice (in fields) wins
       ...fields,
       slug: generateSlug(fields.name, floor, position) + suffix,
-      country_code: /^[A-Z]{2}$/.test(owner.country) ? owner.country : 'XX',
       primary_photo_url: photo,
       floor_id: floor,
       shrine_position: position,
@@ -205,7 +207,16 @@ export async function claimPets(ownerId: string, tokens: Record<string, string>)
   const rows = (must(await db().from('edit_tokens').select('pet_id, token').in('pet_id', ids))) ?? []
   const mine = rows.filter((r: { pet_id: string; token: string }) => tokens[r.pet_id] === r.token).map((r: { pet_id: string }) => r.pet_id)
   if (!mine.length) return 0
-  const claimed = (must(await db().from('pets').update({ owner_id: ownerId }).in('id', mine).is('owner_id', null).select('id'))) ?? []
+  // Free to claim: no owner yet, or a guest (anonymous) owner — the same person before they signed in
+  const rowsNow = (must(await db().from('pets').select('id, owner_id').in('id', mine))) ?? []
+  const guests = new Set<string>()
+  for (const o of new Set(rowsNow.map((r: { owner_id: string | null }) => r.owner_id).filter(Boolean) as string[])) {
+    const { data } = await db().auth.admin.getUserById(o)
+    if (data.user?.is_anonymous) guests.add(o)
+  }
+  const ids2 = rowsNow.filter((r: { owner_id: string | null }) => r.owner_id !== ownerId && (!r.owner_id || guests.has(r.owner_id))).map((r: { id: string }) => r.id)
+  if (!ids2.length) return 0
+  const claimed = (must(await db().from('pets').update({ owner_id: ownerId }).in('id', ids2).select('id'))) ?? []
   return claimed.length
 }
 
@@ -318,12 +329,12 @@ export async function getOpenFloor(): Promise<number> {
 
 /** Latest real happenings: candles, flowers, guestbook messages and new shrines. */
 export async function getActivity(limit = 20): Promise<{ who: string; act: string; pet: string; slug: string; cc: string; at: string }[]> {
-  type P = { name: string; slug: string; country_code: string }
-  const pet = 'pets(name, slug, country_code)'
+  type P = { name: string; slug: string; country_code: string; show_flag?: boolean }
+  const pet = 'pets(name, slug, country_code, show_flag)'
   const [tributes, guestbook, pets, gifts] = await Promise.all([
     db().from('tributes').select(`visitor_name, type, created_at, ${pet}`).order('created_at', { ascending: false }).limit(limit),
     db().from('guestbook').select(`visitor_name, created_at, ${pet}`).eq('is_hidden', false).order('created_at', { ascending: false }).limit(limit),
-    db().from('pets').select('name, slug, country_code, created_at').order('created_at', { ascending: false }).limit(limit),
+    db().from('pets').select('name, slug, country_code, show_flag, created_at').order('created_at', { ascending: false }).limit(limit),
     db().from('gifts').select(`visitor_name, item, created_at, ${pet}`).order('created_at', { ascending: false }).limit(limit),
   ]).then(rs => rs.map(r => must<unknown>(r) ?? [])) as [
     { visitor_name: string; type: string; created_at: string; pets: P }[],
@@ -332,7 +343,7 @@ export async function getActivity(limit = 20): Promise<{ who: string; act: strin
     { visitor_name: string; item: string; created_at: string; pets: P }[],
   ]
   const verb: Record<string, string> = { candle: 'lit a candle for', flower: 'left a flower for', treat_bone: 'left a treat for', treat_icecream: 'left a treat for', treat_ball: 'left a toy for' }
-  const row = (who: string, act: string, p: P, at: string) => ({ who, act, pet: p.name, slug: p.slug, cc: p.country_code, at })
+  const row = (who: string, act: string, p: P, at: string) => ({ who, act, pet: p.name, slug: p.slug, cc: p.show_flag === false ? 'XX' : p.country_code, at })
   return [
     ...tributes.map(t => row(t.visitor_name, verb[t.type], t.pets, t.created_at)),
     ...guestbook.map(e => row(e.visitor_name, 'wrote in the guestbook of', e.pets, e.created_at)),

@@ -7,18 +7,19 @@ import { useAccount } from '@/lib/account'
 import { cn, flagEmoji } from '@/lib/utils'
 import type { Gender } from '@/types'
 
-export function AuthGate({ children, title = 'Sign in to continue' }: { children: React.ReactNode; title?: string }) {
+/** allowGuest: a guest (added a pet without signing in) may see the children, without a profile. */
+export function AuthGate({ children, title = 'Sign in to continue', allowGuest = false }: { children: React.ReactNode; title?: string; allowGuest?: boolean }) {
   const { loading, user, profile } = useAccount()
   if (loading) return <p className="py-10 text-center text-sm text-[#8E8278]">Loading…</p>
-  if (!user) return <LoginPanel title={title} />
-  if (!profile) return <ProfileSetup />
+  if (!user || (user.isAnonymous && !allowGuest)) return <LoginPanel title={title} />
+  if (!profile && !user.isAnonymous) return <ProfileSetup />
   return <>{children}</>
 }
 
 const inApp = () => typeof navigator !== 'undefined' && /Line\/|FBAN|FBAV|Instagram/i.test(navigator.userAgent)
 const input = 'w-full rounded-xl border border-[#D4C9BF] bg-white px-4 py-2.5 text-[#2A1E17] placeholder:text-[#B5A99F] focus:outline-none focus:ring-2 focus:ring-[#D9823B]'
 
-function LoginPanel({ title }: { title: string }) {
+export function LoginPanel({ title }: { title: string }) {
   const { supabase, refresh } = useAccount()
   const [email, setEmail] = useState('')
   const [code, setCode] = useState('')

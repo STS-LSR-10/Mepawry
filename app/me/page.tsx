@@ -4,7 +4,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { SiteNav } from '@/components/site/SiteNav'
-import { AuthGate, ProfileSetup } from '@/components/account/AuthGate'
+import { AuthGate, LoginPanel, ProfileSetup } from '@/components/account/AuthGate'
 import { DeletePetModal, EditPetModal } from '@/components/account/EditPetModal'
 import { useAccount } from '@/lib/account'
 import { flagEmoji, SPECIES_LOOK } from '@/lib/utils'
@@ -15,7 +15,7 @@ export default function MePage() {
     <main className="min-h-dvh bg-[#FAF7F2] pb-20 pt-24">
       <SiteNav solid />
       <div className="mx-auto max-w-[720px] px-4">
-        <AuthGate title="Sign in to see your memorials"><Account /></AuthGate>
+        <AuthGate title="Sign in to see your memorials" allowGuest><Account /></AuthGate>
       </div>
     </main>
   )
@@ -38,9 +38,9 @@ function Account() {
     if (id && pets) setEditing(pets.find(p => p.id === id) ?? null)
   }, [pets])
 
-  if (!profile) return null
   return (
     <div className="space-y-8">
+      {user?.isAnonymous ? <GuestCard /> : profile && (
       <section className="rounded-3xl border border-[#E8DFD6] bg-white p-6">
         <div className="flex items-center gap-4">
           <div className="grid h-16 w-16 place-items-center rounded-full bg-[#FDF0E5] text-4xl" aria-hidden>{profile.gender === 'female' ? '👧' : '👦'}</div>
@@ -55,6 +55,7 @@ function Account() {
         </div>
         {editProfile && <div className="mt-5 border-t border-[#F0E8DC] pt-5"><ProfileSetup onSaved={() => setEditProfile(false)} /></div>}
       </section>
+      )}
 
       <section>
         <h2 className="mb-3 font-serif text-xl font-bold text-[#2A1E17]">My memorials</h2>
@@ -84,10 +85,52 @@ function Account() {
         )}
       </section>
 
-      <button onClick={signOut} className="text-sm text-[#8E8278] underline">Sign out</button>
+      {!user?.isAnonymous && <button onClick={signOut} className="text-sm text-[#8E8278] underline">Sign out</button>}
 
       <EditPetModal pet={editing} onClose={() => setEditing(null)} onSaved={p => { setPets(ps => ps?.map(x => (x.id === p.id ? p : x)) ?? null); setEditing(null) }} />
       <DeletePetModal pet={deleting} onClose={() => setDeleting(null)} onDeleted={id => { setPets(ps => ps?.filter(x => x.id !== id) ?? null); setDeleting(null) }} />
     </div>
+  )
+}
+
+/** A guest is remembered only by this browser. Adding an email keeps the same account (and pets) on any phone. */
+function GuestCard() {
+  const { user, supabase } = useAccount()
+  const [email, setEmail] = useState('')
+  const [state, setState] = useState<'idle' | 'busy' | 'sent' | 'error'>('idle')
+  const [signIn, setSignIn] = useState(false)
+  const save = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!email.trim()) return
+    setState('busy')
+    const { error } = await supabase()?.auth.updateUser({ email: email.trim() }, { emailRedirectTo: `${window.location.origin}/me` }) ?? { error: true }
+    setState(error ? 'error' : 'sent')
+  }
+  return (
+    <section className="space-y-4 rounded-3xl border border-[#E8DFD6] bg-white p-6">
+      <div>
+        <h1 className="font-serif text-2xl font-bold text-[#2A1E17]">You’re a guest on this device</h1>
+        <p className="mt-1 text-sm text-[#5C5046]">
+          This browser remembers you, so you can edit and delete your memorials here. Clearing it, or using another phone, would lose them, so add your email to keep them safe.
+        </p>
+      </div>
+      {user?.email ? (
+        <p className="rounded-xl bg-[#F4EFE6] px-3 py-2 text-sm text-[#5C5046]">Check <b>{user.email}</b> and tap the link to confirm it.</p>
+      ) : state === 'sent' ? (
+        <p className="rounded-xl bg-[#EAF6EE] px-3 py-2 text-sm text-[#2E7D4F]">We sent a link to <b>{email}</b>. Tap it to finish, then sign in with that email on any phone.</p>
+      ) : (
+        <form onSubmit={save} className="flex gap-2">
+          <label htmlFor="guest-email" className="sr-only">Email</label>
+          <input id="guest-email" type="email" required autoComplete="email" placeholder="you@example.com" value={email} onChange={e => setEmail(e.target.value)}
+            className="min-w-0 flex-1 rounded-xl border border-[#D4C9BF] px-3 py-2 text-sm text-[#2A1E17] focus:outline-none focus:ring-2 focus:ring-[#D9823B]" />
+          <button disabled={state === 'busy'} className="rounded-xl bg-[#D9823B] px-4 text-sm font-semibold text-white disabled:opacity-60">Keep them</button>
+        </form>
+      )}
+      {state === 'error' && <p className="text-sm text-[#C0392B]">That email couldn’t be added. It may already have an account: sign in with it below.</p>}
+      <button onClick={() => setSignIn(v => !v)} className="text-sm text-[#C67129] underline">
+        {signIn ? 'Close' : 'Already have an account? Sign in (your memorials here move to it)'}
+      </button>
+      {signIn && <div className="border-t border-[#F0E8DC] pt-4"><LoginPanel title="Sign in" /></div>}
+    </section>
   )
 }

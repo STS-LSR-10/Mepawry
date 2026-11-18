@@ -7,19 +7,28 @@ import { authConfig, getUser } from '@/lib/auth'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET() {
+const edgeCountry = (req: NextRequest) => {
+  const c = req.headers.get('cf-ipcountry') ?? ''
+  return /^[A-Z]{2}$/.test(c) && c !== 'XX' && c !== 'T1' ? c : null
+}
+
+export async function GET(req: NextRequest) {
   const user = await getUser()
   const profile = user ? await getProfile(user.id) : null
-  return NextResponse.json({ user: user && { id: user.id, email: user.email }, profile, config: authConfig() })
+  return NextResponse.json({
+    user: user && { id: user.id, email: user.email, isAnonymous: !!user.is_anonymous },
+    profile,
+    country: edgeCountry(req), // where this visit comes from, to pre-fill the country picker
+    config: authConfig(),
+  })
 }
 
 export async function POST(req: NextRequest) {
   const user = await getUser()
   if (!user) return NextResponse.json({ error: 'Please sign in' }, { status: 401 })
   const body = await req.json().catch(() => null)
-  const fromEdge = req.headers.get('cf-ipcountry') ?? ''
   // shortcut: off Cloudflare (local dev) there's no CF-IPCountry, so we fall back to the browser's region setting
-  const country = /^[A-Z]{2}$/.test(fromEdge) && fromEdge !== 'XX' && fromEdge !== 'T1' ? fromEdge : String(body?.browserCountry ?? '').toUpperCase()
+  const country = edgeCountry(req) ?? String(body?.browserCountry ?? '').toUpperCase()
   const profile = await saveProfile(user.id, body ?? {}, country)
   if (!profile) return NextResponse.json({ error: 'Please enter a name and choose male or female' }, { status: 400 })
   return NextResponse.json({ profile })

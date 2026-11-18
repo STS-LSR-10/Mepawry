@@ -14,7 +14,7 @@ interface ShrineCardProps {
 
 export function ShrineCard({ pet, className }: ShrineCardProps) {
   const [translated, setTranslated] = useState(false)
-  const flag = flagEmoji(pet.country_code)
+  const flag = pet.show_flag === false ? '' : flagEmoji(pet.country_code)
   const look = SPECIES_LOOK[pet.species]
   const years = formatYears(pet.birth_year, pet.death_year)
   const epitaph = translated
@@ -54,7 +54,7 @@ export function ShrineCard({ pet, className }: ShrineCardProps) {
         <div className="px-[1.15rem] pt-4">
           <h3 className="font-serif text-xl font-medium leading-tight">{pet.name}</h3>
           <div className="mt-0.5 text-[0.82rem] text-[#8E8278]">
-            <span aria-label={`From ${pet.country_code}`}>{flag}</span> {years}
+            {flag && <span aria-label={`From ${pet.country_code}`}>{flag}</span>} {years}
             {pet.birth_year && pet.death_year && <> · {pet.death_year - pet.birth_year} yrs</>}
           </div>
           {epitaph && <p className="mt-2 line-clamp-2 font-serif text-sm italic text-[#5C5046]">&ldquo;{epitaph}&rdquo;</p>}

@@ -19,10 +19,10 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  // Guests count too: the page signs them in anonymously first, so the memorial still has an owner who can edit it
   const user = await getUser()
-  if (!user) return NextResponse.json({ error: 'Please sign in to add a memorial' }, { status: 401 })
+  if (!user) return NextResponse.json({ error: 'Please refresh the page and try again' }, { status: 401 })
   const profile = await getProfile(user.id)
-  if (!profile) return NextResponse.json({ error: 'Please finish setting up your profile first' }, { status: 403 })
   try {
     const body = await req.json()
     if (!body.name || !String(body.name).trim()) {
@@ -32,8 +32,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Photo must be a JPG, PNG or WebP under 1.5 MB' }, { status: 400 })
     }
     const pick = body.slot && Number.isInteger(body.slot.floor) && Number.isInteger(body.slot.position) ? body.slot : undefined
-    // Country comes from the owner's locked profile, not from the form
-    const { pet, editToken } = await createPet(body, { id: user.id, country: profile.country_code }, pick)
+    // The form's country wins; without one, the owner's profile country
+    const { pet, editToken } = await createPet(body, { id: user.id, country: profile?.country_code ?? 'XX' }, pick)
     return NextResponse.json({ pet, editToken }, { status: 201 })
   } catch (err) {
     if (err instanceof SlotTakenError) return NextResponse.json({ error: err.message }, { status: 409 })

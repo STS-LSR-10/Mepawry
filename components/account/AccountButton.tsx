@@ -8,11 +8,14 @@ import { AuthGate } from './AuthGate'
 import { useAccount } from '@/lib/account'
 
 export function AccountButton() {
-  const { loading, profile } = useAccount()
+  const { loading, user, profile } = useAccount()
   const [open, setOpen] = useState(false)
   // Close the sign-in box once sign-in and profile are both done
-  useEffect(() => { if (profile) setOpen(false) }, [profile])
+  useEffect(() => { if (profile && !user?.isAnonymous) setOpen(false) }, [profile, user])
   if (loading) return null
+  if (user?.isAnonymous) {
+    return <Link href="/me" className="rounded-full bg-white/10 px-3 py-1.5 text-sm text-[#FAF7F2] hover:bg-white/20">My pets</Link>
+  }
   if (profile) {
     return (
       <Link href="/me" className="flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-sm text-[#FAF7F2] hover:bg-white/20" aria-label={`My account, ${profile.display_name}`}>
