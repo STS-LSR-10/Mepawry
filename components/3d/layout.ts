@@ -186,3 +186,37 @@ export const SLOTS: Slot[] = GALLERIES.flatMap(g => g.aisles.flatMap(faces => {
 export const FLOOR_CAPACITY = SLOTS.length
 
 export const bookcaseRect = (b: Bookcase): Rect => r(b.x - b.depth / 2, b.z0, b.x + b.depth / 2, b.z1)
+
+// ── The park in front of the entrance (ground floor) ──
+// A paved path from the door to a round plaza with a fountain, a cross path to either side,
+// benches, lamp posts, flower beds and shade trees. walk.ts walks around the solid bits.
+
+export const PARK = {
+  path: r(-1.3, -5.6, 1.3, 15.5),                 // main path, door to the far lawn
+  cross: r(-14, 5.1, 14, 6.9),                     // side path through the plaza
+  plaza: { x: 0, z: 6, r: 4.2 },
+  fountain: { x: 0, z: 6, r: 1.9 },
+  benches: [
+    { x: -2.35, z: -1.5, rot: Math.PI / 2 }, { x: 2.35, z: -1.5, rot: -Math.PI / 2 },
+    { x: -2.35, z: 12.5, rot: Math.PI / 2 }, { x: 2.35, z: 12.5, rot: -Math.PI / 2 },
+    { x: -9, z: 4.1, rot: 0 }, { x: 9, z: 4.1, rot: 0 },
+  ],
+  lamps: [
+    { x: -1.9, z: -3.3 }, { x: 1.9, z: -3.3 }, { x: -1.9, z: 1.2 }, { x: 1.9, z: 1.2 },
+    { x: -1.9, z: 10.8 }, { x: 1.9, z: 10.8 }, { x: -13, z: 7.6 }, { x: 13, z: 7.6 },
+  ],
+  beds: [{ x: -6, z: -1.6, r: 1.4 }, { x: 6, z: -1.6, r: 1.4 }, { x: -6, z: 12.4, r: 1.4 }, { x: 6, z: 12.4, r: 1.4 }],
+  trees: [[-8.5, -3], [8.5, -3], [-10.5, 10], [10.5, 10], [-5, 15], [5, 15], [-14.5, 1.5], [14.5, 1.5], [-15, 12.5], [15, 12.5], [-12, -2], [12, -2]] as [number, number][],
+}
+
+/** Solid park pieces (fountain, benches, lamps, beds, trunks) as rectangles for walking around. */
+export function parkObstacles(): Rect[] {
+  const f = PARK.fountain
+  return [
+    rectAt(f.x, f.z, f.r * 2, f.r * 2),
+    ...PARK.benches.map(b => (Math.abs(Math.sin(b.rot)) > 0.5 ? rectAt(b.x, b.z, 0.7, 1.7) : rectAt(b.x, b.z, 1.7, 0.7))),
+    ...PARK.lamps.map(l => rectAt(l.x, l.z, 0.3, 0.3)),
+    ...PARK.beds.map(b => rectAt(b.x, b.z, b.r * 1.7, b.r * 1.7)),
+    ...PARK.trees.map(([x, z]) => rectAt(x, z, 0.6, 0.6)),
+  ]
+}

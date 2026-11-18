@@ -324,3 +324,99 @@ export function hoodieTexture(base: string, accent: string) {
   g.restore()
   return finish(c)
 }
+
+/** Lawn: base colour with blades, light and dark patches. Repeats. */
+export function lawnTexture(base: string) {
+  const { c, g } = canvas(256, 256)
+  g.fillStyle = base; g.fillRect(0, 0, 256, 256)
+  for (let i = 0; i < 60; i++) {
+    const x = (i * 97.1) % 256, y = (i * 57.3) % 256, r = 18 + (i % 5) * 9
+    const gr = g.createRadialGradient(x, y, 0, x, y, r)
+    gr.addColorStop(0, i % 2 ? 'rgba(255,255,200,.06)' : 'rgba(0,30,0,.08)'); gr.addColorStop(1, 'rgba(0,0,0,0)')
+    g.fillStyle = gr; g.fillRect(x - r, y - r, r * 2, r * 2)
+  }
+  for (let i = 0; i < 2600; i++) {
+    const x = (i * 73.13) % 256, y = (i * 41.77 + (i % 13) * 7) % 256
+    g.strokeStyle = i % 3 ? 'rgba(20,50,10,.22)' : 'rgba(210,235,150,.18)'
+    g.lineWidth = 1
+    g.beginPath(); g.moveTo(x, y); g.lineTo(x + ((i % 5) - 2) * 0.6, y - 3 - (i % 4)); g.stroke()
+  }
+  const t = finish(c)
+  t.wrapS = t.wrapT = RepeatWrapping
+  return t
+}
+
+/** Warm stone pavers in a running bond, with mortar and a little wear. Repeats. */
+export function pavingTexture() {
+  const { c, g } = canvas(256, 256)
+  g.fillStyle = '#8D8070'; g.fillRect(0, 0, 256, 256)
+  const tones = ['#C9B79C', '#BFAE92', '#D3C3A8', '#B9A688', '#CDBEA4']
+  for (let row = 0; row < 8; row++) {
+    const off = row % 2 ? 32 : 0
+    for (let col = -1; col < 5; col++) {
+      const x = col * 64 + off + 2, y = row * 32 + 2
+      g.fillStyle = tones[(row * 3 + col + 7) % tones.length]
+      g.beginPath(); g.roundRect(x, y, 60, 28, 4); g.fill()
+      for (let k = 0; k < 40; k++) { g.fillStyle = `rgba(${k % 2 ? '255,255,255' : '60,45,30'},.07)`; g.fillRect(x + ((k * 13.7) % 58), y + ((k * 7.3) % 26), 2, 2) }
+    }
+  }
+  const t = finish(c)
+  t.wrapS = t.wrapT = RepeatWrapping
+  return t
+}
+
+/** Outside walls: cut stone blocks over a darker plinth line. Repeats. */
+export function stoneWallTexture() {
+  const { c, g } = canvas(256, 256)
+  g.fillStyle = '#6F655A'; g.fillRect(0, 0, 256, 256)
+  const tones = ['#B9AE9C', '#AEA391', '#C4BAA8', '#A69B88', '#BDB3A1']
+  for (let row = 0; row < 6; row++) {
+    const h = 256 / 6, off = row % 2 ? 40 : 0
+    for (let col = -1; col < 4; col++) {
+      const x = col * 80 + off + 2, y = row * h + 2
+      const gr = g.createLinearGradient(0, y, 0, y + h)
+      gr.addColorStop(0, tones[(row + col + 5) % tones.length]); gr.addColorStop(1, '#9A8F7D')
+      g.fillStyle = gr; g.fillRect(x, y, 76, h - 4)
+      for (let k = 0; k < 50; k++) { g.fillStyle = `rgba(${k % 2 ? '255,255,255' : '50,40,30'},.06)`; g.fillRect(x + ((k * 17.3) % 74), y + ((k * 9.1) % (h - 6)), 2, 2) }
+    }
+  }
+  const t = finish(c)
+  t.wrapS = t.wrapT = RepeatWrapping
+  return t
+}
+
+/** Roof: overlapping clay tiles. Repeats. */
+export function roofTileTexture() {
+  const { c, g } = canvas(256, 256)
+  g.fillStyle = '#4A2A1C'; g.fillRect(0, 0, 256, 256)
+  for (let row = 0; row < 10; row++) {
+    const y = row * 25.6, off = row % 2 ? 16 : 0
+    for (let col = -1; col < 9; col++) {
+      const x = col * 32 + off
+      const gr = g.createLinearGradient(0, y, 0, y + 26)
+      gr.addColorStop(0, '#8A4A32'); gr.addColorStop(1, '#5E2F1F')
+      g.fillStyle = gr
+      g.beginPath(); g.moveTo(x + 1, y); g.lineTo(x + 31, y); g.lineTo(x + 31, y + 20); g.quadraticCurveTo(x + 16, y + 28, x + 1, y + 20); g.closePath(); g.fill()
+    }
+  }
+  const t = finish(c)
+  t.wrapS = t.wrapT = RepeatWrapping
+  return t
+}
+
+/** Rippling water, for the fountain basin. Repeats. */
+export function waterTexture() {
+  const { c, g } = canvas(128, 128)
+  const gr = g.createLinearGradient(0, 0, 128, 128)
+  gr.addColorStop(0, '#5FA8C8'); gr.addColorStop(1, '#3E86AA')
+  g.fillStyle = gr; g.fillRect(0, 0, 128, 128)
+  g.strokeStyle = 'rgba(255,255,255,.35)'; g.lineWidth = 1.5
+  for (let i = 0; i < 14; i++) {
+    g.beginPath()
+    for (let x = 0; x <= 128; x += 4) g.lineTo(x, (i * 9.3 + Math.sin(x * 0.1 + i) * 3) % 128)
+    g.stroke()
+  }
+  const t = finish(c)
+  t.wrapS = t.wrapT = RepeatWrapping
+  return t
+}

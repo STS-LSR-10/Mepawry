@@ -10,7 +10,7 @@ import {
   WALL_T, furniture, wallRects, type P, type Rect, type Slot,
 } from './layout'
 import { FurniturePiece } from './Furniture'
-import { floorTexture, nightTexture, petTexture, signTexture } from './textures'
+import { floorTexture, nightTexture, petTexture, roofTileTexture, signTexture, stoneWallTexture } from './textures'
 import { getFloorName, SPECIES_LOOK } from '@/lib/utils'
 import type { Quality } from './quality'
 import type { Pet } from '@/types'
@@ -93,16 +93,22 @@ export function Hall({ floor, playerPos, quality, pets, inside, onFloor, onShrin
 function Walls({ ground, inside }: { ground: boolean; inside: boolean }) {
   const h = inside ? CUT : H
   const stop = (e: ThreeEvent<MouseEvent>) => e.stopPropagation() // walls aren't walkable
+  const stone = useTexture(() => stoneWallTexture(), [])
   return (
     <group onClick={stop}>
       {wallRects(ground).map((r, i) => {
         const s = size(r)
         return (
           <group key={i}>
-            <mesh position={[s.cx, h / 2, s.cz]} castShadow receiveShadow>
-              <boxGeometry args={[s.w, h, s.d]} />
-              <meshStandardMaterial color={WOOD} roughness={0.9} />
-            </mesh>
+            {/* Outside: cut stone. Inside (cut down so the camera sees over): warm wood */}
+            {inside ? (
+              <mesh position={[s.cx, h / 2, s.cz]} castShadow receiveShadow>
+                <boxGeometry args={[s.w, h, s.d]} />
+                <meshStandardMaterial color={WOOD} roughness={0.9} />
+              </mesh>
+            ) : (
+              <StoneWall tex={stone} at={[s.cx, h / 2, s.cz]} size={[s.w, h, s.d]} />
+            )}
             {/* Cap rail on the cut-down walls */}
             {inside && (
               <mesh position={[s.cx, h + 0.04, s.cz]} raycast={noRay}>
@@ -117,8 +123,28 @@ function Walls({ ground, inside }: { ground: boolean; inside: boolean }) {
   )
 }
 
+/** One outside wall in stone; each gets its own copy of the texture so the blocks stay the same size. */
+function StoneWall({ tex, at, size: [w, h, d] }: { tex: Texture; at: [number, number, number]; size: [number, number, number] }) {
+  const t = useMemo(() => { const c = tex.clone(); c.repeat.set(Math.max(w, d) / 3, h / 2.2); c.needsUpdate = true; return c }, [tex, w, h, d])
+  useEffect(() => () => t.dispose(), [t])
+  return (
+    <group>
+      <mesh position={at} castShadow receiveShadow>
+        <boxGeometry args={[w, h, d]} />
+        <meshStandardMaterial map={t} roughness={0.92} />
+      </mesh>
+      {/* darker plinth along the foot of the wall */}
+      <mesh position={[at[0], 0.2, at[2]]} raycast={noRay}>
+        <boxGeometry args={[w + 0.08, 0.4, d + 0.08]} />
+        <meshStandardMaterial color="#6E6559" roughness={1} />
+      </mesh>
+    </group>
+  )
+}
+
 function Roofs() {
   const stop = (e: ThreeEvent<MouseEvent>) => e.stopPropagation()
+  const tiles = useTexture(() => { const t = roofTileTexture(); t.repeat.set(6, 3); return t }, [])
   return (
     <group onClick={stop}>
       {[...ROOMS.map(r => r.rect), ...CORRIDORS.map(c => c.rect)].map((r, i) => {
@@ -126,14 +152,14 @@ function Roofs() {
         return (
           <mesh key={i} position={[s.cx, H + 0.15, s.cz]} castShadow>
             <boxGeometry args={[s.w + WALL_T * 2 + 0.3, 0.3, s.d + WALL_T * 2 + 0.3]} />
-            <meshStandardMaterial color="#2A1E14" roughness={0.9} />
+            <meshStandardMaterial color="#4A4440" roughness={0.95} />
           </mesh>
         )
       })}
       {/* Pitched roof over the lobby */}
       <mesh position={[0, H + 1.9, size(HUB).cz]} rotation={[0, Math.PI / 4, 0]}>
         <coneGeometry args={[(size(HUB).w / 2) * Math.SQRT2 + 0.6, 3.4, 4]} />
-        <meshStandardMaterial color="#3A2416" roughness={0.9} flatShading />
+        <meshStandardMaterial map={tiles} roughness={0.85} flatShading />
       </mesh>
     </group>
   )
@@ -245,11 +271,6 @@ function Entrance({ onTap, lit }: { onTap: (e: ThreeEvent<MouseEvent>) => void; 
         <meshStandardMaterial color="#8A5A2B" />
       </mesh>
       {lit && <pointLight position={[0, 3, HUB.z1 + 1.5]} intensity={4} color="#FF8C42" distance={8} decay={1.5} />}
-      {/* Stone path up to the door */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.005, HUB.z1 + 7]} receiveShadow onClick={onTap}>
-        <planeGeometry args={[2.6, 14]} />
-        <meshStandardMaterial color="#8A7B66" roughness={1} />
-      </mesh>
       {/* Hedges closing the courtyards between the lobby and the side galleries */}
       {[-1, 1].map(s => (
         <mesh key={s} position={[s * 12, 0.5, HUB.z1 - 0.4]} raycast={noRay} castShadow>

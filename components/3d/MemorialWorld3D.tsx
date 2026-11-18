@@ -10,6 +10,9 @@ import { Color } from 'three'
 import { useRouter } from 'next/navigation'
 import type { LocalSky, Season } from '@/lib/sky'
 import { Nature } from './Nature'
+import { Park } from './Park'
+import { WindClock } from './wind'
+import { lawnTexture } from './textures'
 import { useContextLossRecovery, useQuality } from './quality'
 import { Hall } from './Hall'
 import { Player, type Route } from './Player'
@@ -40,7 +43,7 @@ const GROUND: Record<Season, string> = {
 export default function MemorialWorld3D({ floorId, avatarName, avatarGender, sky = NIGHT, arrival, onRequestFloor, onElevator }: MemorialWorld3DProps) {
   const router = useRouter()
   const ground = floorId === 1
-  const pos = useRef<P>({ x: 0, z: 6 })
+  const pos = useRef<P>({ x: 0, z: 13.5 }) // on the park path, facing the fountain and the door
   const [route, setRoute] = useState<Route | null>(null)
   const [inside, setInside] = useState(false)
   const [near, setNear] = useState<Pet | null>(null) // the shrine you're standing at
@@ -87,6 +90,9 @@ export default function MemorialWorld3D({ floorId, avatarName, avatarGender, sky
 
   // Upper floors look down on the garden far below
   const groundY = -0.5 - (floorId - 1) * LEVEL_HEIGHT
+  // Grass all the way to the mountains, in the season's colour
+  const lawn = useMemo(() => { const t = lawnTexture(GROUND[sky.season]); t.repeat.set(110, 110); return t }, [sky.season])
+  useEffect(() => () => lawn.dispose(), [lawn])
 
   // Sun climbs from 6:00 to 12:00 and sets at 18:00; below the horizon it's night
   const angle = ((sky.hour - 6) / 12) * Math.PI
@@ -106,7 +112,7 @@ export default function MemorialWorld3D({ floorId, avatarName, avatarGender, sky
     <div className="fixed inset-0 z-0">
       <Canvas
         key={`${quality}-${recovery.key}`}
-        camera={{ position: [0, 4.5, 13.5], fov: 60 }}
+        camera={{ position: [0, 5.5, 22], fov: 60 }} // behind the avatar's starting spot on the park path
         // Phones: no real-time shadows, no MSAA, and a lower pixel ratio — the big memory and GPU savers
         shadows={!low}
         dpr={[1, low ? Math.min(dpr, 1.25) : dpr]}
@@ -150,8 +156,9 @@ export default function MemorialWorld3D({ floorId, avatarName, avatarGender, sky
             onClick={e => { if (ground && e.delta < 6) { e.stopPropagation(); walkTo({ x: e.point.x, z: e.point.z }) } }}
           >
             <planeGeometry args={[400, 400]} />
-            <meshLambertMaterial color={GROUND[sky.season]} />
+            <meshLambertMaterial map={lawn} />
           </mesh>
+          <WindClock ground={groundY} />
 
           {/* This floor of the building, with its shrines */}
           <Hall
@@ -169,6 +176,11 @@ export default function MemorialWorld3D({ floorId, avatarName, avatarGender, sky
           {/* Mountains, hills, trees, birds */}
           <group position={[0, groundY + 0.5, 0]}>
             <Nature season={sky.season} daylight={daylight} />
+          </group>
+
+          {/* The park in front of the entrance (seen from above on upper floors) */}
+          <group position={[0, groundY, 0]}>
+            <Park season={sky.season} night={daylight < 0.35} low={low} />
           </group>
 
           {/* Player Avatar */}
