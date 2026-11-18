@@ -199,7 +199,9 @@ function Bench({ x, z, rot }: { x: number; z: number; rot: number }) {
 }
 
 /** Cast-iron lamp post; its lantern glows warmly at night. */
-function Lamp({ x, z, night, low }: { x: number; z: number; night: boolean; low: boolean }) {
+/** Cast-iron lamp post. At night its lantern glows (soft halo) and lays a warm pool of light on the ground around it
+ *  — a cheap stand-in for a real light, so the park reads as lit even on phones. */
+function Lamp({ x, z, night }: { x: number; z: number; night: boolean; low: boolean }) {
   const glow = useTex(() => glowTexture(), [])
   return (
     <group position={[x, 0, z]}>
@@ -207,15 +209,21 @@ function Lamp({ x, z, night, low }: { x: number; z: number; night: boolean; low:
       <mesh position={[0, 1.4, 0]} castShadow raycast={noRay}><cylinderGeometry args={[0.045, 0.06, 2.6, 10]} /><meshStandardMaterial color={IRON} metalness={0.6} roughness={0.5} /></mesh>
       <group position={[0, 2.85, 0]}>
         <mesh raycast={noRay}><cylinderGeometry args={[0.13, 0.1, 0.32, 6]} />
-          <meshStandardMaterial color="#FFE3A8" emissive="#FFB85C" emissiveIntensity={night ? 3.2 : 0.3} roughness={0.3} />
+          <meshStandardMaterial color="#FFE3A8" emissive="#FFB85C" emissiveIntensity={night ? 5 : 0.3} roughness={0.3} toneMapped={!night} />
         </mesh>
         <mesh position={[0, 0.22, 0]} raycast={noRay}><coneGeometry args={[0.2, 0.16, 6]} /><meshStandardMaterial color={IRON} metalness={0.6} roughness={0.5} /></mesh>
-        {night && !low && (
-          <sprite scale={[1.4, 1.4, 1]}>
-            <spriteMaterial map={glow} color="#FFB85C" transparent opacity={0.55} blending={AdditiveBlending} depthWrite={false} />
+        {night && (
+          <sprite scale={[2.4, 2.4, 1]}>
+            <spriteMaterial map={glow} color="#FFB85C" transparent opacity={0.75} blending={AdditiveBlending} depthWrite={false} toneMapped={false} />
           </sprite>
         )}
       </group>
+      {night && (
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.04, 0]} raycast={noRay} renderOrder={2}>
+          <planeGeometry args={[8, 8]} />
+          <meshBasicMaterial map={glow} color="#FFB065" transparent opacity={0.5} blending={AdditiveBlending} depthWrite={false} toneMapped={false} />
+        </mesh>
+      )}
     </group>
   )
 }

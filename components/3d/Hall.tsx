@@ -23,6 +23,7 @@ const WOOD = '#EFE8DC'       // inside walls (ivory)
 const DARK_WOOD = '#F3EEE6'  // bookcase boards, dividers (soft white)
 const SAGE = '#A3B8A0'       // trim: wall cap rail, bookcase tops and backs, rails
 const RUNNER = '#8FA595'     // carpet runners
+const LAMPLIGHT = '#FFB06A'  // warm glow the interior surfaces give off at night
 
 // A drag to look around also ends in a click; ignore those
 const isTap = (e: ThreeEvent<MouseEvent>) => e.delta < 6
@@ -48,9 +49,11 @@ interface HallProps {
   onShrine: (pet: Pet, standAt: P, face: P) => void
   onStairs: (dir: 'up' | 'down') => void
   onElevator: () => void
+  /** Warm lamplight on interior surfaces (stronger at night). */
+  glow?: number
 }
 
-export function Hall({ floor, playerPos, quality, pets, inside, onFloor, onShrine, onStairs, onElevator }: HallProps) {
+export function Hall({ floor, playerPos, quality, pets, inside, onFloor, onShrine, onStairs, onElevator, glow = 0.15 }: HallProps) {
   const ground = floor === 1
   const floorTap = (e: ThreeEvent<MouseEvent>) => { if (isTap(e)) { e.stopPropagation(); onFloor({ x: e.point.x, z: e.point.z }) } }
   const placed = pets.filter(p => p.shrine_position < SLOTS.length)
@@ -58,10 +61,10 @@ export function Hall({ floor, playerPos, quality, pets, inside, onFloor, onShrin
 
   return (
     <group position={[0, -0.5, 0]}>
-      <Walls ground={ground} inside={inside} />
+      <Walls ground={ground} inside={inside} glow={glow} />
       {!inside && ground && <Roofs />}
       {!ground && <Foundations floor={floor} />}
-      <Floors onTap={floorTap} hole={ground ? null : STAIRS_DOWN} />
+      <Floors onTap={floorTap} hole={ground ? null : STAIRS_DOWN} glow={glow} />
       {quality === 'high' && <Lights />}
       <Sconces ground={ground} />
 
@@ -82,7 +85,7 @@ export function Hall({ floor, playerPos, quality, pets, inside, onFloor, onShrin
 
       {/* Tapping a shelf next to a shrine opens that shrine (small targets on a phone);
           anywhere else on the shelf walks you to the open floor on that side of it */}
-      <Bookcases onTap={e => {
+      <Bookcases glow={glow} onTap={e => {
         if (!isTap(e)) return
         const hit = nearestShrine(placed, e.point)
         if (hit) { e.stopPropagation(); const slot = SLOTS[hit.shrine_position]; onShrine(hit, slot.standAt, slot) }
@@ -95,7 +98,7 @@ export function Hall({ floor, playerPos, quality, pets, inside, onFloor, onShrin
 
 // ── Structure ──
 
-function Walls({ ground, inside }: { ground: boolean; inside: boolean }) {
+function Walls({ ground, inside, glow }: { ground: boolean; inside: boolean; glow: number }) {
   const h = inside ? CUT : H
   const stop = (e: ThreeEvent<MouseEvent>) => e.stopPropagation() // walls aren't walkable
   const stone = useTexture(() => stoneWallTexture(), [])
@@ -109,7 +112,7 @@ function Walls({ ground, inside }: { ground: boolean; inside: boolean }) {
             {inside ? (
               <mesh position={[s.cx, h / 2, s.cz]} castShadow receiveShadow>
                 <boxGeometry args={[s.w, h, s.d]} />
-                <meshStandardMaterial color={WOOD} roughness={0.9} />
+                <meshStandardMaterial color={WOOD} roughness={0.9} emissive={LAMPLIGHT} emissiveIntensity={glow} />
               </mesh>
             ) : (
               <StoneWall tex={stone} at={[s.cx, h / 2, s.cz]} size={[s.w, h, s.d]} />
@@ -189,7 +192,7 @@ function Foundations({ floor }: { floor: number }) {
 }
 
 /** Floor surfaces; the lobby floor has a gap where the stairs go down (not on the ground floor). */
-function Floors({ onTap, hole }: { onTap: (e: ThreeEvent<MouseEvent>) => void; hole: Rect | null }) {
+function Floors({ onTap, hole, glow }: { onTap: (e: ThreeEvent<MouseEvent>) => void; hole: Rect | null; glow: number }) {
   const tex = {
     tiles: useTexture(() => floorTexture('tiles', [1, 1]), []),
     planks: useTexture(() => floorTexture('planks', [1, 1]), []),
@@ -208,11 +211,11 @@ function Floors({ onTap, hole }: { onTap: (e: ThreeEvent<MouseEvent>) => void; h
       {ROOMS.map(rm => (rm.id === 'hub' ? pieces(rm.rect) : [rm.rect]).map((r, i) => {
         const s = size(r)
         const t = tex[rm.floor]
-        return <FloorPlane key={`${rm.id}${i}`} r={r} tex={t} repeat={rm.floor === 'tiles' ? [s.w / 2, s.d / 2] : [s.w / 4, s.d / 4]} onTap={onTap} />
+        return <FloorPlane key={`${rm.id}${i}`} r={r} tex={t} repeat={rm.floor === 'tiles' ? [s.w / 2, s.d / 2] : [s.w / 4, s.d / 4]} onTap={onTap} glow={glow} />
       }))}
       {CORRIDORS.map(c => (
         <group key={c.id}>
-          <FloorPlane r={c.rect} tex={tex.planks} repeat={[size(c.rect).w / 4, size(c.rect).d / 4]} onTap={onTap} />
+          <FloorPlane r={c.rect} tex={tex.planks} repeat={[size(c.rect).w / 4, size(c.rect).d / 4]} onTap={onTap} glow={glow} />
           {/* Runner */}
           <mesh rotation={[-Math.PI / 2, 0, 0]} position={[size(c.rect).cx, 0.02, size(c.rect).cz]} raycast={noRay}>
             <planeGeometry args={c.axis === 'x' ? [size(c.rect).w, 1.4] : [1.4, size(c.rect).d]} />
@@ -229,7 +232,7 @@ function Floors({ onTap, hole }: { onTap: (e: ThreeEvent<MouseEvent>) => void; h
   )
 }
 
-function FloorPlane({ r, tex, repeat, onTap }: { r: Rect; tex: Texture; repeat: [number, number]; onTap: (e: ThreeEvent<MouseEvent>) => void }) {
+function FloorPlane({ r, tex, repeat, onTap, glow }: { r: Rect; tex: Texture; repeat: [number, number]; onTap: (e: ThreeEvent<MouseEvent>) => void; glow: number }) {
   const s = size(r)
   // Each plane needs its own repeat, so it gets its own copy of the texture (sharing the image)
   const t = useMemo(() => { const c = tex.clone(); c.repeat.set(repeat[0], repeat[1]); c.needsUpdate = true; return c }, [tex, repeat[0], repeat[1]]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -237,7 +240,7 @@ function FloorPlane({ r, tex, repeat, onTap }: { r: Rect; tex: Texture; repeat: 
   return (
     <mesh rotation={[-Math.PI / 2, 0, 0]} position={[s.cx, 0.01, s.cz]} receiveShadow onClick={onTap}>
       <planeGeometry args={[s.w, s.d]} />
-      <meshStandardMaterial map={t} bumpMap={t} bumpScale={1.2} roughness={0.75} roughnessMap={microMap('grain')} />
+      <meshStandardMaterial map={t} bumpMap={t} bumpScale={1.2} roughness={0.75} roughnessMap={microMap('grain')} emissive={LAMPLIGHT} emissiveIntensity={glow} />
     </mesh>
   )
 }
@@ -539,7 +542,7 @@ function CorridorDecor() {
 // ── Galleries ──
 
 /** Every bookcase on the floor as ONE instanced mesh: a unit box scaled into panels, boards and dividers. */
-function Bookcases({ onTap }: { onTap: (e: ThreeEvent<MouseEvent>) => void }) {
+function Bookcases({ onTap, glow }: { onTap: (e: ThreeEvent<MouseEvent>) => void; glow: number }) {
   const ref = useRef<InstancedMesh>(null!)
   const parts = useMemo(() => {
     const out: { p: [number, number, number]; s: [number, number, number]; c: string }[] = []
@@ -568,7 +571,7 @@ function Bookcases({ onTap }: { onTap: (e: ThreeEvent<MouseEvent>) => void }) {
   return (
     <instancedMesh ref={ref} args={[undefined, undefined, parts.length]} onClick={onTap} receiveShadow>
       <boxGeometry />
-      <meshStandardMaterial roughness={0.85} />
+      <meshStandardMaterial roughness={0.85} emissive={LAMPLIGHT} emissiveIntensity={glow * 0.8} />
     </instancedMesh>
   )
 }

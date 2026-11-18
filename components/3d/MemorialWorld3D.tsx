@@ -154,7 +154,7 @@ const pos = useRef<P>({ x: (Math.random() - 0.5) * 1.6, z: 13.5 + (Math.random()
         <Suspense fallback={null}>
           <StatsProbe />
           {/* Three-point light: warm golden key (the sun), cool sky fill from above, a soft cool rim from behind */}
-          <ambientLight intensity={0.26 - 0.08 * daylight} color={ambient} />
+          <ambientLight intensity={0.34 - 0.14 * daylight} color={ambient} />
           <hemisphereLight args={[daylight > 0.2 ? '#A5C8FF' : '#5E6E9A', '#5A4632', (low ? 0.75 : 0.55) + 0.25 * daylight]} />
           <directionalLight
             position={daylight > 0 ? [sunPos[0] / 10, Math.max(2, sunPos[1] / 10), 5] : [-5, 10, 5]}
@@ -170,10 +170,7 @@ const pos = useRef<P>({ x: (Math.random() - 0.5) * 1.6, z: 13.5 + (Math.random()
             shadow-camera-bottom={-30}
           />
           {!low && <directionalLight position={[6, 8, -18]} intensity={0.25 + 0.2 * daylight} color="#A5C8FF" />}
-          {/* Indoors: warm orange lamplight fill so rooms and corridors never feel dark (strongest at night) */}
-          {/* (always mounted, only the intensity changes, so walking in and out doesn't recompile every material) */}
-          <ambientLight intensity={inside ? 0.55 - 0.2 * daylight : 0} color="#FFB36B" />
-          <hemisphereLight args={['#FFD6A5', '#C98A4F', inside ? 0.45 : 0]} />
+
 
           {/* Environment */}
           {overcast ? (
@@ -212,6 +209,9 @@ const pos = useRef<P>({ x: (Math.random() - 0.5) * 1.6, z: 13.5 + (Math.random()
             onFloor={walkTo}
             onShrine={(pet, standAt, face) => walkTo(standAt, () => setNear(pet), face)}
             onStairs={takeStairs}
+            // Lamplight on the interior surfaces themselves (walls, floors, shelves): the rooms read as lit at night
+            // from anywhere, and the outside isn't brightened when you step in
+            glow={0.08 + 0.22 * (1 - daylight)}
             onElevator={callElevator}
           />
 
