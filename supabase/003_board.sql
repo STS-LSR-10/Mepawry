@@ -1,4 +1,4 @@
--- supabase/update-board.sql — The community board: stories (with photos), kind-word notes, comments and hearts.
+-- supabase/003_board.sql — The community board: stories (with photos), kind-word notes, comments and hearts.
 -- Run once in Supabase → SQL Editor. Safe to run again.
 
 create table if not exists posts (

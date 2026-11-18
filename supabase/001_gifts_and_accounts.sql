@@ -1,4 +1,4 @@
--- supabase/update-gifts-accounts.sql — Run once in Supabase → SQL Editor on a database made before gifts and accounts existed.
+-- supabase/001_gifts_and_accounts.sql — Run once in Supabase → SQL Editor on a database made before gifts and accounts existed.
 -- Safe to run again.
 
 -- ── Gifts (added later; this block is safe to run on its own too) ──

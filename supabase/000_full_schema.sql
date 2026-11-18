@@ -1,4 +1,5 @@
--- supabase/schema.sql — Mepawry database. Paste into Supabase → SQL Editor → Run. Safe to run again.
+-- supabase/000_full_schema.sql — The whole Mepawry database, for a NEW Supabase project. Paste into SQL Editor → Run.
+-- Safe to run again. Already have a database? Run only the numbered files after the last one you ran (001, 002, …).
 -- Row Level Security is on with no policies: browsers (anon key) can read/write nothing directly;
 -- only the server (service role key, in lib/data.ts) can. Every write goes through our API routes.
 
@@ -182,7 +183,7 @@ create index if not exists pets_owner_idx on pets (owner_id);
 -- Owners can hide their pet's country flag on the plaque
 alter table pets add column if not exists show_flag boolean not null default true;
 
--- ── Community board (also in update-board.sql) ──
+-- ── Community board (also in 003_board.sql) ──
 create table if not exists posts (
   id uuid primary key default gen_random_uuid(),
   author_id uuid not null references auth.users on delete cascade,

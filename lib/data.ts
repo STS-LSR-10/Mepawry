@@ -1,7 +1,7 @@
 // lib/data.ts — Real data layer on Supabase: pets, candles/flowers, guestbook, visits, photos and who's online.
 // Every number on the site is counted from here. Server-only: it uses the service role key,
 // which bypasses Row Level Security, so it must never be imported into a client component.
-// Tables and SQL functions live in supabase/schema.sql.
+// Tables and SQL functions live in supabase/ (000_full_schema.sql has them all; numbered files are the changes in order).
 
 import { randomUUID } from 'node:crypto'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
