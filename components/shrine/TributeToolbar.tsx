@@ -10,6 +10,7 @@ interface TributeToolbarProps {
   flowerCount: number
   onGuestbook: () => void
   onKeepsake: () => void
+  onGift: () => void
   onShare: () => void
   onTribute?: (type: 'candle' | 'flower') => void
 }
@@ -20,6 +21,7 @@ export function TributeToolbar({
   flowerCount: initialFlowers,
   onGuestbook,
   onKeepsake,
+  onGift,
   onShare,
   onTribute,
 }: TributeToolbarProps) {
@@ -75,9 +77,9 @@ export function TributeToolbar({
       {/* Treat */}
       <TributeButton
         emoji="🎁"
-        label="Treat"
-        onClick={() => {/* open treat picker */}}
-        aria-label="Leave a treat"
+        label="Gift"
+        onClick={onGift}
+        aria-label="Leave a gift"
       />
 
       {/* Guestbook */}

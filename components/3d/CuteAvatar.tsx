@@ -7,12 +7,18 @@ import { signTexture } from './textures'
 import type * as THREE from 'three'
 
 const SKIN = '#F6D2B0'
-const SHIRT = '#D9823B'
-const PANTS = '#5B4A7A'
 const SHOES = '#3A2A22'
 const HAIR = '#5A3825'
+// Male: orange shirt and trousers. Female: pink top, skirt, long hair and a bow.
+const LOOK = {
+  male: { shirt: '#D9823B', legs: '#5B4A7A' },
+  female: { shirt: '#E8789A', legs: '#F2E4D8' },
+}
 
-export function CuteAvatar({ name, walking }: { name: string; walking?: React.RefObject<boolean> }) {
+export function CuteAvatar({ name, walking, gender = 'male' }: { name: string; walking?: React.RefObject<boolean>; gender?: 'male' | 'female' }) {
+  const SHIRT = LOOK[gender].shirt
+  const PANTS = LOOK[gender].legs
+  const girl = gender === 'female'
   const body = useRef<THREE.Group>(null!)
   const head = useRef<THREE.Group>(null!)
   const eyes = useRef<THREE.Group>(null!)
@@ -63,6 +69,14 @@ export function CuteAvatar({ name, walking }: { name: string; walking?: React.Re
           </group>
         ))}
 
+        {/* Skirt */}
+        {girl && (
+          <mesh position={[0, 0.47, 0]} castShadow>
+            <cylinderGeometry args={[0.17, 0.3, 0.24, 20, 1, true]} />
+            <meshToonMaterial color="#B85C8A" side={2} />
+          </mesh>
+        )}
+
         {/* Torso */}
         <mesh position={[0, 0.62, 0]} scale={[1, 1, 0.85]} castShadow>
           <capsuleGeometry args={[0.2, 0.2, 6, 16]} />
@@ -94,10 +108,36 @@ export function CuteAvatar({ name, walking }: { name: string; walking?: React.Re
             <sphereGeometry args={[0.315, 32, 16, 0, Math.PI * 2, 0, Math.PI * 0.5]} />
             <meshToonMaterial color={HAIR} />
           </mesh>
-          <mesh position={[0.06, 0.32, 0.05]} rotation={[0.3, 0, -0.4]}>
-            <coneGeometry args={[0.06, 0.14, 8]} />
-            <meshToonMaterial color={HAIR} />
-          </mesh>
+          {!girl && (
+            <mesh position={[0.06, 0.32, 0.05]} rotation={[0.3, 0, -0.4]}>
+              <coneGeometry args={[0.06, 0.14, 8]} />
+              <meshToonMaterial color={HAIR} />
+            </mesh>
+          )}
+          {girl && (
+            <>
+              {/* Long hair down the back, side locks and a bow */}
+              <mesh position={[0, -0.1, -0.1]} scale={[1.05, 1.25, 0.85]}>
+                <sphereGeometry args={[0.31, 24, 16]} />
+                <meshToonMaterial color={HAIR} />
+              </mesh>
+              {[-0.26, 0.26].map(x => (
+                <mesh key={x} position={[x, -0.16, 0.06]}>
+                  <capsuleGeometry args={[0.065, 0.22, 4, 10]} />
+                  <meshToonMaterial color={HAIR} />
+                </mesh>
+              ))}
+              <group position={[0.18, 0.26, 0.08]} rotation={[0, 0, -0.4]}>
+                {[-1, 1].map(s => (
+                  <mesh key={s} position={[s * 0.06, 0, 0]} rotation={[0, 0, s * Math.PI / 2]}>
+                    <coneGeometry args={[0.05, 0.1, 8]} />
+                    <meshToonMaterial color="#FF6F9C" />
+                  </mesh>
+                ))}
+                <mesh><sphereGeometry args={[0.03, 10, 10]} /><meshToonMaterial color="#FF6F9C" /></mesh>
+              </group>
+            </>
+          )}
           {/* Ears */}
           {[-0.3, 0.3].map(x => (
             <mesh key={x} position={[x, -0.02, 0]} scale={[0.5, 1, 0.8]}>

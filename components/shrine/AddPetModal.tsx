@@ -1,12 +1,14 @@
 'use client'
 // components/shrine/AddPetModal.tsx — Pet Creation Flow (S03)
 
-import { useEffect, useState, useRef } from 'react'
+import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { cn } from '@/lib/utils'
 import { photoToDataUrl, saveEditToken } from '@/lib/photo'
+import { AuthGate } from '@/components/account/AuthGate'
+import { SlotPicker, type SlotChoice } from '@/components/shrine/SlotPicker'
 import type { Species } from '@/types'
 
 interface AddPetModalProps {
@@ -34,21 +36,12 @@ export function AddPetModal({ open, onClose }: AddPetModalProps) {
   const [form, setForm] = useState({
     name: '',
     species: 'dog' as Species,
-    country_code: 'TH',
-    email: '',
     birth_year: '',
     death_year: '',
     epitaph: '',
   })
-
-  // Country from the browser's own language/region setting (e.g. th-TH → TH), so country counts are real
-  useEffect(() => {
-    if (!open) return
-    try {
-      const region = new Intl.Locale(navigator.language).maximize().region
-      if (region && /^[A-Z]{2}$/.test(region)) setForm(f => ({ ...f, country_code: region }))
-    } catch {}
-  }, [open])
+  const [slot, setSlot] = useState<SlotChoice>(null)
+  const [slotsVersion, setSlotsVersion] = useState(0)
 
   const handlePhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -77,7 +70,7 @@ export function AddPetModal({ open, onClose }: AddPetModalProps) {
         body: JSON.stringify({
           name: form.name.trim(),
           species: form.species,
-          country_code: form.country_code,
+          slot,
           birth_year: form.birth_year ? Number(form.birth_year) : null,
           death_year: form.death_year ? Number(form.death_year) : null,
           epitaph: form.epitaph.trim() || null,
@@ -85,6 +78,7 @@ export function AddPetModal({ open, onClose }: AddPetModalProps) {
         }),
       })
       const data = await res.json()
+      if (res.status === 409) { setSlot(null); setSlotsVersion(v => v + 1) } // shelf just taken: show the new picture
       if (!res.ok) throw new Error(data.error)
       saveEditToken(data.pet.id, data.editToken)
       setCreatedSlug(data.pet.slug)
@@ -102,7 +96,8 @@ export function AddPetModal({ open, onClose }: AddPetModalProps) {
     setError(null)
     setCreatedSlug(null)
     setExpanded(false)
-    setForm({ name: '', species: 'dog', country_code: 'TH', email: '', birth_year: '', death_year: '', epitaph: '' })
+    setForm({ name: '', species: 'dog', birth_year: '', death_year: '', epitaph: '' })
+    setSlot(null)
     onClose()
   }
 
@@ -114,6 +109,7 @@ export function AddPetModal({ open, onClose }: AddPetModalProps) {
           onClose={() => { const slug = createdSlug; handleClose(); if (slug) router.push(`/${slug}`) }}
         />
       ) : (
+        <AuthGate title="Sign in to give your pet a place">
         <form onSubmit={handleSubmit} className="space-y-5">
           {/* Photo Upload */}
           <div>
@@ -196,21 +192,6 @@ export function AddPetModal({ open, onClose }: AddPetModalProps) {
             </div>
           </div>
 
-          {/* Email */}
-          <div>
-            <label htmlFor="pet-email" className="block text-sm font-medium text-[#2A1E17] mb-1.5">
-              Your email
-            </label>
-            <input
-              id="pet-email"
-              type="email"
-              placeholder="So you can always find them again"
-              value={form.email}
-              onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
-              className="w-full rounded-xl border border-[#D4C9BF] bg-white px-4 py-2.5 text-[#2A1E17] placeholder:text-[#B5A99F] focus:outline-none focus:ring-2 focus:ring-[#D9823B] text-sm"
-            />
-            <p className="mt-1 text-xs text-[#8E8278]">We&apos;ll send a link to edit their memorial anytime</p>
-          </div>
 
           {/* Expandable details */}
           <div>
@@ -276,6 +257,9 @@ export function AddPetModal({ open, onClose }: AddPetModalProps) {
             )}
           </div>
 
+          {/* Shelf */}
+          <SlotPicker value={slot} onChange={setSlot} reloadKey={slotsVersion + (open ? 1 : 0)} />
+
           {error && <p role="alert" className="text-sm text-[#C0392B]">{error}</p>}
 
           {/* Submit */}
@@ -283,6 +267,7 @@ export function AddPetModal({ open, onClose }: AddPetModalProps) {
             🕯️ Place their shrine
           </Button>
         </form>
+        </AuthGate>
       )}
     </Modal>
   )
@@ -297,7 +282,7 @@ function SuccessView({ name, onClose }: { name: string; onClose: () => void }) {
       </h3>
       <p className="text-[#5C5046] text-sm leading-relaxed">
         They now have a place in the memorial hall, forever.
-        We&apos;ve sent you a link so you can visit and edit anytime.
+        You can edit it anytime from <b>My memorials</b>.
       </p>
       <Button onClick={onClose} variant="secondary" size="lg" className="w-full">
         Visit their shrine →

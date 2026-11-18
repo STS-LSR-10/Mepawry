@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import { AddPetModal } from '@/components/shrine/AddPetModal'
+import { AccountButton } from '@/components/account/AccountButton'
 
 const LINKS = [
   { href: '/memorials', label: 'Memorials' },
@@ -36,12 +37,13 @@ export function SiteNav({ solid = false }: { solid?: boolean }) {
       >
         <div className="mx-auto flex h-[68px] max-w-[1180px] items-center justify-between px-5">
           <Logo className="text-[#FAF7F2]" />
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-3 md:gap-6">
             {LINKS.map(l => (
               <Link key={l.href} href={l.href} className="hidden text-sm text-[#FAF7F2]/75 transition hover:text-white md:block">
                 {l.label}
               </Link>
             ))}
+            <AccountButton />
             <button className="btn btn-amber btn-sm" onClick={() => setAddOpen(true)}>+ Add my pet</button>
           </div>
         </div>

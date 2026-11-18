@@ -20,6 +20,7 @@ import type { Pet } from '@/types'
 interface MemorialWorld3DProps {
   floorId: number
   avatarName: string
+  avatarGender?: 'male' | 'female'
   sky?: LocalSky
   /** Where to put the avatar after changing floors; a new object each time. */
   arrival: { at: P } | null
@@ -36,7 +37,7 @@ const GROUND: Record<Season, string> = {
   hot: '#6B5A33', rainy: '#2E472A', cool: '#46562F',
 }
 
-export default function MemorialWorld3D({ floorId, avatarName, sky = NIGHT, arrival, onRequestFloor, onElevator }: MemorialWorld3DProps) {
+export default function MemorialWorld3D({ floorId, avatarName, avatarGender, sky = NIGHT, arrival, onRequestFloor, onElevator }: MemorialWorld3DProps) {
   const router = useRouter()
   const ground = floorId === 1
   const pos = useRef<P>({ x: 0, z: 6 })
@@ -171,7 +172,7 @@ export default function MemorialWorld3D({ floorId, avatarName, sky = NIGHT, arri
           </group>
 
           {/* Player Avatar */}
-          <Player name={avatarName} pos={pos} route={route} onInsideChange={setInside} />
+          <Player name={avatarName} gender={avatarGender} pos={pos} route={route} onInsideChange={setInside} />
 
           {/* Controls */}
           <OrbitControls

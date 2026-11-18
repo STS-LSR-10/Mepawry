@@ -4,9 +4,13 @@
 import { useEffect, useState } from 'react'
 import dynamic from 'next/dynamic'
 import { TributeToolbar } from '@/components/shrine/TributeToolbar'
+import { GiftPicker, GiftShelf } from '@/components/shrine/GiftPicker'
+import { giftById, type LeftGift } from '@/lib/gifts'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { getVisitor } from '@/lib/visitor'
+import { useAccount } from '@/lib/account'
+import Link from 'next/link'
 import { timeAgo } from '@/lib/utils'
 import type { Pet, GuestbookEntry } from '@/types'
 
@@ -17,11 +21,15 @@ const ShrineCabinet = dynamic(() => import('@/components/3d/ShrineCabinet'), {
 })
 
 export function ShrineClientSection({ pet }: { pet: Pet }) {
+  const { user, profile } = useAccount()
+  const isOwner = !!user && user.id === pet.owner_id
   const [guestbookOpen, setGuestbookOpen] = useState(false)
   // Live counts, so a candle you light appears in the cabinet straight away
   const [candles, setCandles] = useState(pet.candle_count)
   const [flowers, setFlowers] = useState(pet.flower_count)
   const [keepsakeOpen, setKeepsakeOpen] = useState(false)
+  const [giftOpen, setGiftOpen] = useState(false)
+  const [gifts, setGifts] = useState<LeftGift[]>([])
   const [messages, setMessages] = useState<GuestbookEntry[]>([])
   const [newMsg, setNewMsg] = useState('')
   const [visitorName, setVisitorName] = useState('')
@@ -35,8 +43,12 @@ export function ShrineClientSection({ pet }: { pet: Pet }) {
   // Guestbook is saved on the server; load it once the shrine opens
   useEffect(() => {
     fetch(`/api/guestbook?petId=${encodeURIComponent(pet.id)}`).then(r => r.json()).then(d => setMessages(d.entries ?? [])).catch(() => {})
+    fetch(`/api/gifts?petId=${encodeURIComponent(pet.id)}`).then(r => r.json()).then(d => setGifts(d.gifts ?? [])).catch(() => {})
     setVisitorName(n => n || getVisitor().name)
   }, [pet.id])
+  useEffect(() => {
+    if (profile) setVisitorName(profile.display_name)
+  }, [profile])
 
   const handleSignGuestbook = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -98,6 +110,12 @@ export function ShrineClientSection({ pet }: { pet: Pet }) {
       <p className="mt-1 rounded-full bg-black/30 px-4 py-1.5 text-sm text-[#FFE2C0]">
         {candles > 0 ? <>Tap 🕯️ to light a candle for {pet.name}</> : <>Waiting for their first candle. Will you light it?</>}
       </p>
+      {isOwner && (
+        <Link href={`/me?edit=${pet.id}`} className="mt-3 rounded-full border border-white/20 px-4 py-1.5 text-xs text-[#FFE2C0] hover:bg-white/10">
+          ✏️ Edit or delete this memorial
+        </Link>
+      )}
+      <GiftShelf gifts={gifts} emojiOf={id => giftById(id)?.emoji} petName={pet.name} />
 
       {/* Floating Action Toolbar */}
       <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-20 w-full max-w-lg px-4 flex flex-col items-center gap-2">
@@ -113,11 +131,14 @@ export function ShrineClientSection({ pet }: { pet: Pet }) {
             flowerCount={pet.flower_count}
             onGuestbook={() => setGuestbookOpen(true)}
             onKeepsake={() => setKeepsakeOpen(true)}
+            onGift={() => setGiftOpen(true)}
             onShare={handleShare}
             onTribute={leaveTribute}
           />
         </div>
       </div>
+
+      <GiftPicker open={giftOpen} onClose={() => setGiftOpen(false)} petId={pet.id} petName={pet.name} onLeft={g => setGifts(prev => [g, ...prev])} />
 
       {/* S05: Guestbook & Tributes Modal */}
       <Modal

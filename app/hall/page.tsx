@@ -6,6 +6,7 @@ import { FloatingHeader } from '@/components/shrine/FloatingHeader'
 import { FloorSelector } from '@/components/shrine/FloorSelector'
 import { ELEVATOR_FRONT, type P } from '@/components/3d/layout'
 import { describe, getVisitor, useActivity, useOnlineCount } from '@/lib/visitor'
+import { useAccount } from '@/lib/account'
 import { timeAgo } from '@/lib/utils'
 import type { Floor } from '@/types'
 import { getLocalSky, PHASE_LABEL, SEASON_LABEL, type LocalSky, type Season } from '@/lib/sky'
@@ -24,7 +25,8 @@ export default function HallPage() {
   const [fading, setFading] = useState(false)
   // The visitor's own saved name; only on the client, or SSR and hydration disagree
   const [avatarName, setAvatarName] = useState('Visitor')
-  useEffect(() => setAvatarName(getVisitor().name), [])
+  const { profile } = useAccount()
+  useEffect(() => setAvatarName(profile?.display_name ?? getVisitor().name), [profile])
   const [floorSelectorOpen, setFloorSelectorOpen] = useState(false)
 
   // Live numbers
@@ -75,6 +77,7 @@ export default function HallPage() {
         <MemorialWorld3D
           floorId={currentFloor}
           avatarName={avatarName}
+          avatarGender={profile?.gender}
           sky={sky}
           arrival={arrival}
           onRequestFloor={goToFloor}

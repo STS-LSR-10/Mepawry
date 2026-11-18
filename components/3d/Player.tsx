@@ -13,12 +13,13 @@ export interface Route { points: P[]; onArrive?: () => void; face?: P }
 
 interface PlayerProps {
   name: string
+  gender?: 'male' | 'female'
   pos: React.RefObject<P>          // shared with the scene, which plans routes from it
   route: Route | null
   onInsideChange: (inside: boolean) => void
 }
 
-export function Player({ name, pos, route, onInsideChange }: PlayerProps) {
+export function Player({ name, gender, pos, route, onInsideChange }: PlayerProps) {
   const group = useRef<THREE.Group>(null!)
   const marker = useRef<THREE.Mesh>(null!)
   const queue = useRef<P[]>([])
@@ -86,7 +87,7 @@ export function Player({ name, pos, route, onInsideChange }: PlayerProps) {
   return (
     <>
       <group ref={group}>
-        <CuteAvatar name={name} walking={walking} />
+        <CuteAvatar name={name} walking={walking} gender={gender} />
       </group>
       {/* Where you tapped */}
       <mesh ref={marker} rotation={[-Math.PI / 2, 0, 0]} visible={false} raycast={() => null}>

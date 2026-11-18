@@ -1,7 +1,8 @@
-// app/api/pets/route.ts — List pets (by floor for the 3D hall, or filtered for the directory) and add a new one
+// app/api/pets/route.ts — List pets (by floor for the 3D hall, or filtered for the directory) and add a new one (signed in)
 
 import { NextRequest, NextResponse } from 'next/server'
-import { createPet, getMemorials, getPetsOnFloor } from '@/lib/data'
+import { createPet, getMemorials, getPetsOnFloor, getProfile, SlotTakenError } from '@/lib/data'
+import { getUser } from '@/lib/auth'
 import { isPhotoDataUrl } from '@/lib/utils'
 
 export async function GET(req: NextRequest) {
@@ -18,6 +19,10 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const user = await getUser()
+  if (!user) return NextResponse.json({ error: 'Please sign in to add a memorial' }, { status: 401 })
+  const profile = await getProfile(user.id)
+  if (!profile) return NextResponse.json({ error: 'Please finish setting up your profile first' }, { status: 403 })
   try {
     const body = await req.json()
     if (!body.name || !String(body.name).trim()) {
@@ -26,10 +31,12 @@ export async function POST(req: NextRequest) {
     if (body.primary_photo_url != null && !isPhotoDataUrl(body.primary_photo_url)) {
       return NextResponse.json({ error: 'Photo must be a JPG, PNG or WebP under 1.5 MB' }, { status: 400 })
     }
-    // The token is shown only to the creator; it unlocks edits such as changing the photo
-    const { pet, editToken } = await createPet(body)
+    const pick = body.slot && Number.isInteger(body.slot.floor) && Number.isInteger(body.slot.position) ? body.slot : undefined
+    // Country comes from the owner's locked profile, not from the form
+    const { pet, editToken } = await createPet(body, { id: user.id, country: profile.country_code }, pick)
     return NextResponse.json({ pet, editToken }, { status: 201 })
   } catch (err) {
+    if (err instanceof SlotTakenError) return NextResponse.json({ error: err.message }, { status: 409 })
     return NextResponse.json({ error: err instanceof Error ? err.message : 'Failed to create pet' }, { status: 500 })
   }
 }

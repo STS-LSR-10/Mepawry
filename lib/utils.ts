@@ -32,7 +32,7 @@ export function generateSlug(name: string, floorId: number, position: number): s
     .replace(/-+/g, '-')
     .replace(/^-|-$/g, '')
     .slice(0, 40)
-  return `${base}-${floorId}-${position}`
+  return `${base || 'pet'}-${floorId}-${position}`
 }
 
 /** Format จำนวนแบบ compact (1,234 → 1.2k) */

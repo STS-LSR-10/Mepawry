@@ -35,6 +35,7 @@ export interface Pet {
   visit_count: number
   created_at: string
   updated_at: string
+  owner_id?: string | null
   // เพิ่มเฉพาะ owner view
   edit_token?: string
   edit_token_expires_at?: string
@@ -116,4 +117,14 @@ export interface RealtimeTributeEvent {
   visitor_name: string
   tribute_type: TributeType
   timestamp: string
+}
+
+export type Gender = 'male' | 'female'
+
+export interface Profile {
+  id: string
+  display_name: string
+  gender: Gender
+  country_code: string
+  created_at: string
 }

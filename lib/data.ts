@@ -5,9 +5,10 @@
 
 import { randomUUID } from 'node:crypto'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
-import type { Floor, GlobalStats, GuestbookEntry, Pet, Species, TributeType } from '@/types'
+import type { Floor, GlobalStats, GuestbookEntry, Pet, Profile, Species, TributeType } from '@/types'
 import { FLOOR_CAPACITY, FLOOR_COUNT } from '@/components/3d/layout'
 import { generateSlug, getFloorName } from '@/lib/utils'
+import { FREE_GIFT_COOLDOWN_DAYS, FREE_GIFT_SHOWS_DAYS, giftById, type LeftGift } from '@/lib/gifts'
 
 const g = globalThis as typeof globalThis & { __pmDb?: SupabaseClient }
 
@@ -46,6 +47,11 @@ export async function getPetBySlug(slug: string): Promise<Pet | null> {
   return must(await db().from('pets').select('*').eq('slug', slug).maybeSingle())
 }
 
+export async function getPetById(id: string): Promise<Pet | null> {
+  if (!/^[0-9a-f-]{36}$/i.test(id)) return null
+  return must(await db().from('pets').select('*').eq('id', id).maybeSingle())
+}
+
 export async function getPetsOnFloor(floor: number): Promise<Pet[]> {
   return (must(await db().from('pets').select('*').eq('floor_id', floor).order('shrine_position'))) ?? []
 }
@@ -81,33 +87,69 @@ export async function getNeighbours(pet: Pet): Promise<{ prev: Pet | null; next:
 const SPECIES: Species[] = ['dog', 'cat', 'other']
 const year = (v: unknown) => (typeof v === 'number' && v >= 1900 && v <= new Date().getFullYear() ? Math.floor(v) : null)
 
-/** Adds a pet to the next free shelf: floor 1 fills first, then floor 2, and so on. */
-export async function createPet(data: Partial<Pet>): Promise<{ pet: Pet; editToken: string }> {
+/** The floor new shrines go on (the lowest one with a free shelf) and which shelves there are taken. */
+export async function getOpenSlots(): Promise<{ floor: number; taken: number[] }> {
+  const floor = await getOpenFloor()
+  const rows = (must(await db().from('pets').select('shrine_position').eq('floor_id', floor))) ?? []
+  return { floor, taken: rows.map((r: { shrine_position: number }) => r.shrine_position) }
+}
+
+export class SlotTakenError extends Error {}
+
+/** The pet fields an owner may set (on create and edit). */
+function petFields(data: Partial<Pet>) {
+  return {
+    name: String(data.name ?? '').trim().slice(0, 80),
+    species: SPECIES.includes(data.species as Species) ? data.species : 'other',
+    birth_year: year(data.birth_year),
+    death_year: year(data.death_year),
+    epitaph: data.epitaph ? String(data.epitaph).trim().slice(0, 500) || null : null,
+  }
+}
+
+/**
+ * Gives a pet a shelf on the open floor (floors fill one at a time). The owner may pick the shelf;
+ * otherwise the first free one is used. Two people picking the same shelf at once: the unique
+ * (floor, position) rule lets only one in, and the other is told it was just taken.
+ */
+export async function createPet(
+  data: Partial<Pet>,
+  owner: { id: string; country: string },
+  pick?: { floor: number; position: number },
+): Promise<{ pet: Pet; editToken: string }> {
   const id = randomUUID()
-  const name = String(data.name ?? '').trim().slice(0, 80)
+  const fields = petFields(data)
   const photo = data.primary_photo_url ? await storePhoto(id, data.primary_photo_url) : null
-  // Two people adding at once can pick the same shelf; the unique (floor, position) rule rejects one, which retries
+  let suffix = ''
   for (let attempt = 0; attempt < 5; attempt++) {
-    const last = must(await db().from('pets').select('floor_id, shrine_position')
-      .order('floor_id', { ascending: false }).order('shrine_position', { ascending: false }).limit(1).maybeSingle())
-    const n = last ? (last.floor_id - 1) * FLOOR_CAPACITY + last.shrine_position + 1 : 0
-    if (n >= FLOOR_CAPACITY * FLOOR_COUNT) throw new Error('The memorial building is full')
-    const floor = Math.floor(n / FLOOR_CAPACITY) + 1
-    const position = n % FLOOR_CAPACITY
+    const { floor, taken } = await getOpenSlots()
+    if (taken.length >= FLOOR_CAPACITY) throw new Error('The memorial building is full')
+    let position: number
+    if (pick) {
+      if (pick.floor !== floor) throw new SlotTakenError('That floor just filled up. Please pick a shelf again.')
+      if (!Number.isInteger(pick.position) || pick.position < 0 || pick.position >= FLOOR_CAPACITY) throw new SlotTakenError('Please pick a shelf.')
+      if (taken.includes(pick.position)) throw new SlotTakenError('Someone just took that shelf. Please pick another.')
+      position = pick.position
+    } else {
+      const used = new Set(taken)
+      position = 0
+      while (used.has(position)) position++
+    }
     const { data: pet, error } = await db().from('pets').insert({
       id,
-      slug: generateSlug(name || 'pet', floor, position),
-      name,
-      species: SPECIES.includes(data.species as Species) ? data.species : 'other',
-      country_code: /^[A-Z]{2}$/.test(String(data.country_code)) ? String(data.country_code) : 'XX',
+      ...fields,
+      slug: generateSlug(fields.name, floor, position) + suffix,
+      country_code: /^[A-Z]{2}$/.test(owner.country) ? owner.country : 'XX',
       primary_photo_url: photo,
-      birth_year: year(data.birth_year),
-      death_year: year(data.death_year),
-      epitaph: data.epitaph ? String(data.epitaph).slice(0, 500) : null,
       floor_id: floor,
       shrine_position: position,
+      owner_id: owner.id,
     }).select().single()
-    if (error?.code === '23505') continue // shelf (or slug) just taken
+    if (error?.code === '23505') {
+      if (error.message.includes('slug')) { suffix = '-' + id.slice(0, 4); continue } // a past pet had this address
+      if (pick) throw new SlotTakenError('Someone just took that shelf. Please pick another.')
+      continue
+    }
     if (error) throw new Error(error.message)
     const editToken = randomUUID()
     must(await db().from('edit_tokens').insert({ pet_id: id, token: editToken }))
@@ -116,14 +158,75 @@ export async function createPet(data: Partial<Pet>): Promise<{ pet: Pet; editTok
   throw new Error('The hall is busy, please try again')
 }
 
-export async function updatePetPhoto(petId: string, token: string, photoDataUrl: string): Promise<Pet | null> {
-  if (!token) return null
+/** Old memorials made before accounts: the browser's edit token proves who made them. */
+export async function petTokenMatches(petId: string, token: string): Promise<boolean> {
+  if (!token || !isUuid(petId)) return false
   const row = must(await db().from('edit_tokens').select('token').eq('pet_id', petId).maybeSingle())
-  if (!row || row.token !== token) return null
+  return !!row && row.token === token
+}
+
+export async function updatePetPhoto(petId: string, photoDataUrl: string): Promise<Pet | null> {
   // shortcut: the old photo file stays in the bucket; add a cleanup if storage costs ever matter
   const url = await storePhoto(petId, photoDataUrl)
   return must(await db().from('pets').update({ primary_photo_url: url, updated_at: new Date().toISOString() })
     .eq('id', petId).select().maybeSingle())
+}
+
+/** Owner edits name, species, years and words (and optionally the photo). Null if not theirs. */
+export async function updatePet(petId: string, ownerId: string, data: Partial<Pet>, photoDataUrl?: string): Promise<Pet | null> {
+  if (!isUuid(petId)) return null
+  const fields = petFields(data)
+  if (!fields.name) return null
+  const photo = photoDataUrl ? { primary_photo_url: await storePhoto(petId, photoDataUrl) } : {}
+  return must(await db().from('pets').update({ ...fields, ...photo, updated_at: new Date().toISOString() })
+    .eq('id', petId).eq('owner_id', ownerId).select().maybeSingle())
+}
+
+/** Owner deletes a memorial: its candles, gifts, guestbook and photos go with it; the shelf frees up. */
+export async function deletePet(petId: string, ownerId: string): Promise<boolean> {
+  if (!isUuid(petId)) return false
+  const pet = must(await db().from('pets').select('id').eq('id', petId).eq('owner_id', ownerId).maybeSingle())
+  if (!pet) return false
+  const bucket = db().storage.from('pet-photos')
+  const { data: files } = await bucket.list(petId)
+  if (files?.length) await bucket.remove(files.map(f => `${petId}/${f.name}`))
+  must(await db().from('pets').delete().eq('id', petId).eq('owner_id', ownerId))
+  return true
+}
+
+export async function getMyPets(ownerId: string): Promise<Pet[]> {
+  return (must(await db().from('pets').select('*').eq('owner_id', ownerId).order('created_at', { ascending: false }))) ?? []
+}
+
+/** Attach memorials this browser made before signing in (it still holds their edit tokens). */
+export async function claimPets(ownerId: string, tokens: Record<string, string>): Promise<number> {
+  const ids = Object.keys(tokens).filter(isUuid).slice(0, 50)
+  if (!ids.length) return 0
+  const rows = (must(await db().from('edit_tokens').select('pet_id, token').in('pet_id', ids))) ?? []
+  const mine = rows.filter((r: { pet_id: string; token: string }) => tokens[r.pet_id] === r.token).map((r: { pet_id: string }) => r.pet_id)
+  if (!mine.length) return 0
+  const claimed = (must(await db().from('pets').update({ owner_id: ownerId }).in('id', mine).is('owner_id', null).select('id'))) ?? []
+  return claimed.length
+}
+
+// ── Profiles ──
+
+export async function getProfile(userId: string): Promise<Profile | null> {
+  return must(await db().from('profiles').select('*').eq('id', userId).maybeSingle())
+}
+
+/** Creates the profile on first sign-in (country set then and locked), or updates name and gender later. */
+export async function saveProfile(userId: string, data: { display_name: unknown; gender: unknown }, countryIfNew: string): Promise<Profile | null> {
+  const display_name = String(data.display_name ?? '').trim().slice(0, 40)
+  const gender = data.gender === 'male' || data.gender === 'female' ? data.gender : null
+  if (!display_name || !gender) return null
+  const existing = await getProfile(userId)
+  if (existing) {
+    return must(await db().from('profiles').update({ display_name, gender }).eq('id', userId).select().single())
+  }
+  return must(await db().from('profiles').insert({
+    id: userId, display_name, gender, country_code: /^[A-Z]{2}$/.test(countryIfNew) ? countryIfNew : 'XX',
+  }).select().single())
 }
 
 export async function recordVisit(petId: string): Promise<void> {
@@ -158,6 +261,33 @@ export async function signGuestbook(petId: string, visitorName: unknown, message
   return data
 }
 
+// ── Gifts ──
+
+/** Gifts still showing at a shrine, newest first. */
+export async function getGifts(petId: string): Promise<LeftGift[]> {
+  if (!isUuid(petId)) return []
+  const since = new Date(Date.now() - FREE_GIFT_SHOWS_DAYS * 86_400_000).toISOString()
+  return (must(await db().from('gifts').select('id, item, visitor_name, created_at')
+    .eq('pet_id', petId).gte('created_at', since).order('created_at', { ascending: false }).limit(60))) ?? []
+}
+
+/**
+ * Leaves a free gift. One per visitor per pet every few days, enforced in the database.
+ * shortcut: the visitor is the random id saved in their browser, so clearing site data resets the wait; tie it to accounts if abuse shows up.
+ */
+export async function leaveGift(petId: string, itemId: string, visitorId: unknown, visitorName: unknown):
+  Promise<{ gift: LeftGift } | { nextAt: string } | null> {
+  const item = giftById(itemId)
+  const vid = String(visitorId ?? '')
+  if (!item || item.price || !isUuid(petId) || !/^[\w-]{8,64}$/.test(vid)) return null // special gifts need payment
+  const { data, error } = await db().rpc('leave_gift', {
+    p_pet: petId, p_item: item.id, p_visitor: vid, p_name: cleanName(visitorName), p_cooldown: `${FREE_GIFT_COOLDOWN_DAYS} days`,
+  })
+  if (error?.code === '23503') return null // no such pet
+  if (error) throw new Error(error.message)
+  return data.ok ? { gift: data.gift } : { nextAt: data.next_at }
+}
+
 // ── Counts ──
 
 export async function getStats(): Promise<GlobalStats & { candles_today: number; countries_today: number }> {
@@ -190,14 +320,16 @@ export async function getOpenFloor(): Promise<number> {
 export async function getActivity(limit = 20): Promise<{ who: string; act: string; pet: string; slug: string; cc: string; at: string }[]> {
   type P = { name: string; slug: string; country_code: string }
   const pet = 'pets(name, slug, country_code)'
-  const [tributes, guestbook, pets] = await Promise.all([
+  const [tributes, guestbook, pets, gifts] = await Promise.all([
     db().from('tributes').select(`visitor_name, type, created_at, ${pet}`).order('created_at', { ascending: false }).limit(limit),
     db().from('guestbook').select(`visitor_name, created_at, ${pet}`).eq('is_hidden', false).order('created_at', { ascending: false }).limit(limit),
     db().from('pets').select('name, slug, country_code, created_at').order('created_at', { ascending: false }).limit(limit),
+    db().from('gifts').select(`visitor_name, item, created_at, ${pet}`).order('created_at', { ascending: false }).limit(limit),
   ]).then(rs => rs.map(r => must<unknown>(r) ?? [])) as [
     { visitor_name: string; type: string; created_at: string; pets: P }[],
     { visitor_name: string; created_at: string; pets: P }[],
     (P & { created_at: string })[],
+    { visitor_name: string; item: string; created_at: string; pets: P }[],
   ]
   const verb: Record<string, string> = { candle: 'lit a candle for', flower: 'left a flower for', treat_bone: 'left a treat for', treat_icecream: 'left a treat for', treat_ball: 'left a toy for' }
   const row = (who: string, act: string, p: P, at: string) => ({ who, act, pet: p.name, slug: p.slug, cc: p.country_code, at })
@@ -205,6 +337,7 @@ export async function getActivity(limit = 20): Promise<{ who: string; act: strin
     ...tributes.map(t => row(t.visitor_name, verb[t.type], t.pets, t.created_at)),
     ...guestbook.map(e => row(e.visitor_name, 'wrote in the guestbook of', e.pets, e.created_at)),
     ...pets.map(p => row('', 'was given a place in the hall', p, p.created_at)),
+    ...gifts.map(x => row(x.visitor_name, `left ${giftById(x.item)?.name.toLowerCase() ?? 'a gift'} for`, x.pets, x.created_at)),
   ].sort((a, b) => Date.parse(b.at) - Date.parse(a.at)).slice(0, limit)
 }
 
