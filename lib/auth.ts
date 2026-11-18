@@ -28,3 +28,17 @@ export async function getUser() {
   const { data } = await (await supabaseServer()).auth.getUser()
   return data.user ?? null
 }
+
+/** Who is posting: name and country from their profile, or (guests) the name they go by and where they are. */
+export async function postingAs(req: Request, guestName: unknown) {
+  const user = await getUser()
+  if (!user) return null
+  const { getProfile } = await import('@/lib/data')
+  const profile = await getProfile(user.id)
+  const edge = req.headers.get('cf-ipcountry') ?? ''
+  return {
+    id: user.id,
+    name: profile?.display_name ?? (String(guestName ?? '').trim().slice(0, 40) || 'A visitor'),
+    country: profile?.country_code ?? (/^[A-Z]{2}$/.test(edge) && edge !== 'T1' ? edge : 'XX'),
+  }
+}

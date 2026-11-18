@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { SiteNav } from '@/components/site/SiteNav'
 import { AuthGate, LoginPanel, ProfileSetup } from '@/components/account/AuthGate'
 import { DeletePetModal, EditPetModal } from '@/components/account/EditPetModal'
+import { LookEditor } from '@/components/account/LookEditor'
 import { useAccount } from '@/lib/account'
 import { flagEmoji, SPECIES_LOOK } from '@/lib/utils'
 import type { Pet } from '@/types'
@@ -56,6 +57,8 @@ function Account() {
         {editProfile && <div className="mt-5 border-t border-[#F0E8DC] pt-5"><ProfileSetup onSaved={() => setEditProfile(false)} /></div>}
       </section>
       )}
+
+      <LookSection />
 
       <section>
         <h2 className="mb-3 font-serif text-xl font-bold text-[#2A1E17]">My memorials</h2>
@@ -131,6 +134,20 @@ function GuestCard() {
         {signIn ? 'Close' : 'Already have an account? Sign in (your memorials here move to it)'}
       </button>
       {signIn && <div className="border-t border-[#F0E8DC] pt-4"><LoginPanel title="Sign in" /></div>}
+    </section>
+  )
+}
+
+/** Dress your character (same look in the hall, seen by other visitors). */
+function LookSection() {
+  const [open, setOpen] = useState(false)
+  return (
+    <section className="rounded-3xl border border-[#E8DFD6] bg-white p-6">
+      <div className="flex items-center justify-between">
+        <h2 className="font-serif text-xl font-bold text-[#2A1E17]">👕 My character</h2>
+        {!open && <button onClick={() => setOpen(true)} className="rounded-full border border-[#D4C9BF] px-3 py-1.5 text-xs font-semibold text-[#2A1E17]">Dress up</button>}
+      </div>
+      {open ? <div className="mt-4"><LookEditor onDone={() => setOpen(false)} /></div> : <p className="mt-1 text-sm text-[#8E8278]">Choose skin, hair, top, bottom and colours for your character in the hall.</p>}
     </section>
   )
 }

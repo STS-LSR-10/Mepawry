@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
   const user = await getUser()
   const profile = user ? await getProfile(user.id) : null
   return NextResponse.json({
-    user: user && { id: user.id, email: user.email, isAnonymous: !!user.is_anonymous },
+    user: user && { id: user.id, email: user.email, isAnonymous: !!user.is_anonymous, look: user.user_metadata?.look ?? null },
     profile,
     country: edgeCountry(req), // where this visit comes from, to pre-fill the country picker
     config: authConfig(),

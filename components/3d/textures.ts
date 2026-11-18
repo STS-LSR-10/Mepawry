@@ -278,29 +278,27 @@ export function plaqueTexture(text: string, kind: 'wood' | 'stone', w = 640, h =
   return finish(c)
 }
 
-/** Golden pastel name tag (✦ Name) for the avatar. */
+/** Name tag (✦ Name): cream letters on a dark chocolate pill with a thin gold rim, readable on any background. */
 export function nameTagTexture(text: string) {
   const w = 512, h = 112
   const { c, g } = canvas(w, h)
-  g.font = '700 50px system-ui, sans-serif'
-  const tw = Math.min(w - 20, g.measureText(text).width + 70)
+  g.font = '700 46px system-ui, sans-serif'
+  const tw = Math.min(w - 16, g.measureText(text).width + 64)
   const x0 = (w - tw) / 2
-  const grad = g.createLinearGradient(0, 8, 0, h - 8)
-  grad.addColorStop(0, '#F3D99B'); grad.addColorStop(1, '#D9B26A')
-  g.shadowColor = 'rgba(80,50,10,.35)'; g.shadowBlur = 8; g.shadowOffsetY = 3
-  g.fillStyle = grad
-  g.beginPath(); g.roundRect(x0, 10, tw, h - 24, (h - 24) / 2); g.fill()
+  g.shadowColor = 'rgba(0,0,0,.35)'; g.shadowBlur = 8; g.shadowOffsetY = 3
+  g.fillStyle = 'rgba(42,26,16,.9)'
+  g.beginPath(); g.roundRect(x0, 12, tw, h - 26, (h - 26) / 2); g.fill()
   g.shadowColor = 'transparent'
-  g.strokeStyle = 'rgba(255,248,225,.85)'; g.lineWidth = 3
-  g.beginPath(); g.roundRect(x0 + 4, 14, tw - 8, h - 32, (h - 32) / 2); g.stroke()
-  g.fillStyle = '#FFFDF6'; g.shadowColor = 'rgba(120,80,20,.45)'; g.shadowBlur = 3; g.shadowOffsetY = 2
+  g.strokeStyle = '#E8C365'; g.lineWidth = 3
+  g.beginPath(); g.roundRect(x0 + 2, 14, tw - 4, h - 30, (h - 30) / 2); g.stroke()
+  g.fillStyle = '#FFF6E2'
   g.textAlign = 'center'; g.textBaseline = 'middle'
-  g.fillText(text, w / 2, h / 2 - 1, tw - 30)
+  g.fillText(text, w / 2, h / 2 - 1, tw - 28)
   return finish(c)
 }
 
 /** Knitted hoodie front: soft ribbing with little bones and paw prints raised in a lighter shade. */
-export function hoodieTexture(base: string, accent: string) {
+export function hoodieTexture(base: string, accent: string, motifs = true) {
   const { c, g } = canvas(256, 256)
   g.fillStyle = base; g.fillRect(0, 0, 256, 256)
   for (let x = 0; x < 256; x += 5) { g.fillStyle = x % 10 ? 'rgba(0,0,0,.035)' : 'rgba(255,255,255,.06)'; g.fillRect(x, 0, 2, 256) }
@@ -318,6 +316,7 @@ export function hoodieTexture(base: string, accent: string) {
     g.beginPath(); g.ellipse(x, y + 3, 6, 5, 0, 0, Math.PI * 2); g.fill()
     for (const [dx, dy] of [[-7, -4], [-2.5, -8], [2.5, -8], [7, -4]]) { g.beginPath(); g.arc(x + dx, y + dy, 2.6, 0, Math.PI * 2); g.fill() }
   }
+  if (!motifs) return finish(c) // plain knit (sweater)
   g.save(); g.translate(128, 0); g.scale(1.35, 1.35); g.translate(-128, 0)
   bone(108, 78, -0.5); bone(150, 92, 0.4); bone(124, 112, -0.15)
   paw(104, 140); paw(152, 132)
@@ -419,4 +418,84 @@ export function waterTexture() {
   const t = finish(c)
   t.wrapS = t.wrapT = RepeatWrapping
   return t
+}
+
+/** The lobby notice board: cork with the latest stories (polaroid cards) and kind-word notes pinned on it. */
+export interface BoardCard { kind: 'story' | 'note'; title: string; body: string; photo?: string | null; color?: string | null }
+export function boardTexture() {
+  const W = 1024, H = 640
+  const { c, g } = canvas(W, H)
+  const t = finish(c)
+  const images = new Map<string, HTMLImageElement>()
+  let cards: BoardCard[] = []
+
+  const wrap = (text: string, x: number, y: number, maxW: number, lineH: number, maxLines: number) => {
+    const words = text.replace(/\s+/g, ' ').split(' ')
+    let line = '', n = 0
+    for (let i = 0; i < words.length && n < maxLines; i++) {
+      const test = line ? line + ' ' + words[i] : words[i]
+      if (g.measureText(test).width > maxW && line) {
+        g.fillText(n === maxLines - 1 ? line + '…' : line, x, y + n * lineH); n++; line = words[i]
+      } else line = test
+    }
+    if (n < maxLines && line) g.fillText(line, x, y + n * lineH)
+  }
+
+  const draw = () => {
+    // cork
+    g.fillStyle = '#B98A5E'; g.fillRect(0, 0, W, H)
+    for (let i = 0; i < 5000; i++) { g.fillStyle = i % 3 ? 'rgba(70,40,15,.22)' : 'rgba(255,235,200,.14)'; g.fillRect((i * 97.31) % W, (i * 53.17) % H, 2, 2) }
+    // header strip
+    g.fillStyle = 'rgba(255,248,238,.92)'; g.beginPath(); g.roundRect(W / 2 - 170, 18, 340, 56, 28); g.fill()
+    g.fillStyle = '#5C3A1E'; g.font = '700 30px system-ui, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'
+    g.fillText('📖 Stories & kind words', W / 2, 47)
+    const show = cards.length ? cards : [
+      { kind: 'note', title: '', body: 'Share a story about your pet. Tap the board.', color: '#FFF4C2' },
+      { kind: 'note', title: '', body: 'Leave a few kind words for a stranger.', color: '#FFD9E2' },
+    ] as BoardCard[]
+    show.slice(0, 6).forEach((card, i) => {
+      const col = i % 3, row = Math.floor(i / 3)
+      const cw = 290, ch = 250, x = 42 + col * 320, y = 96 + row * 268
+      g.save(); g.translate(x + cw / 2, y + ch / 2); g.rotate(((i * 37) % 7 - 3) * 0.012); g.translate(-cw / 2, -ch / 2)
+      g.shadowColor = 'rgba(0,0,0,.35)'; g.shadowBlur = 10; g.shadowOffsetY = 4
+      g.fillStyle = card.kind === 'note' ? card.color ?? '#FFF4C2' : '#FBF8F2'
+      g.fillRect(0, 0, cw, ch)
+      g.shadowColor = 'transparent'
+      g.textAlign = 'left'; g.textBaseline = 'top'
+      if (card.kind === 'story') {
+        const img = card.photo ? images.get(card.photo) : undefined
+        if (img?.complete && img.naturalWidth) {
+          const s = Math.max(270 / img.naturalWidth, 130 / img.naturalHeight)
+          g.save(); g.beginPath(); g.rect(10, 10, 270, 130); g.clip()
+          g.drawImage(img, 10 + (270 - img.naturalWidth * s) / 2, 10 + (130 - img.naturalHeight * s) / 2, img.naturalWidth * s, img.naturalHeight * s)
+          g.restore()
+        } else { g.fillStyle = '#EADFCF'; g.fillRect(10, 10, 270, 130); g.font = '60px serif'; g.textAlign = 'center'; g.fillText('🐾', cw / 2, 45); g.textAlign = 'left' }
+        g.fillStyle = '#2A1E17'; g.font = '700 26px Georgia, serif'; wrap('📖 ' + card.title, 14, 150, 262, 30, 1)
+        g.fillStyle = '#5C5046'; g.font = 'italic 21px Georgia, serif'; wrap(card.body, 14, 186, 262, 26, 2)
+      } else {
+        g.fillStyle = '#2A1E17'; g.font = '600 25px Georgia, serif'; wrap(card.body, 18, 34, 254, 31, 6)
+        if (card.title) { g.fillStyle = '#5C5046'; g.font = '600 18px system-ui, sans-serif'; wrap('— ' + card.title, 18, ch - 34, 254, 20, 1) }
+      }
+      // pin
+      g.fillStyle = '#C9473F'; g.beginPath(); g.arc(cw / 2, 12, 9, 0, Math.PI * 2); g.fill()
+      g.fillStyle = 'rgba(255,255,255,.6)'; g.beginPath(); g.arc(cw / 2 - 3, 9, 3, 0, Math.PI * 2); g.fill()
+      g.restore()
+    })
+    t.needsUpdate = true
+  }
+
+  const set = (next: BoardCard[]) => {
+    cards = next
+    for (const card of cards) {
+      if (!card.photo || images.has(card.photo)) continue
+      const img = new Image()
+      img.crossOrigin = 'anonymous' // photos live on Supabase Storage
+      img.onload = draw
+      img.src = card.photo
+      images.set(card.photo, img)
+    }
+    draw()
+  }
+  draw()
+  return { texture: t, set }
 }

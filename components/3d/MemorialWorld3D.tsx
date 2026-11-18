@@ -13,6 +13,10 @@ import { Nature } from './Nature'
 import { Park } from './Park'
 import { WindClock } from './wind'
 import { Polish, RIM, Vignette } from './look'
+import { CrowdAvatars, useCrowd, type Me } from './Crowd'
+import { getVisitor } from '@/lib/visitor'
+import { defaultLook, type AvatarLook } from '@/lib/look'
+import { useAccount } from '@/lib/account'
 import { lawnTexture } from './textures'
 import { useContextLossRecovery, useQuality } from './quality'
 import { Hall } from './Hall'
@@ -25,6 +29,7 @@ interface MemorialWorld3DProps {
   floorId: number
   avatarName: string
   avatarGender?: 'male' | 'female'
+  avatarLook?: AvatarLook
   sky?: LocalSky
   /** Where to put the avatar after changing floors; a new object each time. */
   arrival: { at: P } | null
@@ -41,7 +46,7 @@ const GROUND: Record<Season, string> = {
   hot: '#6B5A33', rainy: '#2E472A', cool: '#46562F',
 }
 
-export default function MemorialWorld3D({ floorId, avatarName, avatarGender, sky = NIGHT, arrival, onRequestFloor, onElevator }: MemorialWorld3DProps) {
+export default function MemorialWorld3D({ floorId, avatarName, avatarGender, avatarLook, sky = NIGHT, arrival, onRequestFloor, onElevator }: MemorialWorld3DProps) {
   const router = useRouter()
   const ground = floorId === 1
   const pos = useRef<P>({ x: 0, z: 13.5 }) // on the park path, facing the fountain and the door
@@ -76,10 +81,22 @@ export default function MemorialWorld3D({ floorId, avatarName, avatarGender, sky
     setRoute({ points: [] })
   }, [arrival])
 
+  // Other visitors on this floor: up to 40 shown on desktop, 20 on phones (a random pick if there are more)
+  const { user } = useAccount()
+  const [me, setMe] = useState<Me | null>(null)
+  useEffect(() => {
+    const v = getVisitor()
+    const id = user?.id ?? v.id
+    setMe({ id, name: avatarName, look: avatarLook ?? defaultLook(avatarGender) })
+  }, [user?.id, avatarName, avatarGender, avatarLook])
+  const crowd = useCrowd(floorId, me, pos, low ? 20 : 40)
+
   const walkTo = useCallback((to: P, onArrive?: () => void, face?: P) => {
     setNear(null)
-    setRoute({ points: planRoute(pos.current, to, ground), onArrive, face })
-  }, [ground])
+    const points = planRoute(pos.current, to, ground)
+    setRoute({ points, onArrive, face })
+    crowd.announce(points) // others play the same walk back
+  }, [ground, crowd.announce]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const takeStairs = (dir: 'up' | 'down') => {
     const up = dir === 'up'
@@ -201,7 +218,8 @@ export default function MemorialWorld3D({ floorId, avatarName, avatarGender, sky
           </group>
 
           {/* Player Avatar */}
-          <Player name={avatarName} gender={avatarGender} pos={pos} route={route} onInsideChange={setInside} />
+          <Player name={avatarName} gender={avatarGender} look={avatarLook} pos={pos} route={route} onInsideChange={setInside} />
+          <CrowdAvatars list={crowd.list} myPos={pos} radius={low ? 16 : 24} />
 
           {/* Controls */}
           <OrbitControls

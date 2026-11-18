@@ -10,6 +10,7 @@ import { AccountButton } from '@/components/account/AccountButton'
 const LINKS = [
   { href: '/memorials', label: 'Memorials' },
   { href: '/hall', label: '3D Hall' },
+  { href: '/board', label: 'Board' },
   { href: '/guides', label: 'Guides' },
   { href: '/report', label: 'Report' },
   { href: '/about', label: 'About' },

@@ -48,7 +48,12 @@ export function FloatingHeader({
           <nav className="hidden sm:flex items-center gap-2" aria-label="Quick navigation">
             <QuickPill href="/memorials" icon="🐾" label="All pets" />
             <QuickPill href="/memorials?waiting=true" icon="🕯️" label="Waiting" badge />
-            <QuickPill href="#" icon="📖" label="Diaries" />
+            <button
+              onClick={() => window.dispatchEvent(new Event('mepawry:board'))}
+              className="glass rounded-full px-3 py-1.5 text-xs text-[#FAF7F2] border border-white/20 hover:bg-white/20 transition-colors flex items-center gap-1.5"
+            >
+              <span aria-hidden>📖</span> Board
+            </button>
             <QuickPill href="#" icon="🏮" label="Lantern" />
           </nav>
 

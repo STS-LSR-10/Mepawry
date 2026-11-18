@@ -4,7 +4,8 @@
 import { useEffect, useMemo } from 'react'
 import type { Texture } from 'three'
 import type { Furniture } from './layout'
-import { petTexture, signTexture } from './textures'
+import { boardTexture, petTexture, signTexture, type BoardCard } from './textures'
+import type { ThreeEvent } from '@react-three/fiber'
 import type { Pet } from '@/types'
 
 const DARK_WOOD = '#4A2F1E'
@@ -159,19 +160,37 @@ function FloorLamp() {
   )
 }
 
+/** Cork board on legs showing the latest stories and kind words; tap it to open the community board. */
 function NoticeBoard({ w }: { w: number }) {
-  const notes = ['#FFF4B8', '#FFD9E2', '#D8F0FF', '#E8FFD8', '#FFFFFF']
+  const board = useMemo(() => boardTexture(), [])
+  useEffect(() => () => board.texture.dispose(), [board])
+  useEffect(() => {
+    let live = true
+    const get = (kind: string) => fetch(`/api/board/posts?kind=${kind}`).then(r => r.json()).then(d => d.posts ?? []).catch(() => [])
+    Promise.all([get('story'), get('note')]).then(([stories, notes]) => {
+      if (!live) return
+      const cards: BoardCard[] = [
+        ...stories.slice(0, 3).map((p: { pet?: { name: string; primary_photo_url: string | null } | null; author_name: string; body: string; photo_url: string | null }) =>
+          ({ kind: 'story' as const, title: p.pet?.name ?? p.author_name, body: p.body, photo: p.photo_url ?? p.pet?.primary_photo_url })),
+        ...notes.slice(0, 3).map((p: { author_name: string; body: string; note_color: string | null }) =>
+          ({ kind: 'note' as const, title: p.author_name, body: p.body, color: p.note_color })),
+      ]
+      board.set(cards)
+    })
+    return () => { live = false }
+  }, [board])
+  const open = (e: ThreeEvent<MouseEvent>) => { if (e.delta < 6) { e.stopPropagation(); window.dispatchEvent(new Event('mepawry:board')) } }
+  const bw = w, bh = bw * (640 / 1024)
   return (
-    <>
-      {[-1, 1].map(s => <Box key={s} size={[0.07, 1.8, 0.07]} at={[s * (w / 2 - 0.1), 0.9, 0]} color={DARK_WOOD} />)}
-      <Box size={[w, 1.1, 0.07]} at={[0, 1.35, 0]} color="#B98A5A" rough={1} />
-      {notes.map((c, i) => (
-        <mesh key={i} position={[-0.6 + (i % 3) * 0.55, 1.55 - Math.floor(i / 3) * 0.45, 0.04]} rotation={[0, 0, (i - 2) * 0.05]}>
-          <planeGeometry args={[0.4, 0.34]} />
-          <meshStandardMaterial color={c} />
-        </mesh>
-      ))}
-    </>
+    <group onClick={open} onPointerOver={() => { document.body.style.cursor = 'pointer' }} onPointerOut={() => { document.body.style.cursor = '' }}>
+      {[-1, 1].map(s => <Box key={s} size={[0.08, 2.1, 0.08]} at={[s * (bw / 2 - 0.12), 1.05, -0.02]} color={DARK_WOOD} />)}
+      {/* frame */}
+      <Box size={[bw + 0.12, bh + 0.12, 0.06]} at={[0, 1.45, 0]} color={DARK_WOOD} />
+      <mesh position={[0, 1.45, 0.035]}>
+        <planeGeometry args={[bw, bh]} />
+        <meshStandardMaterial map={board.texture} roughness={0.95} />
+      </mesh>
+    </group>
   )
 }
 

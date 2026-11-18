@@ -13,7 +13,7 @@ import { FREE_GIFT_COOLDOWN_DAYS, FREE_GIFT_SHOWS_DAYS, giftById, type LeftGift 
 const g = globalThis as typeof globalThis & { __pmDb?: SupabaseClient }
 
 /** Created on first use, so builds without keys still compile. */
-function db(): SupabaseClient {
+export function db(): SupabaseClient {
   if (!g.__pmDb) {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL
     const key = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -24,7 +24,7 @@ function db(): SupabaseClient {
 }
 
 /** Unwraps a Supabase reply, turning its error into a thrown one. */
-function must<T>({ data, error }: { data: T; error: { message: string } | null }): T {
+export function must<T>({ data, error }: { data: T; error: { message: string } | null }): T {
   if (error) throw new Error(error.message)
   return data
 }
@@ -32,7 +32,7 @@ function must<T>({ data, error }: { data: T; error: { message: string } | null }
 // ── Photos (Supabase Storage, public bucket "pet-photos") ──
 
 /** Uploads a validated data: URL and returns its public URL. */
-async function storePhoto(petId: string, dataUrl: string): Promise<string> {
+export async function storePhoto(petId: string, dataUrl: string): Promise<string> {
   const m = /^data:image\/(jpeg|png|webp);base64,(.+)$/.exec(dataUrl)
   if (!m) throw new Error('Photo must be a JPG, PNG or WebP')
   const path = `${petId}/${Date.now()}.${m[1] === 'jpeg' ? 'jpg' : m[1]}`

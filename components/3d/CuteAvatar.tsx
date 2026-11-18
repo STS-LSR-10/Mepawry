@@ -5,22 +5,29 @@
 
 import { useEffect, useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
-import { CatmullRomCurve3, Vector3, type Group, type Texture as THREE_Texture } from 'three'
+import { CatmullRomCurve3, Color, Vector3, type Group, type Texture as THREE_Texture } from 'three'
 import { hoodieTexture, nameTagTexture } from './textures'
 import { contactShadowMap, microMap, rim } from './look'
+import { defaultLook, type AvatarLook } from '@/lib/look'
 
-const SKIN = '#FCE4D4'
-const HAIR = '#6B4430'
 const CHEEK = '#F6A3B0'
-const LOOK = {
-  male: { hoodie: '#F8B98F', accent: '#FFE6D2', legs: '#C7B3EA', cuff: '#DCCEF4', shoe: '#B88A68' },
-  female: { hoodie: '#F6B4C6', accent: '#FCDDE6', legs: '#C7B3EA', cuff: '#DCCEF4', shoe: '#C9967A' },
+const SHOE = '#B88A68'
+
+/** A lighter shade of a colour (cuffs, knit motifs, sheen). */
+export const lighter = (hex: string, k = 0.5) => '#' + new Color(hex).lerp(new Color('#FFFFFF'), k).getHexString()
+
+// One knit texture per colourway and style, shared by every avatar in the hall (kept for the page's life)
+const knits = new Map<string, THREE_Texture>()
+const knitFor = (base: string, motifs: boolean) => {
+  const k = base + motifs
+  if (!knits.has(k)) knits.set(k, hoodieTexture(base, lighter(base, 0.55), motifs))
+  return knits.get(k)!
 }
 
 /** Soft matte "vinyl/clay" finish: fine surface fuzz in the bump and roughness, plus a Fresnel rim. */
-function Clay({ color, rough = 0.78 }: { color: string; rough?: number }) {
+function Clay({ color, rough = 0.78, bump = 0.5 }: { color: string; rough?: number; bump?: number }) {
   const fuzz = microMap('fuzz')
-  return <meshStandardMaterial color={color} roughness={rough} metalness={0} bumpMap={fuzz} bumpScale={color === SKIN ? 0.08 : 0.5} roughnessMap={fuzz} onBeforeCompile={rim} />
+  return <meshStandardMaterial color={color} roughness={rough} metalness={0} bumpMap={fuzz} bumpScale={bump} roughnessMap={fuzz} onBeforeCompile={rim} />
 }
 
 /** Knitted fabric: the knit pattern doubles as the bump map, with velvety sheen at grazing angles. */
@@ -28,9 +35,11 @@ function Knit({ map, sheen }: { map: THREE_Texture; sheen: string }) {
   return <meshPhysicalMaterial map={map} bumpMap={map} bumpScale={1.4} roughness={0.95} sheen={1} sheenColor={sheen} sheenRoughness={0.75} onBeforeCompile={rim} />
 }
 
-export function CuteAvatar({ name, walking, gender = 'male' }: { name: string; walking?: React.RefObject<boolean>; gender?: 'male' | 'female' }) {
-  const L = LOOK[gender]
-  const girl = gender === 'female'
+export function CuteAvatar({ name, walking, gender = 'male', look }: { name: string; walking?: React.RefObject<boolean>; gender?: 'male' | 'female'; look?: AvatarLook }) {
+  const lk = look ?? defaultLook(gender)
+  const girl = lk.gender === 'female'
+  const SKIN = lk.skin, HAIR = lk.hair
+  const knitted = lk.top !== 'tee'
   const body = useRef<Group>(null!)
   const head = useRef<Group>(null!)
   const eyes = useRef<Group>(null!)
@@ -46,8 +55,9 @@ export function CuteAvatar({ name, walking, gender = 'male' }: { name: string; w
   const still = useMemo(() => window.matchMedia('(prefers-reduced-motion: reduce)').matches, [])
   // Name tag drawn onto a sprite (always faces the camera); avoids drei <Html>, which errors on unmount under React 19
   const tag = useMemo(() => nameTagTexture(`✦ ${name}`), [name])
-  const knit = useMemo(() => hoodieTexture(L.hoodie, L.accent), [L.hoodie, L.accent])
-  useEffect(() => () => { tag.dispose(); knit.dispose() }, [tag, knit])
+  const knit = useMemo(() => knitFor(lk.topColor, lk.top === 'hoodie'), [lk.topColor, lk.top])
+  const accent = lighter(lk.topColor, 0.55)
+  useEffect(() => () => tag.dispose(), [tag])
   const strand = useMemo(() => new CatmullRomCurve3([new Vector3(0, 0, 0), new Vector3(0.02, 0.09, 0.01), new Vector3(0.08, 0.14, 0.03), new Vector3(0.13, 0.12, 0.05)]), [])
 
   useFrame(({ clock }) => {
@@ -92,24 +102,39 @@ export function CuteAvatar({ name, walking, gender = 'male' }: { name: string; w
       </mesh>
 
       <group ref={body}>
-        {/* Legs: rolled trousers (or tights under a skirt) and sneakers, pivoting at the hip */}
+        {/* Legs: trousers (rolled cuffs), shorts over bare legs, or bare legs under a skirt; sneakers. Pivot at the hip */}
         {([[-0.1, legL], [0.1, legR]] as const).map(([x, ref]) => (
           <group key={x} ref={ref} position={[x, 0.4, 0]}>
-            <mesh position={[0, -0.13, 0]} castShadow>
-              <capsuleGeometry args={[0.085, 0.16, 6, 14]} />
-              <Clay color={girl ? '#F7EDE4' : L.legs} />
-            </mesh>
-            {!girl && (
-              <mesh position={[0, -0.26, 0]}>
-                <cylinderGeometry args={[0.098, 0.096, 0.07, 18]} />
-                <Clay color={L.cuff} />
-              </mesh>
+            {lk.bottom === 'pants' ? (
+              <>
+                <mesh position={[0, -0.13, 0]} castShadow>
+                  <capsuleGeometry args={[0.085, 0.16, 6, 14]} />
+                  <Clay color={lk.bottomColor} />
+                </mesh>
+                <mesh position={[0, -0.26, 0]}>
+                  <cylinderGeometry args={[0.098, 0.096, 0.07, 18]} />
+                  <Clay color={lighter(lk.bottomColor, 0.35)} />
+                </mesh>
+              </>
+            ) : (
+              <>
+                <mesh position={[0, -0.17, 0]} castShadow>
+                  <capsuleGeometry args={[0.07, 0.14, 6, 12]} />
+                  <Clay color={SKIN} bump={0.08} rough={0.6} />
+                </mesh>
+                {lk.bottom === 'shorts' && (
+                  <mesh position={[0, -0.04, 0]} castShadow>
+                    <cylinderGeometry args={[0.1, 0.105, 0.14, 16]} />
+                    <Clay color={lk.bottomColor} />
+                  </mesh>
+                )}
+              </>
             )}
             {/* Sneaker: upper, cream sole, laces */}
             <group position={[0, -0.34, 0.035]}>
               <mesh scale={[1, 0.62, 1.35]} castShadow>
                 <sphereGeometry args={[0.095, 18, 14]} />
-                <Clay color={L.shoe} rough={0.65} />
+                <Clay color={SHOE} rough={0.65} />
               </mesh>
               <mesh position={[0, -0.04, 0]} scale={[1, 1, 1.3]}>
                 <cylinderGeometry args={[0.098, 0.098, 0.03, 20]} />
@@ -126,50 +151,75 @@ export function CuteAvatar({ name, walking, gender = 'male' }: { name: string; w
         ))}
 
         {/* Skirt */}
-        {girl && (
+        {lk.bottom === 'skirt' && (
           <mesh position={[0, 0.45, 0]} castShadow>
             <cylinderGeometry args={[0.18, 0.3, 0.24, 24, 1, true]} />
-            <meshStandardMaterial color={L.legs} roughness={0.8} side={2} />
+            <meshStandardMaterial color={lk.bottomColor} roughness={0.8} side={2} onBeforeCompile={rim} />
           </mesh>
         )}
 
         <group ref={chest} position={[0, 0.44, 0]}><group position={[0, -0.44, 0]}>
-        {/* Hoodie body (turned so the texture seam is at the back), ribbed hem, hood and drawstrings */}
+        {/* Top: knitted hoodie (hood, drawstrings, bone & paw motifs), plain knit sweater, or a smooth T-shirt */}
         <mesh position={[0, 0.66, 0]} rotation={[0, Math.PI, 0]} scale={[1, 1, 0.86]} castShadow>
           <capsuleGeometry args={[0.215, 0.12, 8, 24]} />
-          <Knit map={knit} sheen={L.accent} />
+          {knitted ? <Knit map={knit} sheen={accent} /> : <Clay color={lk.topColor} rough={0.85} />}
         </mesh>
         <mesh position={[0, 0.44, 0]} rotation={[Math.PI / 2, 0, 0]} scale={[1, 0.86, 1]}>
-          <torusGeometry args={[0.19, 0.04, 10, 28]} />
-          <Clay color={L.hoodie} rough={0.95} />
+          <torusGeometry args={[0.19, knitted ? 0.04 : 0.025, 10, 28]} />
+          <Clay color={lk.topColor} rough={0.95} />
         </mesh>
-        <mesh position={[0, 0.86, -0.05]} rotation={[Math.PI / 2 - 0.25, 0, 0]}>
-          <torusGeometry args={[0.15, 0.065, 12, 28]} />
-          <Clay color={L.hoodie} rough={0.92} />
-        </mesh>
-        {[-0.05, 0.05].map(x => (
-          <group key={x} position={[x, 0.76, 0.18]}>
-            <mesh><cylinderGeometry args={[0.009, 0.009, 0.11, 6]} /><Clay color="#FFF4E8" /></mesh>
-            <mesh position={[0, -0.06, 0]}><sphereGeometry args={[0.014, 8, 8]} /><Clay color="#FFF4E8" /></mesh>
-          </group>
-        ))}
+        {lk.top === 'hoodie' ? (
+          <>
+            <mesh position={[0, 0.86, -0.05]} rotation={[Math.PI / 2 - 0.25, 0, 0]}>
+              <torusGeometry args={[0.15, 0.065, 12, 28]} />
+              <Clay color={lk.topColor} rough={0.92} />
+            </mesh>
+            {[-0.05, 0.05].map(x => (
+              <group key={x} position={[x, 0.76, 0.18]}>
+                <mesh><cylinderGeometry args={[0.009, 0.009, 0.11, 6]} /><Clay color="#FFF4E8" /></mesh>
+                <mesh position={[0, -0.06, 0]}><sphereGeometry args={[0.014, 8, 8]} /><Clay color="#FFF4E8" /></mesh>
+              </group>
+            ))}
+          </>
+        ) : (
+          // ribbed (sweater) or plain (tee) neckline
+          <mesh position={[0, 0.87, 0]} rotation={[Math.PI / 2, 0, 0]}>
+            <torusGeometry args={[0.11, knitted ? 0.035 : 0.02, 10, 24]} />
+            <Clay color={knitted ? accent : lighter(lk.topColor, 0.15)} rough={0.95} />
+          </mesh>
+        )}
 
         </group></group>
 
-        {/* Arms: sleeves with cuffs and soft round hands, pivoting at the shoulders */}
+        {/* Arms: long knitted sleeves with cuffs, or short T-shirt sleeves over bare arms; pivot at the shoulders */}
         {([[-0.24, -0.22, armL], [0.24, 0.22, armR]] as const).map(([x, z, ref]) => (
           <group key={x} ref={ref} position={[x, 0.8, 0]} rotation={[0, 0, z]}>
-            <mesh position={[0, -0.14, 0]} castShadow>
-              <capsuleGeometry args={[0.078, 0.18, 6, 14]} />
-              <Knit map={knit} sheen={L.accent} />
-            </mesh>
-            <mesh position={[0, -0.27, 0]}>
-              <cylinderGeometry args={[0.072, 0.072, 0.05, 16]} />
-              <Clay color={L.hoodie} rough={0.95} />
-            </mesh>
+            {knitted ? (
+              <>
+                <mesh position={[0, -0.14, 0]} castShadow>
+                  <capsuleGeometry args={[0.078, 0.18, 6, 14]} />
+                  <Knit map={knit} sheen={accent} />
+                </mesh>
+                <mesh position={[0, -0.27, 0]}>
+                  <cylinderGeometry args={[0.072, 0.072, 0.05, 16]} />
+                  <Clay color={lk.topColor} rough={0.95} />
+                </mesh>
+              </>
+            ) : (
+              <>
+                <mesh position={[0, -0.06, 0]} castShadow>
+                  <capsuleGeometry args={[0.085, 0.07, 6, 14]} />
+                  <Clay color={lk.topColor} rough={0.85} />
+                </mesh>
+                <mesh position={[0, -0.2, 0]} castShadow>
+                  <capsuleGeometry args={[0.06, 0.14, 6, 12]} />
+                  <Clay color={SKIN} bump={0.08} rough={0.6} />
+                </mesh>
+              </>
+            )}
             <mesh position={[0, -0.34, 0]} scale={[1, 0.95, 0.9]}>
               <sphereGeometry args={[0.072, 16, 12]} />
-              <Clay color={SKIN} rough={0.6} />
+              <Clay color={SKIN} rough={0.6} bump={0.08} />
             </mesh>
           </group>
         ))}
@@ -178,13 +228,13 @@ export function CuteAvatar({ name, walking, gender = 'male' }: { name: string; w
         <group ref={head} position={[0, 1.18, 0]}>
           <mesh scale={[1, 0.94, 0.95]} castShadow>
             <sphereGeometry args={[0.34, 36, 28]} />
-            <Clay color={SKIN} rough={0.55} />
+            <Clay color={SKIN} rough={0.55} bump={0.08} />
           </mesh>
           {/* Ears */}
           {[-0.33, 0.33].map(x => (
             <mesh key={x} position={[x, -0.03, 0]} scale={[0.5, 1, 0.8]}>
               <sphereGeometry args={[0.07, 12, 10]} />
-              <Clay color={SKIN} rough={0.55} />
+              <Clay color={SKIN} rough={0.55} bump={0.08} />
             </mesh>
           ))}
 
@@ -273,7 +323,7 @@ export function CuteAvatar({ name, walking, gender = 'male' }: { name: string; w
       </group>
 
       {/* Name tag */}
-      <sprite position={[0, 1.78, 0]} scale={[1.05, 0.23, 1]}>
+      <sprite position={[0, 1.82, 0]} scale={[1.32, 0.29, 1]}>
         <spriteMaterial map={tag} transparent alphaTest={0.1} depthWrite={false} />
       </sprite>
     </group>

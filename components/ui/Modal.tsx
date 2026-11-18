@@ -16,20 +16,25 @@ interface ModalProps {
 export function Modal({ open, onClose, title, children, className }: ModalProps) {
   const dialogRef = useRef<HTMLDivElement>(null)
 
-  // Focus trap + Escape key
+  // Callers often pass a new onClose every render; keep the latest in a ref so the effect below runs only when
+  // the dialog opens or closes. (Re-running it on every keystroke stole focus from the input being typed in.)
+  const closeRef = useRef(onClose)
+  closeRef.current = onClose
+
+  // Focus the dialog when it opens, close on Escape, give focus back when it closes
   useEffect(() => {
     if (!open) return
     const prev = document.activeElement as HTMLElement
     dialogRef.current?.focus()
     const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
+      if (e.key === 'Escape') closeRef.current()
     }
     document.addEventListener('keydown', handler)
     return () => {
       document.removeEventListener('keydown', handler)
       prev?.focus()
     }
-  }, [open, onClose])
+  }, [open])
 
   if (!open) return null
 

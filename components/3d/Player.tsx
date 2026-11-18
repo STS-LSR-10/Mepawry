@@ -5,6 +5,7 @@ import { useEffect, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import type * as THREE from 'three'
 import { CuteAvatar } from './CuteAvatar'
+import type { AvatarLook } from '@/lib/look'
 import { isInside, type P } from './layout'
 
 const SPEED = 3.2 // world units per second
@@ -14,12 +15,13 @@ export interface Route { points: P[]; onArrive?: () => void; face?: P }
 interface PlayerProps {
   name: string
   gender?: 'male' | 'female'
+  look?: AvatarLook
   pos: React.RefObject<P>          // shared with the scene, which plans routes from it
   route: Route | null
   onInsideChange: (inside: boolean) => void
 }
 
-export function Player({ name, gender, pos, route, onInsideChange }: PlayerProps) {
+export function Player({ name, gender, look, pos, route, onInsideChange }: PlayerProps) {
   const group = useRef<THREE.Group>(null!)
   const marker = useRef<THREE.Mesh>(null!)
   const queue = useRef<P[]>([])
@@ -101,7 +103,7 @@ export function Player({ name, gender, pos, route, onInsideChange }: PlayerProps
   return (
     <>
       <group ref={group}>
-        <CuteAvatar name={name} walking={walking} gender={gender} />
+        <CuteAvatar name={name} walking={walking} gender={gender} look={look} />
       </group>
       {/* Where you tapped */}
       <mesh ref={marker} rotation={[-Math.PI / 2, 0, 0]} visible={false} raycast={() => null}>

@@ -7,6 +7,9 @@ import { FloorSelector } from '@/components/shrine/FloorSelector'
 import { ELEVATOR_FRONT, type P } from '@/components/3d/layout'
 import { describe, getVisitor, useActivity, useOnlineCount } from '@/lib/visitor'
 import { useAccount } from '@/lib/account'
+import { BoardSheet } from '@/components/board/Board'
+import { LookEditor } from '@/components/account/LookEditor'
+import { useMyLook } from '@/lib/look'
 import { timeAgo } from '@/lib/utils'
 import type { Floor } from '@/types'
 import { getLocalSky, PHASE_LABEL, SEASON_LABEL, type LocalSky, type Season } from '@/lib/sky'
@@ -28,6 +31,15 @@ export default function HallPage() {
   const { profile } = useAccount()
   useEffect(() => setAvatarName(profile?.display_name ?? getVisitor().name), [profile])
   const [floorSelectorOpen, setFloorSelectorOpen] = useState(false)
+  // The community board opens from the header button or by tapping the board in the lobby
+  const [boardOpen, setBoardOpen] = useState(false)
+  const myLook = useMyLook()
+  const [lookOpen, setLookOpen] = useState(false)
+  useEffect(() => {
+    const open = () => setBoardOpen(true)
+    window.addEventListener('mepawry:board', open)
+    return () => window.removeEventListener('mepawry:board', open)
+  }, [])
 
   // Live numbers
   const online = useOnlineCount()
@@ -78,6 +90,7 @@ export default function HallPage() {
           floorId={currentFloor}
           avatarName={avatarName}
           avatarGender={profile?.gender}
+          avatarLook={myLook}
           sky={sky}
           arrival={arrival}
           onRequestFloor={goToFloor}
@@ -91,6 +104,28 @@ export default function HallPage() {
           {PHASE_LABEL[sky.phase]} · {SEASON_LABEL[sky.season]} · {sky.place}
         </div>
       )}
+
+      {/* Dress your character: the panel sits at the bottom so your avatar stays in view and changes live */}
+      <button
+        onClick={() => setLookOpen(true)}
+        className="fixed bottom-[11.5rem] right-4 z-20 glass rounded-full border border-white/20 px-4 py-2.5 text-sm text-[#FAF7F2] shadow-md sm:bottom-[8.5rem]"
+      >
+        👕 My look
+      </button>
+      {lookOpen && (
+        <div className="fixed inset-x-0 bottom-0 z-40 mx-auto max-h-[46dvh] max-w-md overflow-y-auto rounded-t-3xl bg-[#FFFBF5] p-4 shadow-2xl sm:bottom-4 sm:left-4 sm:right-auto sm:max-h-[80dvh] sm:rounded-3xl" role="dialog" aria-label="Dress your character">
+          <h2 className="mb-3 font-serif text-lg font-bold text-[#2A1E17]">Dress your character</h2>
+          <LookEditor live onDone={() => setLookOpen(false)} />
+        </div>
+      )}
+
+      {/* Board button for phones (the header pills are hidden on small screens) */}
+      <button
+        onClick={() => setBoardOpen(true)}
+        className="sm:hidden fixed bottom-[8.5rem] right-4 z-20 glass rounded-full border border-white/20 px-4 py-2.5 text-sm text-[#FAF7F2] shadow-md"
+      >
+        📖 Board
+      </button>
 
       {/* Floor Selector Button */}
       <div className="fixed bottom-24 right-4 z-20">
@@ -123,6 +158,8 @@ export default function HallPage() {
 
       {/* Fade between floors */}
       <div className={`pointer-events-none fixed inset-0 z-40 bg-[#17131B] transition-opacity duration-300 ${fading ? 'opacity-100' : 'opacity-0'}`} />
+
+      <BoardSheet open={boardOpen} onClose={() => setBoardOpen(false)} />
 
       {/* Floor Selector Modal */}
       <FloorSelector
