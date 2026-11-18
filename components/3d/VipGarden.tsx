@@ -30,7 +30,8 @@ function useTex(make: () => Texture, deps: unknown[]) {
 /** Cheap seeded random, so the flowers grow the same on every visit. */
 const rand = (seed: number) => () => { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646 }
 
-export function VipGarden({ pets, glow, onOpen, onFloor }: {
+export function VipGarden({ floor, pets, glow, onOpen, onFloor }: {
+  floor: number
   pets: Pet[]
   glow: number
   onOpen: (pet: Pet, slot: VipSlot) => void
@@ -62,7 +63,7 @@ export function VipGarden({ pets, glow, onOpen, onFloor }: {
       <Lanterns />
       <PawPlanters />
       <Niches vip={vip} onOpen={onOpen} />
-      <GardenSign />
+      <GardenSign floor={floor} />
     </group>
   )
 }
@@ -312,13 +313,13 @@ function PawPlanters() {
 }
 
 /** Big wooden sign at the garden's entrance. */
-function GardenSign() {
-  const tex = useTex(() => plaqueTexture('✿ VIP Garden ✿', 'wood', 768, 160), [])
+function GardenSign({ floor }: { floor: number }) {
+  const tex = useTex(() => plaqueTexture(`✿ VIP Garden · Floor ${floor} ✿`, 'wood', 900, 160), [floor])
   return (
     <group position={[22, 3.5, -29.4]}>
-      <mesh raycast={noRay}><boxGeometry args={[3.1, 0.68, 0.08]} /><meshStandardMaterial color="#6B4A33" roughness={0.6} /></mesh>
-      <mesh position={[0, 0, 0.045]} raycast={noRay}><planeGeometry args={[3.0, 0.62]} /><meshStandardMaterial map={tex} transparent alphaTest={0.5} emissive="#FFFFFF" emissiveMap={tex} emissiveIntensity={0.15} /></mesh>
-      <mesh position={[0, 0, -0.045]} rotation={[0, Math.PI, 0]} raycast={noRay}><planeGeometry args={[3.0, 0.62]} /><meshStandardMaterial map={tex} transparent alphaTest={0.5} /></mesh>
+      <mesh raycast={noRay}><boxGeometry args={[3.7, 0.68, 0.08]} /><meshStandardMaterial color="#6B4A33" roughness={0.6} /></mesh>
+      <mesh position={[0, 0, 0.045]} raycast={noRay}><planeGeometry args={[3.6, 0.62]} /><meshStandardMaterial map={tex} transparent alphaTest={0.5} emissive="#FFFFFF" emissiveMap={tex} emissiveIntensity={0.15} /></mesh>
+      <mesh position={[0, 0, -0.045]} rotation={[0, Math.PI, 0]} raycast={noRay}><planeGeometry args={[3.6, 0.62]} /><meshStandardMaterial map={tex} transparent alphaTest={0.5} /></mesh>
     </group>
   )
 }

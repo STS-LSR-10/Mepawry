@@ -4,7 +4,8 @@
 import { Suspense, useCallback, useEffect, useState } from 'react'
 import { FloatingHeader } from '@/components/shrine/FloatingHeader'
 import { FloorSelector } from '@/components/shrine/FloorSelector'
-import { ELEVATOR_FRONT, FLOOR_COUNT, type P } from '@/components/3d/layout'
+import { ELEVATOR_FRONT, FLOOR_COUNT, SLOTS, VIP_SLOTS, type P } from '@/components/3d/layout'
+import type { Pet } from '@/types'
 
 // Just inside the VIP Garden's door, facing the arcades
 const VIP_ENTRY: P = { x: 22, z: -30.5 }
@@ -79,14 +80,26 @@ export default function HallPage() {
   }, [currentFloor])
 
   /** Fade out, swap floors, put the avatar at the stairs or elevator, fade back in. */
-  const goToFloor = (floor: number, at: P) => {
+  const goToFloor = (floor: number, at: P, then?: () => void) => {
     setFading(true)
     setTimeout(() => {
       setCurrentFloor(floor)
       setArrival({ at })
+      then?.()
       setTimeout(() => setFading(false), 250)
     }, 450)
   }
+
+  // Find my pet: ride to its floor (if needed), then walk to its shrine — its VIP niche if it has one
+  const [guide, setGuide] = useState<{ pet: Pet; at: P; face: P; nonce: number } | null>(null)
+  const findPet = (pet: Pet) => {
+    const slot = pet.vip_position != null ? VIP_SLOTS[pet.vip_position] : SLOTS[pet.shrine_position]
+    if (!slot) return
+    const go = () => setGuide({ pet, at: slot.standAt, face: { x: slot.x, z: slot.z }, nonce: Date.now() })
+    if (pet.floor_id === currentFloor) go()
+    else goToFloor(pet.floor_id, ELEVATOR_FRONT, go)
+  }
+  const [menu, setMenu] = useState<'pets' | 'vip' | null>(null)
 
   // Visitor's own time and season; ?hour=14&season=winter previews others
   const [sky, setSky] = useState<LocalSky>()
@@ -124,6 +137,7 @@ export default function HallPage() {
           onPeopleHere={onPeopleHere}
           sky={sky}
           arrival={arrival}
+          guide={guide}
           onRequestFloor={goToFloor}
           onElevator={() => setFloorSelectorOpen(true)}
         />}
@@ -150,6 +164,16 @@ export default function HallPage() {
         </div>
       )}
 
+      {menu === 'pets' && <MyPetsMenu onPick={pet => { setMenu(null); findPet(pet) }} onClose={() => setMenu(null)} />}
+      {menu === 'vip' && (
+        <FloorGrid
+          title="✿ VIP Garden — which floor?"
+          current={currentFloor}
+          onPick={f => { setMenu(null); goToFloor(f, VIP_ENTRY) }}
+          onClose={() => setMenu(null)}
+        />
+      )}
+
       {/* Board button for phones (the header pills are hidden on small screens) */}
       <button
         onClick={() => setBoardOpen(true)}
@@ -161,9 +185,17 @@ export default function HallPage() {
       {/* Floor Selector Button, and a shortcut to this floor's VIP Garden */}
       <div className="fixed bottom-24 right-4 z-20 flex items-center gap-2">
         <button
-          onClick={() => goToFloor(currentFloor, VIP_ENTRY)}
+          onClick={() => setMenu(m => (m === 'pets' ? null : 'pets'))}
+          aria-expanded={menu === 'pets'}
+          className="glass rounded-full border border-white/20 px-4 py-2.5 text-sm text-[#FAF7F2] shadow-md hover:bg-white/20"
+        >
+          🐾 My pet
+        </button>
+        <button
+          onClick={() => setMenu(m => (m === 'vip' ? null : 'vip'))}
+          aria-expanded={menu === 'vip'}
           className="rounded-full border border-[#E8C365]/60 bg-gradient-to-r from-[#F3D99B]/90 to-[#D9B26A]/90 px-4 py-2.5 text-sm font-semibold text-[#3A2612] shadow-md hover:brightness-105"
-          aria-label={`Go to the VIP Garden on floor ${currentFloor}`}
+          aria-label="VIP Garden: choose a floor"
         >
           ✿ VIP
         </button>
@@ -228,6 +260,69 @@ function WorldLoader() {
         />
       </div>
       <p className="text-sm text-[#FAF7F2]/60">Loading the memorial hall…</p>
+    </div>
+  )
+}
+
+/** Your memorials, to jump to: tap one and you're taken to its floor and walked to its shrine. */
+function MyPetsMenu({ onPick, onClose }: { onPick: (pet: Pet) => void; onClose: () => void }) {
+  const [pets, setPets] = useState<Pet[] | null>(null)
+  useEffect(() => {
+    fetch('/api/me/pets', { cache: 'no-store' }).then(r => (r.ok ? r.json() : { pets: [] })).then(d => setPets(d.pets ?? [])).catch(() => setPets([]))
+  }, [])
+  return (
+    <Popover title="🐾 Take me to my pet" onClose={onClose}>
+      {pets === null ? <p className="py-3 text-center text-sm text-[#8E8278]">Loading…</p>
+        : pets.length === 0 ? <p className="py-3 text-center text-sm text-[#8E8278]">No memorials yet on this device. Add your pet with “+ Add my pet”, or sign in on My page.</p>
+        : (
+          <ul className="max-h-64 space-y-1.5 overflow-y-auto">
+            {pets.map(p => (
+              <li key={p.id}>
+                <button onClick={() => onPick(p)} className="flex w-full items-center gap-3 rounded-2xl bg-[#FAF3E8] px-3 py-2 text-left hover:bg-[#F4E6D2]">
+                  <span className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-xl bg-[#EADFCF] text-xl">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    {p.primary_photo_url ? <img src={p.primary_photo_url} alt="" className="h-full w-full object-cover" /> : '🐾'}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate font-semibold text-[#2A1E17]">{p.name}</span>
+                    <span className="block text-xs text-[#8E8278]">
+                      Floor {p.floor_id} · {p.vip_position != null ? `✿ VIP niche ${p.vip_position + 1}` : `shelf ${p.shrine_position + 1}`}
+                    </span>
+                  </span>
+                  <span className="text-sm text-[#C67129]">Go →</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+    </Popover>
+  )
+}
+
+/** Pick a floor (for the VIP Garden shortcut). */
+function FloorGrid({ title, current, onPick, onClose }: { title: string; current: number; onPick: (f: number) => void; onClose: () => void }) {
+  return (
+    <Popover title={title} onClose={onClose}>
+      <div className="grid grid-cols-6 gap-1.5">
+        {Array.from({ length: FLOOR_COUNT }, (_, i) => i + 1).map(f => (
+          <button key={f} onClick={() => onPick(f)} aria-current={f === current}
+            className={`rounded-lg py-2 text-sm font-semibold ${f === current ? 'bg-gradient-to-r from-[#F3D99B] to-[#D9B26A] text-[#3A2612]' : 'bg-[#FAF3E8] text-[#5C5046] hover:bg-[#F4E6D2]'}`}>
+            {f}
+          </button>
+        ))}
+      </div>
+    </Popover>
+  )
+}
+
+function Popover({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
+  return (
+    <div className="fixed bottom-36 right-4 z-30 w-[min(22rem,calc(100vw-2rem))] rounded-3xl bg-[#FFFBF5] p-4 shadow-2xl" role="dialog" aria-label={title}>
+      <div className="mb-3 flex items-center justify-between">
+        <h2 className="font-serif text-base font-bold text-[#2A1E17]">{title}</h2>
+        <button onClick={onClose} aria-label="Close" className="grid h-8 w-8 place-items-center rounded-full bg-[#F4EBDD] text-[#8E8278]">✕</button>
+      </div>
+      {children}
     </div>
   )
 }

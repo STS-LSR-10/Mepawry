@@ -38,6 +38,8 @@ interface MemorialWorld3DProps {
   sky?: LocalSky
   /** Where to put the avatar after changing floors; a new object each time. */
   arrival: { at: P } | null
+  /** Walk to this spot and offer to open the pet there (set again with a new nonce to repeat). */
+  guide?: { pet: Pet; at: P; face: P; nonce: number } | null
   /** Stairs: go to that floor, appearing at that spot. */
   onRequestFloor: (floor: number, at: P) => void
   /** Elevator: the page opens its floor picker. */
@@ -51,7 +53,7 @@ const GROUND: Record<Season, string> = {
   hot: '#6B5A33', rainy: '#2E472A', cool: '#46562F',
 }
 
-export default function MemorialWorld3D({ floorId, avatarName, avatarGender, avatarLook, onPeopleHere, startAt, sky = NIGHT, arrival, onRequestFloor, onElevator }: MemorialWorld3DProps) {
+export default function MemorialWorld3D({ floorId, avatarName, avatarGender, avatarLook, onPeopleHere, startAt, sky = NIGHT, arrival, guide, onRequestFloor, onElevator }: MemorialWorld3DProps) {
   const router = useRouter()
   const ground = floorId === 1
   // On the park path facing the fountain and the door, nudged a little so visitors arriving together don't stand on each other
@@ -117,6 +119,12 @@ const pos = useRef<P>(
     setRoute({ points, onArrive, face })
     crowd.announce(points) // others play the same walk back
   }, [ground, crowd.announce]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // "Find my pet": walk there (the destination ring shows the way) and offer to open the shrine on arrival
+  useEffect(() => {
+    if (guide) walkTo(guide.at, () => setNear(guide.pet), guide.face)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [guide?.nonce])
 
   const takeStairs = (dir: 'up' | 'down') => {
     const up = dir === 'up'

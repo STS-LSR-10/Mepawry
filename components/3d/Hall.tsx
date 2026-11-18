@@ -79,13 +79,13 @@ export function Hall({ floor, playerPos, quality, pets, inside, onFloor, onShrin
       {/* Signs: floor name over the north corridor, gallery names over each corridor mouth.
           Hung above the camera's usual height so they don't block the view as you walk under them. */}
       <Sign text={`Floor ${floor} · ${getFloorName(floor)}`} at={[0, 4.5, HUB.z0 + 0.3]} w={3.4} />
-      <Sign text={`← West Gallery · ${perRoom('west')}`} at={[HUB.x0 + 0.3, 4.3, -15]} rot={Math.PI / 2} w={3} />
-      <Sign text={`East Gallery · ${perRoom('east')} →`} at={[HUB.x1 - 0.3, 4.3, -15]} rot={-Math.PI / 2} w={3} />
-      <Sign text={`North Library · ${perRoom('north')} ↑`} at={[0, 4.3, -31.3]} w={3.4} />
-      <Sign text="✿ VIP Garden ↑" at={[22, 4.3, -23.7]} w={3} />
+      <Sign text={`← West Gallery · F${floor} · ${perRoom('west')}`} at={[HUB.x0 + 0.3, 4.3, -15]} rot={Math.PI / 2} w={3} />
+      <Sign text={`East Gallery · F${floor} · ${perRoom('east')} →`} at={[HUB.x1 - 0.3, 4.3, -15]} rot={-Math.PI / 2} w={3} />
+      <Sign text={`North Library · F${floor} · ${perRoom('north')} ↑`} at={[0, 4.3, -31.3]} w={3.4} />
+      <Sign text={`✿ VIP Garden · F${floor} ↑`} at={[22, 4.3, -23.7]} w={3.2} />
 
       {/* VIP Garden: tap a portrait to visit; tap an empty niche to walk to it */}
-      <VipGarden pets={pets} glow={glow} onOpen={(pet, slot) => onShrine(pet, slot.standAt, slot)} onFloor={onFloor} />
+      <VipGarden floor={floor} pets={pets} glow={glow} onOpen={(pet, slot) => onShrine(pet, slot.standAt, slot)} onFloor={onFloor} />
 
       {furniture(ground).map((it, i) => <FurniturePiece key={i} it={it} featured={placed[0]} />)}
       <CorridorDecor />
@@ -365,10 +365,11 @@ function Entrance({ onTap, lit }: { onTap: (e: ThreeEvent<MouseEvent>) => void; 
         <meshStandardMaterial color="#8A5A2B" />
       </mesh>
       {lit && <pointLight position={[0, 3, HUB.z1 + 1.5]} intensity={4} color="#FF8C42" distance={8} decay={1.5} />}
-      {/* Hedges closing the courtyards between the lobby and the side galleries */}
+      {/* Hedges closing the courtyards between the lobby and the side galleries — kept clear of the walls on
+          both ends (they used to start right at the lobby wall's inner face and showed through it as dark panels) */}
       {[-1, 1].map(s => (
-        <mesh key={s} position={[s * 12, 0.5, HUB.z1 - 0.4]} raycast={noRay} castShadow>
-          <boxGeometry args={[6, 1, 0.8]} />
+        <mesh key={s} position={[s * 12.2, 0.5, HUB.z1 - 0.6]} raycast={noRay} castShadow>
+          <boxGeometry args={[4.9, 1, 0.8]} />
           <meshStandardMaterial color="#3F6B35" roughness={1} />
         </mesh>
       ))}
