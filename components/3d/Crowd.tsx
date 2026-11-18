@@ -22,6 +22,9 @@ const GRACE_MS = 30000      // left the channel: keep them a little in case they
 
 export interface Me { id: string; name: string; look: AvatarLook }
 
+/** Where other visitors are right now (for things that react to people, like the entrance doors). */
+export const crowdPositions = new Map<string, P>()
+
 interface Remote {
   id: string
   name: string
@@ -184,6 +187,7 @@ export function CrowdAvatars({ list, myPos, radius }: { list: Remote[]; myPos: R
 function RemoteAvatar({ r, myPos, radius }: { r: Remote; myPos: React.RefObject<P>; radius: number }) {
   const group = useRef<Group>(null!)
   const walking = useRef(false)
+  useEffect(() => () => { crowdPositions.delete(r.id) }, [r.id])
   useFrame((_, dt) => {
     const h = Math.min(dt, 0.25)
     if (r.path.length) {
@@ -195,6 +199,7 @@ function RemoteAvatar({ r, myPos, radius }: { r: Remote; myPos: React.RefObject<
     walking.current = r.path.length > 0
     const g = group.current
     g.position.set(r.pos.x, -0.5, r.pos.z)
+    crowdPositions.set(r.id, r.pos)
     // Turn smoothly toward where they're heading
     g.rotation.y += (((r.heading - g.rotation.y + Math.PI) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2) - Math.PI) * Math.min(1, h * 10)
     const me = myPos.current

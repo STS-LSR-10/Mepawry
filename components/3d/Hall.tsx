@@ -4,12 +4,13 @@
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useFrame, type ThreeEvent } from '@react-three/fiber'
-import { AdditiveBlending, CanvasTexture, Color, Object3D, Vector3, type InstancedMesh, type Mesh, type Texture } from 'three'
+import { AdditiveBlending, CanvasTexture, Color, Object3D, Vector3, type Group, type InstancedMesh, type Mesh, type Texture } from 'three'
 import {
   CORRIDORS, ELEVATOR_X, FLOOR_COUNT, GALLERIES, HUB, LEVEL_HEIGHT, ROOMS, SHELF, SLOTS, STAIRS_DOWN, STAIRS_UP,
   WALL_T, furniture, wallRects, type P, type Rect, type Slot,
 } from './layout'
 import { FurniturePiece } from './Furniture'
+import { crowdPositions } from './Crowd'
 import { microMap, rim } from './look'
 import { floorTexture, nightTexture, petTexture, roofTileTexture, signTexture, stoneWallTexture } from './textures'
 import { getFloorName, SPECIES_LOOK } from '@/lib/utils'
@@ -69,6 +70,7 @@ export function Hall({ floor, playerPos, quality, pets, inside, onFloor, onShrin
       <Sconces ground={ground} />
 
       {ground ? <Entrance onTap={floorTap} lit={quality === 'high'} /> : <Window />}
+      {ground && <EntranceDoors playerPos={playerPos} />}
       <UpStairs floor={floor} onUse={() => onStairs('up')} />
       <DownStairs floor={floor} onUse={() => onStairs('down')} />
       <Elevator floor={floor} onUse={onElevator} />
@@ -363,6 +365,58 @@ function Entrance({ onTap, lit }: { onTap: (e: ThreeEvent<MouseEvent>) => void; 
         </mesh>
       ))}
     </>
+  )
+}
+
+/** Double doors in the main entrance: closed until someone (you or another visitor) comes near, then they swing
+ *  outward and close again behind them. Taps go through them to the floor, so walking is never blocked. */
+function EntranceDoors({ playerPos }: { playerPos: React.RefObject<P> }) {
+  const left = useRef<Group>(null!)
+  const right = useRef<Group>(null!)
+  const open = useRef(0)
+  const door = { x: 0, z: HUB.z1 + WALL_T / 2 } // centre of the doorway
+  const leafW = 1.72, leafH = 3.05
+  useFrame((_, dt) => {
+    const near = (p: P) => Math.abs(p.x - door.x) < 2.4 && Math.abs(p.z - door.z) < 3.2
+    let someone = near(playerPos.current)
+    if (!someone) for (const p of crowdPositions.values()) if (near(p)) { someone = true; break }
+    // Ease toward open/closed (opens a bit quicker than it closes, like a real door)
+    open.current += ((someone ? 1 : 0) - open.current) * Math.min(1, dt * (someone ? 4.5 : 2.2))
+    const a = open.current * 1.45
+    left.current.rotation.y = a
+    right.current.rotation.y = -a
+  })
+  const leaf = (side: -1 | 1) => (
+    // pivot at the outer edge (the hinge); the leaf extends toward the middle
+    <group position={[(-side * leafW) / 2, 0, 0]}>
+      {/* frame */}
+      {[[leafW, 0.12, 0, leafH - 0.06], [leafW, 0.16, 0, 0.08], [0.12, leafH, -leafW / 2 + 0.06, leafH / 2], [0.12, leafH, leafW / 2 - 0.06, leafH / 2], [leafW, 0.1, 0, 1.05]].map(([w, h, x, y], i) => (
+        <mesh key={i} position={[x, y, 0]} castShadow raycast={noRay}>
+          <boxGeometry args={[w, h, 0.09]} />
+          <meshStandardMaterial color="#6B4A33" roughness={0.6} onBeforeCompile={rim} />
+        </mesh>
+      ))}
+      {/* warm glass above the kick panel, solid wood below */}
+      <mesh position={[0, 0.55, 0]} raycast={noRay}>
+        <boxGeometry args={[leafW - 0.2, 0.9, 0.05]} />
+        <meshStandardMaterial color="#7A5638" roughness={0.7} />
+      </mesh>
+      <mesh position={[0, (leafH + 1.1) / 2, 0]} raycast={noRay}>
+        <boxGeometry args={[leafW - 0.2, leafH - 1.2, 0.02]} />
+        <meshStandardMaterial color="#FFE2B8" emissive="#FFB06A" emissiveIntensity={0.25} transparent opacity={0.35} roughness={0.05} depthWrite={false} />
+      </mesh>
+      {/* brass handle near the middle */}
+      <mesh position={[-side * (leafW / 2 - 0.2), 1.2, 0.08]} raycast={noRay}>
+        <boxGeometry args={[0.04, 0.5, 0.04]} />
+        <meshStandardMaterial color="#C9A227" metalness={0.8} roughness={0.3} />
+      </mesh>
+    </group>
+  )
+  return (
+    <group position={[door.x, 0, door.z]}>
+      <group ref={left} position={[-leafW, 0, 0]}>{leaf(-1)}</group>
+      <group ref={right} position={[leafW, 0, 0]}>{leaf(1)}</group>
+    </group>
   )
 }
 

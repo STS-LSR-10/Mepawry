@@ -83,7 +83,12 @@ export function Player({ name, gender, look, pos, route, onInsideChange }: Playe
     // Camera trails the avatar with a little damping (smooth starts and stops, no rigid lock)
     const orbit = controls as unknown as { target: THREE.Vector3 } | null
     if (orbit) {
-      if (!last.current || !follow.current) { orbit.target.set(p.x, 0.6, p.z); follow.current = { ...p } }
+      if (!last.current || !follow.current) {
+        // First frame: look at the avatar from behind, wherever it starts (a restored spot may be far from the entrance)
+        orbit.target.set(p.x, 0.6, p.z)
+        camera.position.set(p.x, camera.position.y, p.z + 8.5)
+        follow.current = { ...p }
+      }
       else {
         const f = follow.current, k = 1 - Math.exp(-Math.min(dt, 0.25) * 6)
         // Snap if far behind (arrival on another floor), otherwise glide

@@ -15,13 +15,14 @@ import { WindClock } from './wind'
 import { Polish, RIM, Vignette } from './look'
 import { CrowdAvatars, useCrowd, type Me } from './Crowd'
 import { getVisitor } from '@/lib/visitor'
+import { saveSpot } from '@/lib/spot'
 import { defaultLook, type AvatarLook } from '@/lib/look'
 import { useAccount } from '@/lib/account'
 import { lawnTexture } from './textures'
 import { useContextLossRecovery, useQuality } from './quality'
 import { Hall } from './Hall'
 import { Player, type Route } from './Player'
-import { planRoute, type P } from './walk'
+import { isFree, planRoute, type P } from './walk'
 import { DOWN_FOOT, ELEVATOR_FRONT, ELEVATOR_X, HUB, LEVEL_HEIGHT, STAIRS_DOWN, STAIRS_UP, UP_FOOT } from './layout'
 import type { Pet } from '@/types'
 
@@ -30,6 +31,8 @@ interface MemorialWorld3DProps {
   avatarName: string
   avatarGender?: 'male' | 'female'
   avatarLook?: AvatarLook
+  /** Restored spot after a refresh (same floor as floorId). */
+  startAt?: P
   /** How many people are in the hall on this floor, you included. */
   onPeopleHere?: (n: number, status: 'connecting' | 'live' | 'offline') => void
   sky?: LocalSky
@@ -48,11 +51,24 @@ const GROUND: Record<Season, string> = {
   hot: '#6B5A33', rainy: '#2E472A', cool: '#46562F',
 }
 
-export default function MemorialWorld3D({ floorId, avatarName, avatarGender, avatarLook, onPeopleHere, sky = NIGHT, arrival, onRequestFloor, onElevator }: MemorialWorld3DProps) {
+export default function MemorialWorld3D({ floorId, avatarName, avatarGender, avatarLook, onPeopleHere, startAt, sky = NIGHT, arrival, onRequestFloor, onElevator }: MemorialWorld3DProps) {
   const router = useRouter()
   const ground = floorId === 1
   // On the park path facing the fountain and the door, nudged a little so visitors arriving together don't stand on each other
-const pos = useRef<P>({ x: (Math.random() - 0.5) * 1.6, z: 13.5 + (Math.random() - 0.5) * 1.4 })
+const pos = useRef<P>(
+    startAt && isFree(startAt, floorId === 1)
+      ? { ...startAt } // back where you were before the refresh
+      : { x: (Math.random() - 0.5) * 1.6, z: 13.5 + (Math.random() - 0.5) * 1.4 },
+  )
+  // Remember where you are (every couple of seconds, and when the page is hidden or closed) for the next visit
+  useEffect(() => {
+    const save = () => saveSpot(floorId, pos.current.x, pos.current.z)
+    const id = setInterval(save, 2000)
+    const hide = () => { if (document.visibilityState === 'hidden') save() }
+    document.addEventListener('visibilitychange', hide)
+    window.addEventListener('pagehide', save)
+    return () => { clearInterval(id); document.removeEventListener('visibilitychange', hide); window.removeEventListener('pagehide', save); save() }
+  }, [floorId])
   const [route, setRoute] = useState<Route | null>(null)
   const [inside, setInside] = useState(false)
   const [near, setNear] = useState<Pet | null>(null) // the shrine you're standing at

@@ -4,7 +4,8 @@
 import { Suspense, useCallback, useEffect, useState } from 'react'
 import { FloatingHeader } from '@/components/shrine/FloatingHeader'
 import { FloorSelector } from '@/components/shrine/FloorSelector'
-import { ELEVATOR_FRONT, type P } from '@/components/3d/layout'
+import { ELEVATOR_FRONT, FLOOR_COUNT, type P } from '@/components/3d/layout'
+import { loadSpot } from '@/lib/spot'
 import { describe, getVisitor, useActivity, useOnlineCount } from '@/lib/visitor'
 import { useAccount } from '@/lib/account'
 import { BoardSheet } from '@/components/board/Board'
@@ -23,8 +24,14 @@ const MemorialWorld3D = dynamic(() => import('@/components/3d/MemorialWorld3D'),
 })
 
 export default function HallPage() {
-  // Everyone starts outside the entrance on the ground floor
+  // Back within the hour: same floor and spot as before the refresh. Otherwise: the park entrance, ground floor
   const [currentFloor, setCurrentFloor] = useState(1)
+  const [startAt, setStartAt] = useState<P | null | undefined>(undefined) // undefined until we've looked
+  useEffect(() => {
+    const s = loadSpot()
+    if (s && s.floor <= FLOOR_COUNT) { setCurrentFloor(s.floor); setStartAt({ x: s.x, z: s.z }) }
+    else setStartAt(null)
+  }, [])
   const [arrival, setArrival] = useState<{ at: P } | null>(null)
   const [fading, setFading] = useState(false)
   // The visitor's own saved name; only on the client, or SSR and hydration disagree
@@ -105,7 +112,8 @@ export default function HallPage() {
 
       {/* 3D World */}
       <Suspense fallback={<WorldLoader />}>
-        <MemorialWorld3D
+        {startAt !== undefined && <MemorialWorld3D
+          startAt={startAt ?? undefined}
           floorId={currentFloor}
           avatarName={avatarName}
           avatarGender={profile?.gender}
@@ -115,7 +123,7 @@ export default function HallPage() {
           arrival={arrival}
           onRequestFloor={goToFloor}
           onElevator={() => setFloorSelectorOpen(true)}
-        />
+        />}
       </Suspense>
 
       {/* Local time and season */}
