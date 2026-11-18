@@ -49,7 +49,8 @@ const GROUND: Record<Season, string> = {
 export default function MemorialWorld3D({ floorId, avatarName, avatarGender, avatarLook, sky = NIGHT, arrival, onRequestFloor, onElevator }: MemorialWorld3DProps) {
   const router = useRouter()
   const ground = floorId === 1
-  const pos = useRef<P>({ x: 0, z: 13.5 }) // on the park path, facing the fountain and the door
+  // On the park path facing the fountain and the door, nudged a little so visitors arriving together don't stand on each other
+const pos = useRef<P>({ x: (Math.random() - 0.5) * 1.6, z: 13.5 + (Math.random() - 0.5) * 1.4 })
   const [route, setRoute] = useState<Route | null>(null)
   const [inside, setInside] = useState(false)
   const [near, setNear] = useState<Pet | null>(null) // the shrine you're standing at

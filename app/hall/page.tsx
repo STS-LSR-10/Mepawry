@@ -9,6 +9,7 @@ import { describe, getVisitor, useActivity, useOnlineCount } from '@/lib/visitor
 import { useAccount } from '@/lib/account'
 import { BoardSheet } from '@/components/board/Board'
 import { LookEditor } from '@/components/account/LookEditor'
+import { MyPageSheet } from '@/components/account/MyPageSheet'
 import { useMyLook } from '@/lib/look'
 import { timeAgo } from '@/lib/utils'
 import type { Floor } from '@/types'
@@ -30,11 +31,23 @@ export default function HallPage() {
   const [avatarName, setAvatarName] = useState('Visitor')
   const { profile } = useAccount()
   useEffect(() => setAvatarName(profile?.display_name ?? getVisitor().name), [profile])
+  // Renamed on "My page": show it at once
+  useEffect(() => {
+    const on = (e: Event) => setAvatarName((e as CustomEvent<string>).detail)
+    window.addEventListener('mepawry:name', on)
+    return () => window.removeEventListener('mepawry:name', on)
+  }, [])
+  const [myPageOpen, setMyPageOpen] = useState(false)
   const [floorSelectorOpen, setFloorSelectorOpen] = useState(false)
   // The community board opens from the header button or by tapping the board in the lobby
   const [boardOpen, setBoardOpen] = useState(false)
   const myLook = useMyLook()
   const [lookOpen, setLookOpen] = useState(false)
+  useEffect(() => {
+    const open = () => setLookOpen(true)
+    window.addEventListener('mepawry:look-editor', open)
+    return () => window.removeEventListener('mepawry:look-editor', open)
+  }, [])
   useEffect(() => {
     const open = () => setBoardOpen(true)
     window.addEventListener('mepawry:board', open)
@@ -82,6 +95,7 @@ export default function HallPage() {
         avatarName={avatarName}
         currentFloor={currentFloor}
         activityFeed={activity.map(it => `${describe(it)} · ${timeAgo(it.at)}`)}
+        onOpenMyPage={() => setMyPageOpen(true)}
       />
 
       {/* 3D World */}
@@ -160,6 +174,7 @@ export default function HallPage() {
       <div className={`pointer-events-none fixed inset-0 z-40 bg-[#17131B] transition-opacity duration-300 ${fading ? 'opacity-100' : 'opacity-0'}`} />
 
       <BoardSheet open={boardOpen} onClose={() => setBoardOpen(false)} />
+      <MyPageSheet open={myPageOpen} onClose={() => setMyPageOpen(false)} name={avatarName} />
 
       {/* Floor Selector Modal */}
       <FloorSelector

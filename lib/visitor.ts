@@ -19,6 +19,14 @@ export function getVisitor(): { id: string; name: string } {
   }
 }
 
+/** Renames this browser's visitor (guests) and tells open pages, so the hall's name tag updates at once. */
+export function setVisitorName(name: string) {
+  const clean = name.trim().slice(0, 40)
+  if (!clean) return
+  try { localStorage.setItem('pm-visitor', JSON.stringify({ ...getVisitor(), name: clean })) } catch {}
+  window.dispatchEvent(new CustomEvent('mepawry:name', { detail: clean }))
+}
+
 /** Checks in every 25s and returns how many people are on the site right now (null until known). */
 export function useOnlineCount(): number | null {
   const [n, setN] = useState<number | null>(null)

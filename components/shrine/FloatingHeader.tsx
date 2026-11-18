@@ -12,6 +12,7 @@ interface FloatingHeaderProps {
   avatarName: string
   currentFloor: number
   activityFeed: string[]
+  onOpenMyPage?: () => void
 }
 
 export function FloatingHeader({
@@ -19,6 +20,7 @@ export function FloatingHeader({
   avatarName,
   currentFloor,
   activityFeed,
+  onOpenMyPage,
 }: FloatingHeaderProps) {
   const [addPetOpen, setAddPetOpen] = useState(false)
   const [tickerIndex, setTickerIndex] = useState(0)
@@ -74,16 +76,20 @@ export function FloatingHeader({
           </div>
 
           {/* Avatar */}
-          <div className="glass rounded-full px-3 py-1.5 flex items-center gap-2 text-sm text-[#FAF7F2] shadow-sm border border-white/10">
+          <button
+            onClick={onOpenMyPage}
+            aria-label={`My page: ${avatarName}. Change name or sign in`}
+            className="glass rounded-full px-3 py-1.5 flex items-center gap-2 text-sm text-[#FAF7F2] shadow-sm border border-white/10 hover:bg-white/20 transition-colors"
+          >
             <span
               className="w-6 h-6 rounded-full bg-[#D9823B] flex items-center justify-center text-white text-xs font-bold"
               aria-hidden
             >
-              {avatarName[0]}
+              {avatarName[0]?.toUpperCase()}
             </span>
-            <span>{avatarName}</span>
-            <span className="text-[#8E8278]">›</span>
-          </div>
+            <span className="max-w-[9rem] truncate">{avatarName}</span>
+            <span className="text-[#FAF7F2]/60" aria-hidden>›</span>
+          </button>
 
           {/* Activity ticker */}
           {activityFeed.length > 0 && (

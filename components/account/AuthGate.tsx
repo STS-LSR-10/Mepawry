@@ -19,7 +19,8 @@ export function AuthGate({ children, title = 'Sign in to continue', allowGuest =
 const inApp = () => typeof navigator !== 'undefined' && /Line\/|FBAN|FBAV|Instagram/i.test(navigator.userAgent)
 const input = 'w-full rounded-xl border border-[#D4C9BF] bg-white px-4 py-2.5 text-[#2A1E17] placeholder:text-[#B5A99F] focus:outline-none focus:ring-2 focus:ring-[#D9823B]'
 
-export function LoginPanel({ title }: { title: string }) {
+/** compact: no icon/heading (when the surrounding card already explains). */
+export function LoginPanel({ title, compact = false }: { title: string; compact?: boolean }) {
   const { supabase, refresh } = useAccount()
   const [email, setEmail] = useState('')
   const [code, setCode] = useState('')
@@ -65,11 +66,11 @@ export function LoginPanel({ title }: { title: string }) {
 
   return (
     <div className="space-y-5">
-      <div className="text-center">
+      {!compact && <div className="text-center">
         <div className="text-4xl" aria-hidden>🐾</div>
         <h3 className="mt-2 font-serif text-xl font-bold text-[#2A1E17]">{title}</h3>
         <p className="mt-1 text-sm text-[#8E8278]">So we remember you, and you can edit your memorials from any device.</p>
-      </div>
+      </div>}
 
       {step === 'email' ? (
         <>
