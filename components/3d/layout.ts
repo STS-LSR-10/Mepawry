@@ -18,7 +18,7 @@ export const inRect = (p: P, a: Rect, m = 0) => p.x > a.x0 - m && p.x < a.x1 + m
 
 type Side = 'N' | 'S' | 'E' | 'W'
 export interface Door { side: Side; from: number; to: number; groundOnly?: boolean }
-export interface Room { id: 'hub' | 'west' | 'east' | 'north'; name: string; rect: Rect; doors: Door[]; floor: 'tiles' | 'planks' }
+export interface Room { id: 'hub' | 'west' | 'east' | 'north' | 'vip'; name: string; rect: Rect; doors: Door[]; floor: 'tiles' | 'planks' }
 export interface Corridor { id: string; rect: Rect; axis: 'x' | 'z' }
 
 export const ROOMS: Room[] = [
@@ -31,14 +31,17 @@ export const ROOMS: Room[] = [
     ],
   },
   { id: 'west', name: 'West Gallery', rect: r(-29, -24, -15, -6), floor: 'planks', doors: [{ side: 'E', from: -16.5, to: -13.5 }] },
-  { id: 'east', name: 'East Gallery', rect: r(15, -24, 29, -6), floor: 'planks', doors: [{ side: 'W', from: -16.5, to: -13.5 }] },
+  { id: 'east', name: 'East Gallery', rect: r(15, -24, 29, -6), floor: 'planks', doors: [{ side: 'W', from: -16.5, to: -13.5 }, { side: 'N', from: 20.6, to: 23.4 }] },
   { id: 'north', name: 'North Library', rect: r(-12, -51, 12, -31), floor: 'planks', doors: [{ side: 'S', from: -1.5, to: 1.5 }] },
+  // VIP Garden: big arched niches under flowers and fairy lights, through the East Gallery's north door
+  { id: 'vip', name: 'VIP Garden', rect: r(15, -50, 29, -29), floor: 'planks', doors: [{ side: 'S', from: 20.6, to: 23.4 }] },
 ]
 
 export const CORRIDORS: Corridor[] = [
   { id: 'cw', rect: r(-15, -16.5, -9, -13.5), axis: 'x' },
   { id: 'ce', rect: r(9, -16.5, 15, -13.5), axis: 'x' },
   { id: 'cn', rect: r(-1.5, -31, 1.5, -24), axis: 'z' },
+  { id: 'cv', rect: r(20.6, -29, 23.4, -24), axis: 'z' },
 ]
 
 export const HUB = ROOMS[0].rect
@@ -220,3 +223,25 @@ export function parkObstacles(): Rect[] {
     ...PARK.trees.map(([x, z]) => rectAt(x, z, 0.6, 0.6)),
   ]
 }
+
+// ── VIP Garden: two flower-covered arcades running north–south, each with big arched niches on both faces ──
+
+export const VIP_ARCADES = [
+  { x: 19.6, z0: -47, z1: -32, depth: 1.3 },
+  { x: 25.2, z0: -47, z1: -32, depth: 1.3 },
+]
+export const VIP_NICHE_W = 2.5
+export interface VipSlot { x: number; z: number; rot: number; standAt: P }
+
+/** Every VIP niche on a floor (24): arcade by arcade, west face then east face, south to north. */
+export const VIP_SLOTS: VipSlot[] = VIP_ARCADES.flatMap(a => {
+  const n = Math.floor((a.z1 - a.z0) / VIP_NICHE_W)
+  return ([-1, 1] as const).flatMap(dir => Array.from({ length: n }, (_, i) => {
+    const z = a.z1 - VIP_NICHE_W * (i + 0.5)
+    const x = a.x + dir * (a.depth / 2)
+    return { x, z, rot: dir > 0 ? Math.PI / 2 : -Math.PI / 2, standAt: { x: x + dir * 1.3, z } }
+  }))
+})
+export const VIP_CAPACITY = VIP_SLOTS.length
+
+export const vipArcadeRect = (a: typeof VIP_ARCADES[number]): Rect => r(a.x - a.depth / 2, a.z0, a.x + a.depth / 2, a.z1)

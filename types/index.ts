@@ -37,6 +37,8 @@ export interface Pet {
   updated_at: string
   owner_id?: string | null
   show_flag?: boolean
+  /** VIP Garden niche on this pet's floor (0–23), or null. */
+  vip_position?: number | null
   // เพิ่มเฉพาะ owner view
   edit_token?: string
   edit_token_expires_at?: string

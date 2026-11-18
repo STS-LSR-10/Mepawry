@@ -3,7 +3,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { getProfile, saveProfile } from '@/lib/data'
-import { authConfig, getUser } from '@/lib/auth'
+import { authConfig, getUser, isAdmin } from '@/lib/auth'
 
 export const dynamic = 'force-dynamic'
 
@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
   const user = await getUser()
   const profile = user ? await getProfile(user.id) : null
   return NextResponse.json({
-    user: user && { id: user.id, email: user.email, isAnonymous: !!user.is_anonymous, look: user.user_metadata?.look ?? null },
+    user: user && { id: user.id, email: user.email, isAnonymous: !!user.is_anonymous, look: user.user_metadata?.look ?? null, isAdmin: isAdmin(user) },
     profile,
     country: edgeCountry(req), // where this visit comes from, to pre-fill the country picker
     config: authConfig(),

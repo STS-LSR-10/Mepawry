@@ -11,6 +11,7 @@ import {
 } from './layout'
 import { FurniturePiece } from './Furniture'
 import { crowdPositions } from './Crowd'
+import { VipGarden } from './VipGarden'
 import { microMap, rim } from './look'
 import { floorTexture, nightTexture, petTexture, roofTileTexture, signTexture, stoneWallTexture } from './textures'
 import { getFloorName, SPECIES_LOOK } from '@/lib/utils'
@@ -81,6 +82,10 @@ export function Hall({ floor, playerPos, quality, pets, inside, onFloor, onShrin
       <Sign text={`← West Gallery · ${perRoom('west')}`} at={[HUB.x0 + 0.3, 4.3, -15]} rot={Math.PI / 2} w={3} />
       <Sign text={`East Gallery · ${perRoom('east')} →`} at={[HUB.x1 - 0.3, 4.3, -15]} rot={-Math.PI / 2} w={3} />
       <Sign text={`North Library · ${perRoom('north')} ↑`} at={[0, 4.3, -31.3]} w={3.4} />
+      <Sign text="✿ VIP Garden ↑" at={[22, 4.3, -23.7]} w={3} />
+
+      {/* VIP Garden: tap a portrait to visit; tap an empty niche to walk to it */}
+      <VipGarden pets={pets} glow={glow} onOpen={(pet, slot) => onShrine(pet, slot.standAt, slot)} onFloor={onFloor} />
 
       {furniture(ground).map((it, i) => <FurniturePiece key={i} it={it} featured={placed[0]} />)}
       <CorridorDecor />
@@ -254,7 +259,8 @@ function Lights() {
   const spots: [number, number][] = [
     [0, -11], [0, -19], [-22, -11], [-22, -19], [22, -11], [22, -19], // lobby and side galleries
     [-6, -36], [6, -36], [-6, -46], [6, -46],                          // north library
-    [-12, -15], [12, -15], [0, -27.5],                                 // corridors
+    [-12, -15], [12, -15], [0, -27.5], [22, -26.5],                    // corridors
+    [17.5, -39], [22.4, -34], [22.4, -44], [27.3, -39],               // VIP Garden
   ]
   return (
     <>

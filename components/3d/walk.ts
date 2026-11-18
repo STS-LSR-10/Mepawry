@@ -3,7 +3,7 @@
 // furniture, stairs and the elevator get in the way.
 
 import {
-  BBOX, BOOKCASES, CORRIDORS, ROOMS, STAIRS_DOWN, STAIRS_UP, bookcaseRect, footprint, furniture, inRect, parkObstacles, wallRects,
+  BBOX, BOOKCASES, CORRIDORS, ROOMS, STAIRS_DOWN, STAIRS_UP, VIP_ARCADES, bookcaseRect, footprint, furniture, inRect, parkObstacles, vipArcadeRect, wallRects,
   type P, type Rect,
 } from './layout'
 
@@ -21,6 +21,7 @@ const AREAS: Rect[] = [...ROOMS.map(rm => rm.rect), ...CORRIDORS.map(c => c.rect
 const obstacles = (ground: boolean): Rect[] => [
   ...wallRects(ground),
   ...BOOKCASES.map(bookcaseRect),
+  ...VIP_ARCADES.map(vipArcadeRect),
   ...furniture(ground).filter(it => it.solid).map(footprint),
   STAIRS_UP, STAIRS_DOWN,
   ...(ground ? parkObstacles() : []),

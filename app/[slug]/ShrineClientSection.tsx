@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react'
 import dynamic from 'next/dynamic'
 import { TributeToolbar } from '@/components/shrine/TributeToolbar'
 import { GiftPicker, GiftShelf } from '@/components/shrine/GiftPicker'
+import { VipUpgrade } from '@/components/shrine/VipUpgrade'
 import { giftById, type LeftGift } from '@/lib/gifts'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
@@ -20,7 +21,8 @@ const ShrineCabinet = dynamic(() => import('@/components/3d/ShrineCabinet'), {
   loading: () => <div className="grid h-full place-items-center text-sm text-[#FAF7F2]/50">Opening the shrine…</div>,
 })
 
-export function ShrineClientSection({ pet }: { pet: Pet }) {
+export function ShrineClientSection({ pet: initialPet }: { pet: Pet }) {
+  const [pet, setPet] = useState(initialPet)
   const { user, profile } = useAccount()
   const isOwner = !!user && user.id === pet.owner_id
   const [guestbookOpen, setGuestbookOpen] = useState(false)
@@ -115,6 +117,7 @@ export function ShrineClientSection({ pet }: { pet: Pet }) {
           ✏️ Edit or delete this memorial
         </Link>
       )}
+      <VipUpgrade pet={pet} isOwner={isOwner} onChange={setPet} />
       <GiftShelf gifts={gifts} emojiOf={id => giftById(id)?.emoji} petName={pet.name} />
 
       {/* Floating Action Toolbar */}

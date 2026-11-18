@@ -8,6 +8,7 @@ SQL files are numbered in the order they were made. Run them in **Supabase → S
 | `001_gifts_and_accounts.sql` | Gifts (one free gift every 3 days), profiles, pet owners |
 | `002_guest_flags.sql` | Show/hide the country flag on a pet's plaque |
 | `003_board.sql` | Community board: stories, kind-word notes, comments, hearts |
+| `004_vip.sql` | VIP Garden niche for a pet (big arched niches on every floor) |
 
 **Existing database:** run only the numbered files after the last one you ran.
 Every file is safe to run more than once.

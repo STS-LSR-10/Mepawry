@@ -270,6 +270,10 @@ $$;
 revoke execute on function toggle_like(uuid, text), add_comment(uuid, uuid, text, text, text), delete_comment(uuid, uuid), anniversary_pets() from public, anon, authenticated;
 grant execute on function toggle_like(uuid, text), add_comment(uuid, uuid, text, text, text), delete_comment(uuid, uuid), anniversary_pets() to service_role;
 
+-- ── VIP Garden (also in 004_vip.sql) ──
+alter table pets add column if not exists vip_position int;
+create unique index if not exists pets_vip_slot on pets (floor_id, vip_position) where vip_position is not null;
+
 -- ── Photos: a public bucket (anyone can view a memorial photo; only the server uploads) ──
 
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)

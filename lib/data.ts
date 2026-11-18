@@ -6,7 +6,7 @@
 import { randomUUID } from 'node:crypto'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import type { Floor, GlobalStats, GuestbookEntry, Pet, Profile, Species, TributeType } from '@/types'
-import { FLOOR_CAPACITY, FLOOR_COUNT } from '@/components/3d/layout'
+import { FLOOR_CAPACITY, FLOOR_COUNT, VIP_CAPACITY } from '@/components/3d/layout'
 import { generateSlug, getFloorName } from '@/lib/utils'
 import { FREE_GIFT_COOLDOWN_DAYS, FREE_GIFT_SHOWS_DAYS, giftById, type LeftGift } from '@/lib/gifts'
 
@@ -356,4 +356,31 @@ export async function getActivity(limit = 20): Promise<{ who: string; act: strin
 
 export async function heartbeat(id: string | null): Promise<number> {
   return must(await db().rpc('heartbeat', { p_id: id && /^[\w-]{8,64}$/.test(id) ? id : null }))
+}
+
+// ── VIP Garden ──
+
+/**
+ * Gives a pet a VIP niche on its own floor (the first free one, or the one asked for). Returns the pet, or an
+ * error message. Two placements racing for one niche: the unique (floor, vip_position) index lets only one in.
+ */
+export async function placeInVip(petId: string, want?: number): Promise<Pet | { error: string }> {
+  const pet = await getPetById(petId)
+  if (!pet) return { error: 'Memorial not found' }
+  if (pet.vip_position != null) return pet
+  const rows = (must(await db().from('pets').select('vip_position').eq('floor_id', pet.floor_id).not('vip_position', 'is', null))) ?? []
+  const taken = new Set(rows.map((r: { vip_position: number }) => r.vip_position))
+  let pos = Number.isInteger(want) && want! >= 0 && want! < VIP_CAPACITY ? want! : -1
+  if (pos >= 0 && taken.has(pos)) return { error: 'That VIP niche is taken' }
+  if (pos < 0) { pos = 0; while (taken.has(pos)) pos++ }
+  if (pos >= VIP_CAPACITY) return { error: `The VIP Garden on floor ${pet.floor_id} is full` }
+  const { data, error } = await db().from('pets').update({ vip_position: pos }).eq('id', petId).select().single()
+  if (error?.code === '23505') return { error: 'That VIP niche was just taken, please try again' }
+  if (error) throw new Error(error.message)
+  return data as Pet
+}
+
+export async function removeFromVip(petId: string): Promise<Pet | null> {
+  if (!/^[0-9a-f-]{36}$/i.test(petId)) return null
+  return must(await db().from('pets').update({ vip_position: null }).eq('id', petId).select().maybeSingle())
 }

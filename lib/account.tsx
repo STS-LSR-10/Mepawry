@@ -9,7 +9,7 @@ import type { Profile } from '@/types'
 interface Account {
   loading: boolean
   /** isAnonymous: a guest who added a pet without signing in (remembered by this browser's session cookie). */
-  user: { id: string; email?: string; isAnonymous?: boolean; look?: unknown } | null
+  user: { id: string; email?: string; isAnonymous?: boolean; look?: unknown; isAdmin?: boolean } | null
   profile: Profile | null
   /** The country this visit comes from (Cloudflare), for pre-filling forms; null when unknown. */
   country: string | null

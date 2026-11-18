@@ -42,3 +42,10 @@ export async function postingAs(req: Request, guestName: unknown) {
     country: profile?.country_code ?? (/^[A-Z]{2}$/.test(edge) && edge !== 'T1' ? edge : 'XX'),
   }
 }
+
+/** Site admins: emails listed in ADMIN_EMAILS (comma-separated), signed in with a real (not guest) account. */
+export function isAdmin(user: { email?: string | null; is_anonymous?: boolean } | null): boolean {
+  if (!user?.email || user.is_anonymous) return false
+  const list = (process.env.ADMIN_EMAILS ?? '').toLowerCase().split(',').map(s => s.trim()).filter(Boolean)
+  return list.includes(user.email.toLowerCase())
+}
