@@ -4,7 +4,7 @@
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useFrame, type ThreeEvent } from '@react-three/fiber'
-import { Color, Object3D, Vector3, type InstancedMesh, type Mesh, type Texture } from 'three'
+import { AdditiveBlending, CanvasTexture, Color, Object3D, Vector3, type InstancedMesh, type Mesh, type Texture } from 'three'
 import {
   CORRIDORS, ELEVATOR_X, FLOOR_COUNT, GALLERIES, HUB, LEVEL_HEIGHT, ROOMS, SHELF, SLOTS, STAIRS_DOWN, STAIRS_UP,
   WALL_T, furniture, wallRects, type P, type Rect, type Slot,
@@ -63,6 +63,7 @@ export function Hall({ floor, playerPos, quality, pets, inside, onFloor, onShrin
       {!ground && <Foundations floor={floor} />}
       <Floors onTap={floorTap} hole={ground ? null : STAIRS_DOWN} />
       {quality === 'high' && <Lights />}
+      <Sconces ground={ground} />
 
       {ground ? <Entrance onTap={floorTap} lit={quality === 'high'} /> : <Window />}
       <UpStairs floor={floor} onUse={() => onStairs('up')} />
@@ -242,13 +243,89 @@ function FloorPlane({ r, tex, repeat, onTap }: { r: Rect; tex: Texture; repeat: 
 }
 
 /** Warm ceiling lights, desktop only. Phones get the same mood from the hemisphere light and glowing lamps. */
+/** Warm ceiling lights over each room and corridor, desktop only. Phones get the glow from the wall sconces
+ *  (emissive + soft halos) and a warmer, brighter ambient inside — no per-pixel lights to pay for. */
 function Lights() {
+  const spots: [number, number][] = [
+    [0, -11], [0, -19], [-22, -11], [-22, -19], [22, -11], [22, -19], // lobby and side galleries
+    [-6, -36], [6, -36], [-6, -46], [6, -46],                          // north library
+    [-12, -15], [12, -15], [0, -27.5],                                 // corridors
+  ]
   return (
     <>
-      {[[0, -14], [-22, -15], [22, -15], [0, -41]].map(([x, z]) => (
-        <pointLight key={`${x},${z}`} position={[x, 4.4, z]} intensity={7} color="#FFB870" distance={17} decay={1.3} />
+      {spots.map(([x, z]) => (
+        <pointLight key={`${x},${z}`} position={[x, 3.6, z]} intensity={5} color="#FFA54F" distance={11} decay={1.4} />
       ))}
     </>
+  )
+}
+
+/** Where wall sconces go: along every room's and corridor's walls, inside, skipping doorways. */
+function sconceSpots(ground: boolean): { p: [number, number, number]; out: [number, number] }[] {
+  const spots: { p: [number, number, number]; out: [number, number] }[] = []
+  const y = 2.05, inset = 0.09
+  const add = (x: number, z: number, nx: number, nz: number) => spots.push({ p: [x, y, z], out: [nx, nz] })
+  const along = (from: number, to: number, step: number, cb: (t: number) => void, gaps: [number, number][] = []) => {
+    const n = Math.max(1, Math.round((to - from) / step))
+    for (let i = 0; i < n; i++) {
+      const t = from + (to - from) * (i + 0.5) / n
+      if (!gaps.some(([a, b]) => t > a - 0.9 && t < b + 0.9)) cb(t)
+    }
+  }
+  for (const room of ROOMS) {
+    const { x0, z0, x1, z1 } = room.rect
+    const gaps = (side: string) => room.doors.filter(d => d.side === side && (ground || !d.groundOnly)).map(d => [d.from, d.to] as [number, number])
+    along(x0, x1, 5, x => add(x, z0 + inset, 0, 1), gaps('N'))
+    along(x0, x1, 5, x => add(x, z1 - inset, 0, -1), gaps('S'))
+    along(z0, z1, 5, z => add(x0 + inset, z, 1, 0), gaps('W'))
+    along(z0, z1, 5, z => add(x1 - inset, z, -1, 0), gaps('E'))
+  }
+  for (const c of CORRIDORS) {
+    const { x0, z0, x1, z1 } = c.rect
+    if (c.axis === 'x') { along(x0, x1, 3, x => add(x, z0 + inset, 0, 1)); along(x0, x1, 3, x => add(x, z1 - inset, 0, -1)) }
+    else { along(z0, z1, 3, z => add(x0 + inset, z, 1, 0)); along(z0, z1, 3, z => add(x1 - inset, z, -1, 0)) }
+  }
+  return spots
+}
+
+/** Brass wall sconces with glowing orange shades and a soft halo: one draw call for the lamps, one for the halos. */
+function Sconces({ ground }: { ground: boolean }) {
+  const spots = useMemo(() => sconceSpots(ground), [ground])
+  const lamps = useRef<InstancedMesh>(null!)
+  const glow = useTexture(() => {
+    const c = document.createElement('canvas'); c.width = c.height = 64
+    const g = c.getContext('2d')!, gr = g.createRadialGradient(32, 32, 0, 32, 32, 32)
+    gr.addColorStop(0, 'rgba(255,190,120,1)'); gr.addColorStop(0.35, 'rgba(255,150,70,.45)'); gr.addColorStop(1, 'rgba(255,140,60,0)')
+    g.fillStyle = gr; g.fillRect(0, 0, 64, 64)
+    return new CanvasTexture(c)
+  }, [])
+  const halo = useMemo(() => {
+    const arr = new Float32Array(spots.length * 3)
+    spots.forEach((s, i) => { arr[i * 3] = s.p[0] + s.out[0] * 0.18; arr[i * 3 + 1] = s.p[1] + 0.12; arr[i * 3 + 2] = s.p[2] + s.out[1] * 0.18 })
+    return arr
+  }, [spots])
+  useLayoutEffect(() => {
+    const o = new Object3D()
+    spots.forEach((s, i) => {
+      o.position.set(s.p[0] + s.out[0] * 0.12, s.p[1], s.p[2] + s.out[1] * 0.12)
+      o.rotation.set(0, Math.atan2(s.out[0], s.out[1]), 0)
+      o.updateMatrix()
+      lamps.current.setMatrixAt(i, o.matrix)
+    })
+    lamps.current.instanceMatrix.needsUpdate = true
+    lamps.current.computeBoundingSphere()
+  }, [spots])
+  return (
+    <group>
+      <instancedMesh ref={lamps} args={[undefined, undefined, spots.length]} raycast={noRay}>
+        <cylinderGeometry args={[0.13, 0.09, 0.26, 10]} />
+        <meshStandardMaterial color="#FFD9A8" emissive="#FF9A3C" emissiveIntensity={2.6} roughness={0.4} />
+      </instancedMesh>
+      <points raycast={noRay}>
+        <bufferGeometry><bufferAttribute attach="attributes-position" args={[halo, 3]} /></bufferGeometry>
+        <pointsMaterial map={glow} size={1.6} sizeAttenuation transparent depthWrite={false} blending={AdditiveBlending} toneMapped={false} opacity={0.75} />
+      </points>
+    </group>
   )
 }
 

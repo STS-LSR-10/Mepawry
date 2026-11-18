@@ -37,12 +37,19 @@ export function useCrowd(floor: number, me: Me | null, myPos: React.RefObject<P>
   const remotes = useRef(new Map<string, Remote>())
   const shown = useRef<string[]>([])
   const [version, setVersion] = useState(0)
+  const [present, setPresent] = useState(0) // everyone on this floor's channel (not just those drawn)
   const channel = useRef<RealtimeChannel | null>(null)
   const meRef = useRef(me)
   meRef.current = me
+  // One key per open tab: the same person on a phone and a computer (or two tabs) shows up as two visitors,
+  // instead of the second one being mistaken for "me" and hidden
+  const tabKey = useMemo(() => (me ? `${me.id}:${Math.random().toString(36).slice(2, 8)}` : ''), [me?.id]) // eslint-disable-line react-hooks/exhaustive-deps
+  const tabRef = useRef(tabKey)
+  tabRef.current = tabKey
 
   // Keep the drawn set stable: keep whoever is still here, top up at random from the rest
   const reselect = () => {
+    setPresent(remotes.current.size)
     const ids = [...remotes.current.keys()]
     const keep = shown.current.filter(id => remotes.current.has(id))
     const rest = ids.filter(id => !keep.includes(id))
@@ -58,9 +65,9 @@ export function useCrowd(floor: number, me: Me | null, myPos: React.RefObject<P>
     const sb = supabase()
     if (loading || !sb || !me) return
     let lookChanged = false
-    const ch = sb.channel(`hall-floor-${floor}`, { config: { presence: { key: me.id }, broadcast: { self: false } } })
+    const ch = sb.channel(`hall-floor-${floor}`, { config: { presence: { key: tabKey }, broadcast: { self: false } } })
     const upsert = (id: string, d: { name?: string; look?: unknown; x?: number; z?: number }) => {
-      if (id === meRef.current?.id || typeof d.x !== 'number' || typeof d.z !== 'number') return
+      if (id === tabRef.current || typeof d.x !== 'number' || typeof d.z !== 'number') return
       const r = remotes.current.get(id)
       const look = sanitizeLook(d.look) // untrusted: only known options get through
       const name = String(d.name ?? 'Visitor').slice(0, 40)
@@ -113,7 +120,7 @@ export function useCrowd(floor: number, me: Me | null, myPos: React.RefObject<P>
       setVersion(v => v + 1)
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [floor, me?.id, loading, max])
+  }, [floor, tabKey, loading, max])
 
   // Changed my look: tell everyone right away rather than at the next heartbeat
   useEffect(() => {
@@ -125,11 +132,11 @@ export function useCrowd(floor: number, me: Me | null, myPos: React.RefObject<P>
   const announce = (points: P[]) => {
     const m = meRef.current
     if (!m || !points.length) return
-    channel.current?.send({ type: 'broadcast', event: 'walk', payload: { id: m.id, points: points.map(p => ({ x: Math.round(p.x * 100) / 100, z: Math.round(p.z * 100) / 100 })) } })
+    channel.current?.send({ type: 'broadcast', event: 'walk', payload: { id: tabRef.current, points: points.map(p => ({ x: Math.round(p.x * 100) / 100, z: Math.round(p.z * 100) / 100 })) } })
   }
 
   const list = useMemo(() => shown.current.map(id => remotes.current.get(id)).filter(Boolean) as Remote[], [version]) // eslint-disable-line react-hooks/exhaustive-deps
-  return { list, announce, count: remotes.current.size }
+  return { list, announce, count: present }
 }
 
 /** Draws the chosen visitors; each walks its received route and only renders when near you. */

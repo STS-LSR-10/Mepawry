@@ -30,6 +30,8 @@ interface MemorialWorld3DProps {
   avatarName: string
   avatarGender?: 'male' | 'female'
   avatarLook?: AvatarLook
+  /** How many people are in the hall on this floor, you included. */
+  onPeopleHere?: (n: number) => void
   sky?: LocalSky
   /** Where to put the avatar after changing floors; a new object each time. */
   arrival: { at: P } | null
@@ -46,7 +48,7 @@ const GROUND: Record<Season, string> = {
   hot: '#6B5A33', rainy: '#2E472A', cool: '#46562F',
 }
 
-export default function MemorialWorld3D({ floorId, avatarName, avatarGender, avatarLook, sky = NIGHT, arrival, onRequestFloor, onElevator }: MemorialWorld3DProps) {
+export default function MemorialWorld3D({ floorId, avatarName, avatarGender, avatarLook, onPeopleHere, sky = NIGHT, arrival, onRequestFloor, onElevator }: MemorialWorld3DProps) {
   const router = useRouter()
   const ground = floorId === 1
   // On the park path facing the fountain and the door, nudged a little so visitors arriving together don't stand on each other
@@ -91,6 +93,7 @@ const pos = useRef<P>({ x: (Math.random() - 0.5) * 1.6, z: 13.5 + (Math.random()
     setMe({ id, name: avatarName, look: avatarLook ?? defaultLook(avatarGender) })
   }, [user?.id, avatarName, avatarGender, avatarLook])
   const crowd = useCrowd(floorId, me, pos, low ? 20 : 40)
+  useEffect(() => { onPeopleHere?.(crowd.count + 1) }, [crowd.count, onPeopleHere])
 
   const walkTo = useCallback((to: P, onArrive?: () => void, face?: P) => {
     setNear(null)
@@ -167,6 +170,10 @@ const pos = useRef<P>({ x: (Math.random() - 0.5) * 1.6, z: 13.5 + (Math.random()
             shadow-camera-bottom={-30}
           />
           {!low && <directionalLight position={[6, 8, -18]} intensity={0.25 + 0.2 * daylight} color="#A5C8FF" />}
+          {/* Indoors: warm orange lamplight fill so rooms and corridors never feel dark (strongest at night) */}
+          {/* (always mounted, only the intensity changes, so walking in and out doesn't recompile every material) */}
+          <ambientLight intensity={inside ? 0.55 - 0.2 * daylight : 0} color="#FFB36B" />
+          <hemisphereLight args={['#FFD6A5', '#C98A4F', inside ? 0.45 : 0]} />
 
           {/* Environment */}
           {overcast ? (

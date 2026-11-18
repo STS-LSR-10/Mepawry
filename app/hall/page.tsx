@@ -56,6 +56,8 @@ export default function HallPage() {
 
   // Live numbers
   const online = useOnlineCount()
+  // The header counts people in the hall on this floor (the ones you can meet), not everyone on the site
+  const [hereNow, setHereNow] = useState<number | null>(null)
   const activity = useActivity()
   const [floors, setFloors] = useState<Floor[]>([])
   const [today, setToday] = useState<{ candles: number; countries: number } | null>(null)
@@ -91,7 +93,7 @@ export default function HallPage() {
     <main className="world-bg min-h-dvh relative overflow-hidden">
       {/* Floating Header HUD */}
       <FloatingHeader
-        visitorCount={online ?? 1}
+        visitorCount={hereNow ?? online ?? 1}
         avatarName={avatarName}
         currentFloor={currentFloor}
         activityFeed={activity.map(it => `${describe(it)} · ${timeAgo(it.at)}`)}
@@ -105,6 +107,7 @@ export default function HallPage() {
           avatarName={avatarName}
           avatarGender={profile?.gender}
           avatarLook={myLook}
+          onPeopleHere={setHereNow}
           sky={sky}
           arrival={arrival}
           onRequestFloor={goToFloor}
