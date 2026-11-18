@@ -38,6 +38,7 @@ export function useCrowd(floor: number, me: Me | null, myPos: React.RefObject<P>
   const shown = useRef<string[]>([])
   const [version, setVersion] = useState(0)
   const [present, setPresent] = useState(0) // everyone on this floor's channel (not just those drawn)
+  const [status, setStatus] = useState<'connecting' | 'live' | 'offline'>('connecting')
   const channel = useRef<RealtimeChannel | null>(null)
   const meRef = useRef(me)
   meRef.current = me
@@ -96,8 +97,10 @@ export function useCrowd(floor: number, me: Me | null, myPos: React.RefObject<P>
       r.path = pts
       r.seen = Date.now()
     })
-    ch.subscribe(status => {
-      if (status !== 'SUBSCRIBED') return
+    ch.subscribe((s, err) => {
+      // Shown as the dot on "here now": green live, amber connecting, red offline (supabase-js keeps retrying)
+      setStatus(s === 'SUBSCRIBED' ? 'live' : s === 'CHANNEL_ERROR' || s === 'TIMED_OUT' ? 'offline' : 'connecting')
+      if (s !== 'SUBSCRIBED') { if (err) console.warn('[hall] live visitors:', s, err.message); return }
       const p = myPos.current
       ch.track({ name: me.name, look: me.look, x: p.x, z: p.z })
     })
@@ -136,7 +139,7 @@ export function useCrowd(floor: number, me: Me | null, myPos: React.RefObject<P>
   }
 
   const list = useMemo(() => shown.current.map(id => remotes.current.get(id)).filter(Boolean) as Remote[], [version]) // eslint-disable-line react-hooks/exhaustive-deps
-  return { list, announce, count: present }
+  return { list, announce, count: present, status }
 }
 
 /** Draws the chosen visitors; each walks its received route and only renders when near you. */

@@ -13,6 +13,8 @@ interface FloatingHeaderProps {
   currentFloor: number
   activityFeed: string[]
   onOpenMyPage?: () => void
+  /** Connection to the other visitors in the hall: green live, amber connecting, red offline. */
+  liveStatus?: 'connecting' | 'live' | 'offline'
 }
 
 export function FloatingHeader({
@@ -21,6 +23,7 @@ export function FloatingHeader({
   currentFloor,
   activityFeed,
   onOpenMyPage,
+  liveStatus = 'live',
 }: FloatingHeaderProps) {
   const [addPetOpen, setAddPetOpen] = useState(false)
   const [tickerIndex, setTickerIndex] = useState(0)
@@ -70,8 +73,11 @@ export function FloatingHeader({
         {/* Second row: presence + avatar + ticker */}
         <div className="pointer-events-auto flex items-center gap-3 px-4 pb-2">
           {/* Live presence */}
-          <div className="glass rounded-full px-3 py-1.5 flex items-center gap-2 text-sm text-[#FAF7F2] shadow-sm border border-white/10">
-            <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" aria-hidden />
+          <div
+            className="glass rounded-full px-3 py-1.5 flex items-center gap-2 text-sm text-[#FAF7F2] shadow-sm border border-white/10"
+            title={liveStatus === 'live' ? 'Connected: you can see other visitors on this floor' : liveStatus === 'connecting' ? 'Connecting to other visitors…' : 'Can’t reach other visitors right now — retrying'}
+          >
+            <span className={`w-2 h-2 rounded-full ${liveStatus === 'live' ? 'bg-green-400 animate-pulse' : liveStatus === 'connecting' ? 'bg-amber-400' : 'bg-red-500'}`} aria-hidden />
             <span>{formatCount(visitorCount)} here now</span>
           </div>
 

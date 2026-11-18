@@ -1,7 +1,7 @@
 'use client'
 // app/hall/page.tsx — S01 3D Memorial Hall: the building, the live HUD, and travel between floors
 
-import { Suspense, useEffect, useState } from 'react'
+import { Suspense, useCallback, useEffect, useState } from 'react'
 import { FloatingHeader } from '@/components/shrine/FloatingHeader'
 import { FloorSelector } from '@/components/shrine/FloorSelector'
 import { ELEVATOR_FRONT, type P } from '@/components/3d/layout'
@@ -58,6 +58,8 @@ export default function HallPage() {
   const online = useOnlineCount()
   // The header counts people in the hall on this floor (the ones you can meet), not everyone on the site
   const [hereNow, setHereNow] = useState<number | null>(null)
+  const [live, setLive] = useState<'connecting' | 'live' | 'offline'>('connecting')
+  const onPeopleHere = useCallback((n: number, st: 'connecting' | 'live' | 'offline') => { setHereNow(n); setLive(st) }, [])
   const activity = useActivity()
   const [floors, setFloors] = useState<Floor[]>([])
   const [today, setToday] = useState<{ candles: number; countries: number } | null>(null)
@@ -94,6 +96,7 @@ export default function HallPage() {
       {/* Floating Header HUD */}
       <FloatingHeader
         visitorCount={hereNow ?? online ?? 1}
+        liveStatus={live}
         avatarName={avatarName}
         currentFloor={currentFloor}
         activityFeed={activity.map(it => `${describe(it)} · ${timeAgo(it.at)}`)}
@@ -107,7 +110,7 @@ export default function HallPage() {
           avatarName={avatarName}
           avatarGender={profile?.gender}
           avatarLook={myLook}
-          onPeopleHere={setHereNow}
+          onPeopleHere={onPeopleHere}
           sky={sky}
           arrival={arrival}
           onRequestFloor={goToFloor}

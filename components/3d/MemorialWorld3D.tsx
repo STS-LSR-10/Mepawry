@@ -31,7 +31,7 @@ interface MemorialWorld3DProps {
   avatarGender?: 'male' | 'female'
   avatarLook?: AvatarLook
   /** How many people are in the hall on this floor, you included. */
-  onPeopleHere?: (n: number) => void
+  onPeopleHere?: (n: number, status: 'connecting' | 'live' | 'offline') => void
   sky?: LocalSky
   /** Where to put the avatar after changing floors; a new object each time. */
   arrival: { at: P } | null
@@ -93,7 +93,7 @@ const pos = useRef<P>({ x: (Math.random() - 0.5) * 1.6, z: 13.5 + (Math.random()
     setMe({ id, name: avatarName, look: avatarLook ?? defaultLook(avatarGender) })
   }, [user?.id, avatarName, avatarGender, avatarLook])
   const crowd = useCrowd(floorId, me, pos, low ? 20 : 40)
-  useEffect(() => { onPeopleHere?.(crowd.count + 1) }, [crowd.count, onPeopleHere])
+  useEffect(() => { onPeopleHere?.(crowd.count + 1, crowd.status) }, [crowd.count, crowd.status, onPeopleHere])
 
   const walkTo = useCallback((to: P, onArrive?: () => void, face?: P) => {
     setNear(null)
