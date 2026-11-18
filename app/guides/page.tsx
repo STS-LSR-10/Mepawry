@@ -4,7 +4,7 @@ import { SiteNav, SiteFooter } from '@/components/site/SiteNav'
 import { ARTICLES } from '@/lib/articles'
 
 export const metadata = {
-  title: 'Pet Loss Guides & Support — Paw Memorial',
+  title: 'Pet Loss Guides & Support — Mepawry',
   description: 'Compassionate articles and guidance for coping with the grief of losing an animal companion.',
 }
 

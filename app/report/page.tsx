@@ -6,7 +6,7 @@ import { getStats, getTopNames } from '@/lib/data'
 import { formatCount } from '@/lib/utils'
 
 export const metadata = {
-  title: 'Global Pet Loss Report — Paw Memorial',
+  title: 'Global Pet Loss Report — Mepawry',
   description: 'Live statistics counted from every memorial in the hall.',
 }
 

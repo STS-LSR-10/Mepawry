@@ -1,4 +1,4 @@
-// Cloudflare Workers config for Paw Memorial (built by @opennextjs/cloudflare).
+// Cloudflare Workers config for Mepawry (built by @opennextjs/cloudflare).
 // Secrets (SUPABASE_SERVICE_ROLE_KEY etc.) are not kept here: set them with `npx wrangler secret put NAME`.
 {
   "$schema": "node_modules/wrangler/config-schema.json",

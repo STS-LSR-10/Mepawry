@@ -73,7 +73,7 @@ export function ShrineClientSection({ pet }: { pet: Pet }) {
     if (typeof navigator !== 'undefined' && navigator.share) {
       try {
         await navigator.share({
-          title: `${pet.name}'s Memorial — Paw Memorial`,
+          title: `${pet.name}'s Memorial — Mepawry`,
           text: `Light a candle in memory of ${pet.name}`,
           url: window.location.href,
         })

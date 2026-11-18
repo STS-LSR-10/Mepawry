@@ -14,7 +14,7 @@ interface SearchParams {
 }
 
 export const metadata = {
-  title: 'All Memorials — Paw Memorial',
+  title: 'All Memorials — Mepawry',
   description: 'Browse and search pet memorials from around the world.',
 }
 

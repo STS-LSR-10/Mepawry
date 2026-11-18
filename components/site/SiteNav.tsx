@@ -53,7 +53,7 @@ export function SiteNav({ solid = false }: { solid?: boolean }) {
 
 export function Logo({ className }: { className?: string }) {
   return (
-    <Link href="/" className={cn('flex items-center gap-2.5 font-serif text-xl', className)} aria-label="Paw Memorial home">
+    <Link href="/" className={cn('flex items-center gap-2.5 font-serif text-xl', className)} aria-label="Mepawry home">
       <svg viewBox="0 0 32 32" className="h-[30px] w-[30px]" aria-hidden="true">
         <defs>
           <radialGradient id="pawGlow" cx=".5" cy=".6">
@@ -67,7 +67,7 @@ export function Logo({ className }: { className?: string }) {
         <circle cx="19" cy="7.5" r="3" fill="url(#pawGlow)" />
         <circle cx="24" cy="12" r="3" fill="url(#pawGlow)" />
       </svg>
-      Paw Memorial
+      Mepawry
     </Link>
   )
 }

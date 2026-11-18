@@ -17,7 +17,7 @@ export async function generateMetadata({ params }: ShrinePageProps) {
   const pet = await getPetBySlug((await params).slug)
   if (!pet) return {}
   return {
-    title: `${pet.name}'s Memorial — Paw Memorial`,
+    title: `${pet.name}'s Memorial — Mepawry`,
     description: pet.epitaph ?? `A memorial for ${pet.name}, loved and remembered.`,
     openGraph: {
       title: `${pet.name}'s Memorial`,

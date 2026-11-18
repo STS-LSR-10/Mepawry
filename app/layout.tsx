@@ -8,11 +8,11 @@ const serif = Lora({ subsets: ['latin'], style: ['normal', 'italic'], variable: 
 const sans = Plus_Jakarta_Sans({ subsets: ['latin'], variable: '--font-sans' })
 
 export const metadata: Metadata = {
-  title: 'Paw Memorial — A place that never forgets',
+  title: 'Mepawry — A place that never forgets',
   description: 'A quiet, candlelit memorial hall for pets from every corner of the world. Light a candle, leave a flower, write in their guestbook.',
   keywords: ['pet memorial', 'pet loss', 'rainbow bridge', 'memorial candle'],
   openGraph: {
-    title: 'Paw Memorial',
+    title: 'Mepawry',
     description: 'A candlelit memorial hall for pets from every corner of the world.',
     type: 'website',
   },

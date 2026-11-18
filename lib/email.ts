@@ -22,7 +22,7 @@ export async function sendMagicLinkEmail({
   }
 
   return await resend.emails.send({
-    from: process.env.EMAIL_FROM || 'Paw Memorial <noreply@pawmemorial.com>',
+    from: process.env.EMAIL_FROM || 'Mepawry <noreply@pawmemorial.com>',
     to,
     subject: `Your memorial edit key for ${petName} 🕯️`,
     html: `

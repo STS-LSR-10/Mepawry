@@ -1,4 +1,4 @@
--- supabase/schema.sql — Paw Memorial database. Paste into Supabase → SQL Editor → Run. Safe to run again.
+-- supabase/schema.sql — Mepawry database. Paste into Supabase → SQL Editor → Run. Safe to run again.
 -- Row Level Security is on with no policies: browsers (anon key) can read/write nothing directly;
 -- only the server (service role key, in lib/data.ts) can. Every write goes through our API routes.
 

@@ -41,7 +41,7 @@ export function FloatingHeader({
           {/* Logo */}
           <Link href="/" className="glass rounded-full px-4 py-2 flex items-center gap-2 shadow-sm border border-white/20">
             <span className="text-lg" aria-hidden>🐾</span>
-            <span className="font-serif font-semibold text-[#FAF7F2] text-sm">Paw Memorial</span>
+            <span className="font-serif font-semibold text-[#FAF7F2] text-sm">Mepawry</span>
           </Link>
 
           {/* Center: quick pills */}
