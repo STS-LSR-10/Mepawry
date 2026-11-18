@@ -18,8 +18,11 @@ import type { Pet } from '@/types'
 
 const H = 5.5          // full wall height (seen from outside)
 const CUT = 2.6        // walls are cut down to this inside, so the camera can see over them
-const WOOD = '#6B4A33'
-const DARK_WOOD = '#4A2F1E'
+// Interior palette: warm ivory walls, light ash floors, ivory bookcases with sage-green trim and runners
+const WOOD = '#EFE8DC'       // inside walls (ivory)
+const DARK_WOOD = '#F3EEE6'  // bookcase boards, dividers (soft white)
+const SAGE = '#A3B8A0'       // trim: wall cap rail, bookcase tops and backs, rails
+const RUNNER = '#8FA595'     // carpet runners
 
 // A drag to look around also ends in a click; ignore those
 const isTap = (e: ThreeEvent<MouseEvent>) => e.delta < 6
@@ -114,7 +117,7 @@ function Walls({ ground, inside }: { ground: boolean; inside: boolean }) {
             {inside && (
               <mesh position={[s.cx, h + 0.04, s.cz]} raycast={noRay}>
                 <boxGeometry args={[s.w + 0.06, 0.08, s.d + 0.06]} />
-                <meshStandardMaterial color={DARK_WOOD} />
+                <meshStandardMaterial color={SAGE} />
               </mesh>
             )}
           </group>
@@ -176,7 +179,7 @@ function Foundations({ floor }: { floor: number }) {
         return (
           <mesh key={i} position={[s.cx, -depth / 2 - 0.05, s.cz]} raycast={noRay}>
             <boxGeometry args={[s.w + WALL_T * 2, depth, s.d + WALL_T * 2]} />
-            <meshStandardMaterial color="#5A3E2B" roughness={1} />
+            <meshStandardMaterial color="#8C8478" roughness={1} />
           </mesh>
         )
       })}
@@ -212,14 +215,14 @@ function Floors({ onTap, hole }: { onTap: (e: ThreeEvent<MouseEvent>) => void; h
           {/* Runner */}
           <mesh rotation={[-Math.PI / 2, 0, 0]} position={[size(c.rect).cx, 0.02, size(c.rect).cz]} raycast={noRay}>
             <planeGeometry args={c.axis === 'x' ? [size(c.rect).w, 1.4] : [1.4, size(c.rect).d]} />
-            <meshStandardMaterial color="#8E2F2A" roughness={1} />
+            <meshStandardMaterial color={RUNNER} roughness={1} />
           </mesh>
         </group>
       ))}
       {/* Runner down the centre of the North Library */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, -41]} raycast={noRay}>
         <planeGeometry args={[1.8, 19]} />
-        <meshStandardMaterial color="#8E2F2A" roughness={1} />
+        <meshStandardMaterial color={RUNNER} roughness={1} />
       </mesh>
     </>
   )
@@ -308,7 +311,7 @@ function UpStairs({ floor, onUse }: { floor: number; onUse: () => void }) {
       {Array.from({ length: STEPS }, (_, k) => (
         <mesh key={k} position={[s.cx, ((k + 1) * rise) / 2, STAIRS_UP.z1 - run * (k + 0.5)]} castShadow receiveShadow>
           <boxGeometry args={[s.w, (k + 1) * rise, run]} />
-          <meshStandardMaterial color={k % 2 ? '#8A6042' : '#7A5236'} roughness={0.8} />
+          <meshStandardMaterial color={k % 2 ? '#E6DCCB' : '#DCD1BE'} roughness={0.8} />
         </mesh>
       ))}
       <Railing from={[STAIRS_UP.x0 - 0.05, STAIRS_UP.z1]} to={[STAIRS_UP.x0 - 0.05, STAIRS_UP.z0]} y0={1} y1={1 + STEPS * rise} />
@@ -343,12 +346,12 @@ function DownStairs({ floor, onUse }: { floor: number; onUse: () => void }) {
       {/* Dark shaft and the steps going down into it */}
       <mesh position={[s.cx, -2.2, s.cz]}>
         <boxGeometry args={[s.w, 4.4, s.d]} />
-        <meshStandardMaterial color="#1E140E" side={1} />
+        <meshStandardMaterial color="#3E4A44" side={1} />
       </mesh>
       {Array.from({ length: STEPS }, (_, k) => (
         <mesh key={k} position={[s.cx, -(k + 1) * drop + 0.05, STAIRS_DOWN.z1 - run * (k + 0.5)]}>
           <boxGeometry args={[s.w - 0.02, 0.1, run]} />
-          <meshStandardMaterial color={k % 2 ? '#8A6042' : '#7A5236'} />
+          <meshStandardMaterial color={k % 2 ? '#E6DCCB' : '#DCD1BE'} />
         </mesh>
       ))}
       <Railing from={[STAIRS_DOWN.x0, STAIRS_DOWN.z1]} to={[STAIRS_DOWN.x0, STAIRS_DOWN.z0]} y0={1} y1={1} />
@@ -370,13 +373,13 @@ function Railing({ from, to, y0, y1 }: { from: [number, number]; to: [number, nu
         return (
           <mesh key={i} position={[from[0] + (to[0] - from[0]) * k, y / 2, from[1] + (to[1] - from[1]) * k]}>
             <boxGeometry args={[0.05, y, 0.05]} />
-            <meshStandardMaterial color="#2A1E14" />
+            <meshStandardMaterial color="#8A9C8D" />
           </mesh>
         )
       })}
       <mesh position={[(from[0] + to[0]) / 2, (y0 + y1) / 2, (from[1] + to[1]) / 2]} rotation={[slope, 0, 0]}>
         <boxGeometry args={[0.07, 0.07, Math.hypot(len, y1 - y0)]} />
-        <meshStandardMaterial color="#8A5A2B" />
+        <meshStandardMaterial color={SAGE} />
       </mesh>
     </>
   )
@@ -466,8 +469,8 @@ function Bookcases({ onTap }: { onTap: (e: ThreeEvent<MouseEvent>) => void }) {
     const Ht = SHELF.height
     for (const b of GALLERIES.flatMap(g => g.bookcases)) {
       const L = b.z1 - b.z0, cz = (b.z0 + b.z1) / 2
-      out.push({ p: [b.x, Ht / 2, cz], s: [0.08, Ht, L], c: '#3A2618' })                  // back panel
-      out.push({ p: [b.x, Ht + 0.08, cz], s: [b.depth + 0.12, 0.16, L + 0.12], c: DARK_WOOD }) // top
+      out.push({ p: [b.x, Ht / 2, cz], s: [0.08, Ht, L], c: SAGE })                  // back panel
+      out.push({ p: [b.x, Ht + 0.08, cz], s: [b.depth + 0.12, 0.16, L + 0.12], c: SAGE }) // top
       for (const y of [0.15, 0.95, 1.75, 2.55, 3.35]) out.push({ p: [b.x, y, cz], s: [b.depth, 0.06, L], c: DARK_WOOD })
       const n = Math.floor(L / SHELF.colW) + 1
       for (let i = 0; i < n; i++) out.push({ p: [b.x, Ht / 2, b.z1 - i * SHELF.colW], s: [b.depth, Ht, 0.05], c: DARK_WOOD })
@@ -529,7 +532,7 @@ function ShelfFrames({ pets, playerPos, onOpen }: { pets: Pet[]; playerPos: Reac
     pets.forEach((pet, i) => {
       const slot = SLOTS[pet.shrine_position]
       frames.current.setMatrixAt(i, place(slot, 0, 0, -0.02))
-      frames.current.setColorAt(i, c.set(pet.candle_count >= 50 ? '#C9A227' : '#2A1A10'))
+      frames.current.setColorAt(i, c.set(pet.candle_count >= 50 ? '#C9A227' : '#55685C'))
       cards.current.setMatrixAt(i, place(slot, 0, 0, 0.005))
       cards.current.setColorAt(i, c.set(SPECIES_LOOK[pet.species].to))
     })
@@ -630,7 +633,7 @@ function PetFrame({ pet, slot, onOpen }: { pet: Pet; slot: Slot; onOpen: () => v
     <group position={[slot.x, slot.y + 0.02, slot.z]} rotation={[0, slot.rot, 0]} onClick={click} onPointerOver={hover(true)} onPointerOut={hover(false)}>
       <mesh position={[0, 0, -0.02]}>
         <boxGeometry args={[0.66, 0.76, 0.04]} />
-        <meshStandardMaterial color={loved ? '#C9A227' : '#2A1A10'} metalness={loved ? 0.6 : 0} roughness={0.5} emissive={loved ? '#5A3A00' : '#000'} />
+        <meshStandardMaterial color={loved ? '#C9A227' : '#55685C'} metalness={loved ? 0.6 : 0} roughness={0.5} emissive={loved ? '#5A3A00' : '#000'} />
       </mesh>
       <mesh position={[0, 0, 0.005]}>
         <planeGeometry args={[0.56, 0.72]} />

@@ -176,7 +176,7 @@ export default function MemorialWorld3D({ floorId, avatarName, avatarGender, ava
           ) : (
             <>
               <Sky distance={450000} sunPosition={sunPos} rayleigh={golden ? 3 : 0.6} turbidity={golden ? 8 : 2} mieCoefficient={0.004} />
-              <fogExp2 attach="fog" args={[haze, 0.0105]} />
+              <fogExp2 attach="fog" args={[haze, 0.0082]} />
             </>
           )}
           {daylight < 0.35 && !overcast && <Stars radius={170} depth={40} count={low ? 1200 : 3000} factor={4} fade />}

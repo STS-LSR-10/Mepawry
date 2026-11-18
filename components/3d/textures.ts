@@ -87,17 +87,17 @@ export function floorTexture(kind: 'tiles' | 'planks', repeat: [number, number])
   const { c, g } = canvas(256, 256)
   if (kind === 'tiles') {
     for (let i = 0; i < 2; i++) for (let j = 0; j < 2; j++) {
-      g.fillStyle = (i + j) % 2 ? '#B9875E' : '#C4936A'
+      g.fillStyle = (i + j) % 2 ? '#E9E1D3' : '#DED5C5' // ivory stone tiles
       g.fillRect(i * 128, j * 128, 128, 128)
     }
-    g.strokeStyle = '#8E6440'; g.lineWidth = 3
+    g.strokeStyle = '#C6BCAB'; g.lineWidth = 3
     g.strokeRect(0, 0, 128, 128); g.strokeRect(128, 128, 128, 128); g.strokeRect(128, 0, 128, 128); g.strokeRect(0, 128, 128, 128)
   } else {
-    const tones = ['#7A5236', '#835A3C', '#6F4A30', '#8A6042']
+    const tones = ['#DCCFB9', '#D4C6AE', '#E2D6C2', '#CFC1A8'] // light ash planks
     for (let i = 0; i < 8; i++) {
       g.fillStyle = tones[i % tones.length]
       g.fillRect(0, i * 32, 256, 32)
-      g.fillStyle = 'rgba(0,0,0,.25)'
+      g.fillStyle = 'rgba(80,60,40,.18)'
       g.fillRect(0, i * 32 + 30, 256, 2)
       g.fillRect(((i * 97) % 256), i * 32, 2, 32)
     }

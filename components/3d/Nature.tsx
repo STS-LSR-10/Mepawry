@@ -120,9 +120,12 @@ function Mountains({ season }: { season: Season }) {
     const r = seeded(7)
     return Array.from({ length: 24 }, (_, i) => {
       const a = (i / 24) * Math.PI * 2 + r() * 0.2
-      const d = 90 + r() * 30
+      const extra = r() * 30
       const h = 20 + r() * 32
-      return { x: Math.cos(a) * d, z: Math.sin(a) * d, h, w: h * (0.9 + r() * 0.5), rot: r() * Math.PI, v: i % 4, tall: h > 42 }
+      const w = h * (0.9 + r() * 0.5)
+      // Keep the whole foot (ridges spread it up to ~1.35× w) beyond the building and garden (~60 from the centre)
+      const d = w * 1.35 + 72 + extra
+      return { x: Math.cos(a) * d, z: Math.sin(a) * d, h, w, rot: r() * Math.PI, v: i % 4, tall: h > 42 }
     })
   }, [])
   // Snow: thick in winter, none in the tropics, otherwise only on the tallest peaks
@@ -148,8 +151,11 @@ function Hills({ season }: { season: Season }) {
     const r = seeded(11)
     return Array.from({ length: 12 }, (_, i) => {
       const a = (i / 12) * Math.PI * 2 + r() * 0.4
-      const d = 50 + r() * 18
-      return { x: Math.cos(a) * d, z: Math.sin(a) * d, sx: 14 + r() * 12, sy: 4 + r() * 5, sz: 10 + r() * 8 }
+      const extra = r() * 18
+      const sx = 14 + r() * 12, sy = 4 + r() * 5, sz = 10 + r() * 8
+      // Hills sit just past the building's far corners (~60), never overlapping it
+      const d = Math.max(sx, sz) + 64 + extra
+      return { x: Math.cos(a) * d, z: Math.sin(a) * d, sx, sy, sz }
     })
   }, [])
   return (

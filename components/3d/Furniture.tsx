@@ -8,7 +8,7 @@ import { boardTexture, petTexture, signTexture, type BoardCard } from './texture
 import type { ThreeEvent } from '@react-three/fiber'
 import type { Pet } from '@/types'
 
-const DARK_WOOD = '#4A2F1E'
+const DARK_WOOD = '#8A9C8D' // legs and frames: muted sage (interior is ivory + sage)
 const noRay = () => null
 
 function useTexture(make: () => Texture, deps: unknown[]) {
@@ -60,7 +60,7 @@ function Reception({ w, d }: { w: number; d: number }) {
         <meshStandardMaterial map={plate} transparent alphaTest={0.5} />
       </mesh>
       {/* Desk lamp and a small candle */}
-      <Box size={[0.06, 0.4, 0.06]} at={[-1.5, 1.33, -0.2]} color="#2A1E14" />
+      <Box size={[0.06, 0.4, 0.06]} at={[-1.5, 1.33, -0.2]} color="#5F6F64" />
       <mesh position={[-1.5, 1.6, -0.2]}>
         <sphereGeometry args={[0.13, 12, 12]} />
         <meshStandardMaterial color="#FFE7B8" emissive="#FFC070" emissiveIntensity={1.8} />
@@ -71,7 +71,7 @@ function Reception({ w, d }: { w: number; d: number }) {
 }
 
 function Sofa({ w, d }: { w: number; d: number }) {
-  const fabric = '#8E5B4A', cushion = '#A8705C'
+  const fabric = '#8FA595', cushion = '#B7C7B2'
   return (
     <>
       <Box size={[w, 0.42, d]} at={[0, 0.21, 0]} color={fabric} rough={1} />
@@ -118,11 +118,11 @@ function Rug({ w, d }: { w: number; d: number }) {
     <>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.03, 0]} scale={[w / 2, d / 2, 1]} receiveShadow raycast={noRay}>
         <circleGeometry args={[1, 40]} />
-        <meshStandardMaterial color="#7A3B33" roughness={1} />
+        <meshStandardMaterial color="#9DB09A" roughness={1} />
       </mesh>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.035, 0]} scale={[w / 2 - 0.4, d / 2 - 0.4, 1]} raycast={noRay}>
         <ringGeometry args={[0.92, 0.96, 40]} />
-        <meshStandardMaterial color="#D9B27A" roughness={1} />
+        <meshStandardMaterial color="#F3EEE6" roughness={1} />
       </mesh>
     </>
   )
@@ -241,7 +241,7 @@ function Candle({ at }: { at: [number, number, number] }) {
 function Bench({ w, d }: { w: number; d: number }) {
   return (
     <>
-      <Box size={[w, 0.08, d]} at={[0, 0.45, 0]} color="#8A5A2B" />
+      <Box size={[w, 0.08, d]} at={[0, 0.45, 0]} color="#E6DCCB" />
       {[-1, 1].map(s => <Box key={s} size={[0.08, 0.45, d - 0.1]} at={[s * (w / 2 - 0.15), 0.22, 0]} color={DARK_WOOD} />)}
     </>
   )
