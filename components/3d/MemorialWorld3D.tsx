@@ -12,7 +12,7 @@ import type { LocalSky, Season } from '@/lib/sky'
 import { Nature } from './Nature'
 import { Park } from './Park'
 import { WindClock } from './wind'
-import { Polish, RIM, Vignette } from './look'
+import { AVATAR_FILL, Polish, RIM, Vignette } from './look'
 import { CrowdAvatars, useCrowd, type Me } from './Crowd'
 import { getVisitor } from '@/lib/visitor'
 import { saveSpot } from '@/lib/spot'
@@ -145,6 +145,12 @@ const pos = useRef<P>(
     RIM.color.value.set(daylight === 0 ? '#7F94C8' : golden ? '#FFC890' : '#CFE0FF')
     RIM.strength.value = 0.2 + 0.06 * daylight
   }, [daylight, golden])
+  // Light on the characters: warm lamplight indoors (more at night), faint moonlight outside at night
+  useEffect(() => {
+    const night = 1 - daylight
+    if (inside) AVATAR_FILL.value.set('#FFC08A').multiplyScalar(0.3 + 0.25 * night)
+    else AVATAR_FILL.value.set('#AFC2E8').multiplyScalar(0.03 + 0.12 * night)
+  }, [inside, daylight])
   // Haze matches the horizon so far mountains fade into the sky
   const haze = useMemo(() => {
     const c = new Color('#1E1B2B').lerp(new Color('#BFCFDF'), daylight)

@@ -7,7 +7,7 @@ import { useEffect, useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { CatmullRomCurve3, Color, Vector3, type Group, type Texture as THREE_Texture } from 'three'
 import { hoodieTexture, nameTagTexture } from './textures'
-import { contactShadowMap, microMap, rim } from './look'
+import { avatarShade, contactShadowMap, microMap } from './look'
 import { defaultLook, type AvatarLook } from '@/lib/look'
 
 const CHEEK = '#F6A3B0'
@@ -27,12 +27,12 @@ const knitFor = (base: string, motifs: boolean) => {
 /** Soft matte "vinyl/clay" finish: fine surface fuzz in the bump and roughness, plus a Fresnel rim. */
 function Clay({ color, rough = 0.78, bump = 0.5 }: { color: string; rough?: number; bump?: number }) {
   const fuzz = microMap('fuzz')
-  return <meshStandardMaterial color={color} roughness={rough} metalness={0} bumpMap={fuzz} bumpScale={bump} roughnessMap={fuzz} onBeforeCompile={rim} />
+  return <meshStandardMaterial color={color} roughness={rough} metalness={0} bumpMap={fuzz} bumpScale={bump} roughnessMap={fuzz} onBeforeCompile={avatarShade} />
 }
 
 /** Knitted fabric: the knit pattern doubles as the bump map, with velvety sheen at grazing angles. */
 function Knit({ map, sheen }: { map: THREE_Texture; sheen: string }) {
-  return <meshPhysicalMaterial map={map} bumpMap={map} bumpScale={1.4} roughness={0.95} sheen={1} sheenColor={sheen} sheenRoughness={0.75} onBeforeCompile={rim} />
+  return <meshPhysicalMaterial map={map} bumpMap={map} bumpScale={1.4} roughness={0.95} sheen={1} sheenColor={sheen} sheenRoughness={0.75} onBeforeCompile={avatarShade} />
 }
 
 export function CuteAvatar({ name, walking, gender = 'male', look }: { name: string; walking?: React.RefObject<boolean>; gender?: 'male' | 'female'; look?: AvatarLook }) {
@@ -154,7 +154,7 @@ export function CuteAvatar({ name, walking, gender = 'male', look }: { name: str
         {lk.bottom === 'skirt' && (
           <mesh position={[0, 0.45, 0]} castShadow>
             <cylinderGeometry args={[0.18, 0.3, 0.24, 24, 1, true]} />
-            <meshStandardMaterial color={lk.bottomColor} roughness={0.8} side={2} onBeforeCompile={rim} />
+            <meshStandardMaterial color={lk.bottomColor} roughness={0.8} side={2} onBeforeCompile={avatarShade} />
           </mesh>
         )}
 

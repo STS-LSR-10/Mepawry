@@ -11,7 +11,7 @@ import {
 } from 'three'
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import { nameTagTexture } from './textures'
-import { contactShadowMap, microMap, withRim } from './look'
+import { avatarShade, contactShadowMap, microMap } from './look'
 
 import { lookKey, type AvatarLook } from '@/lib/look'
 import { lighter } from './CuteAvatar'
@@ -95,7 +95,10 @@ function buildLook(lk: AvatarLook) {
 const looks = new Map<string, ReturnType<typeof buildLook>>()
 const lookFor = (lk: AvatarLook) => { const k = lookKey(lk); if (!looks.has(k)) looks.set(k, buildLook(lk)); return looks.get(k)! }
 let shared: MeshStandardMaterial | null = null
-const material = () => (shared ??= withRim(new MeshStandardMaterial({ vertexColors: true, roughness: 0.75, bumpMap: microMap('fuzz'), bumpScale: 0.3 }), 0.8))
+const material = () => {
+  if (!shared) { shared = new MeshStandardMaterial({ vertexColors: true, roughness: 0.75, bumpMap: microMap('fuzz'), bumpScale: 0.3 }); shared.onBeforeCompile = avatarShade }
+  return shared
+}
 
 export function LiteAvatar({ name, look: lk, walking }: { name: string; look: AvatarLook; walking: React.RefObject<boolean> }) {
   const look = lookFor(lk)

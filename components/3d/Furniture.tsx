@@ -6,6 +6,7 @@ import type { Texture } from 'three'
 import type { Furniture } from './layout'
 import { boardTexture, petTexture, signTexture, type BoardCard } from './textures'
 import type { ThreeEvent } from '@react-three/fiber'
+import { avatarShade } from './look' // the indoor lamplight that also lights the characters
 import type { Pet } from '@/types'
 
 const DARK_WOOD = '#8A9C8D' // legs and frames: muted sage (interior is ivory + sage)
@@ -44,7 +45,7 @@ function Box({ size, at, color, rough = 0.8 }: { size: [number, number, number];
   return (
     <mesh position={at} castShadow receiveShadow>
       <boxGeometry args={size} />
-      <meshStandardMaterial color={color} roughness={rough} />
+      <meshStandardMaterial color={color} roughness={rough} onBeforeCompile={avatarShade} />
     </mesh>
   )
 }
@@ -57,7 +58,7 @@ function Reception({ w, d }: { w: number; d: number }) {
       <Box size={[w + 0.15, 0.08, d + 0.15]} at={[0, 1.09, 0]} color={DARK_WOOD} />
       <mesh position={[0, 0.62, d / 2 + 0.01]}>
         <planeGeometry args={[2.4, 0.45]} />
-        <meshStandardMaterial map={plate} transparent alphaTest={0.5} />
+        <meshStandardMaterial map={plate} transparent alphaTest={0.5} onBeforeCompile={avatarShade} />
       </mesh>
       {/* Desk lamp and a small candle */}
       <Box size={[0.06, 0.4, 0.06]} at={[-1.5, 1.33, -0.2]} color="#5F6F64" />
@@ -91,7 +92,7 @@ function Table({ w, d, h }: { w: number; d: number; h: number }) {
       <Box size={[0.3, 0.05, 0.22]} at={[-0.3, h + 0.06, 0]} color="#3E6B8A" />
       <mesh position={[0.35, h + 0.08, 0.05]}>
         <cylinderGeometry args={[0.05, 0.04, 0.09, 12]} />
-        <meshStandardMaterial color="#FBF6EC" />
+        <meshStandardMaterial color="#FBF6EC" onBeforeCompile={avatarShade} />
       </mesh>
     </>
   )
@@ -102,7 +103,7 @@ function SideTable() {
     <>
       <mesh position={[0, 0.55, 0]} castShadow>
         <cylinderGeometry args={[0.33, 0.33, 0.05, 20]} />
-        <meshStandardMaterial color={DARK_WOOD} />
+        <meshStandardMaterial color={DARK_WOOD} onBeforeCompile={avatarShade} />
       </mesh>
       <Box size={[0.06, 0.55, 0.06]} at={[0, 0.27, 0]} color={DARK_WOOD} />
       <mesh position={[0, 0.72, 0]}>
@@ -118,11 +119,11 @@ function Rug({ w, d }: { w: number; d: number }) {
     <>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.03, 0]} scale={[w / 2, d / 2, 1]} receiveShadow raycast={noRay}>
         <circleGeometry args={[1, 40]} />
-        <meshStandardMaterial color="#9DB09A" roughness={1} />
+        <meshStandardMaterial color="#9DB09A" roughness={1} onBeforeCompile={avatarShade} />
       </mesh>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.035, 0]} scale={[w / 2 - 0.4, d / 2 - 0.4, 1]} raycast={noRay}>
         <ringGeometry args={[0.92, 0.96, 40]} />
-        <meshStandardMaterial color="#F3EEE6" roughness={1} />
+        <meshStandardMaterial color="#F3EEE6" roughness={1} onBeforeCompile={avatarShade} />
       </mesh>
     </>
   )
@@ -133,14 +134,14 @@ function Plant() {
     <>
       <mesh position={[0, 0.3, 0]} castShadow>
         <cylinderGeometry args={[0.3, 0.22, 0.6, 16]} />
-        <meshStandardMaterial color="#F2EDE4" roughness={0.6} />
+        <meshStandardMaterial color="#F2EDE4" roughness={0.6} onBeforeCompile={avatarShade} />
       </mesh>
       {Array.from({ length: 7 }, (_, i) => {
         const a = (i / 7) * Math.PI * 2
         return (
           <mesh key={i} position={[Math.cos(a) * 0.2, 1, Math.sin(a) * 0.2]} rotation={[Math.sin(a) * 0.5, 0, -Math.cos(a) * 0.5]} castShadow>
             <coneGeometry args={[0.1, 0.9, 6]} />
-            <meshStandardMaterial color={i % 2 ? '#4E8A3E' : '#3F7A35'} flatShading />
+            <meshStandardMaterial color={i % 2 ? '#4E8A3E' : '#3F7A35'} flatShading onBeforeCompile={avatarShade} />
           </mesh>
         )
       })}
@@ -188,7 +189,7 @@ function NoticeBoard({ w }: { w: number }) {
       <Box size={[bw + 0.12, bh + 0.12, 0.06]} at={[0, 1.45, 0]} color={DARK_WOOD} />
       <mesh position={[0, 1.45, 0.035]}>
         <planeGeometry args={[bw, bh]} />
-        <meshStandardMaterial map={board.texture} roughness={0.95} />
+        <meshStandardMaterial map={board.texture} roughness={0.95} onBeforeCompile={avatarShade} />
       </mesh>
     </group>
   )
@@ -203,11 +204,11 @@ function Easel({ pet }: { pet: Pet }) {
       <Box size={[1.05, 1.25, 0.06]} at={[0, 1.55, 0.06]} color="#C9A227" rough={0.35} />
       <mesh position={[0, 1.55, 0.1]}>
         <planeGeometry args={[0.85, 1]} />
-        <meshStandardMaterial map={tex} />
+        <meshStandardMaterial map={tex} onBeforeCompile={avatarShade} />
       </mesh>
       <mesh position={[0, 0.82, 0.1]}>
         <planeGeometry args={[1.1, 0.2]} />
-        <meshStandardMaterial map={label} transparent alphaTest={0.5} />
+        <meshStandardMaterial map={label} transparent alphaTest={0.5} onBeforeCompile={avatarShade} />
       </mesh>
     </>
   )
@@ -228,7 +229,7 @@ function Candle({ at }: { at: [number, number, number] }) {
     <group position={at}>
       <mesh position={[0, 0.08, 0]}>
         <cylinderGeometry args={[0.045, 0.045, 0.16, 10]} />
-        <meshStandardMaterial color="#F5EBD8" />
+        <meshStandardMaterial color="#F5EBD8" onBeforeCompile={avatarShade} />
       </mesh>
       <mesh position={[0, 0.2, 0]} scale={[1, 1.6, 1]}>
         <sphereGeometry args={[0.03, 8, 8]} />

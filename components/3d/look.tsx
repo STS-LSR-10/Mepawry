@@ -86,6 +86,22 @@ export function withRim<M extends Material>(mat: M, strength = 1): M {
   return mat
 }
 
+/**
+ * Light that falls on the characters where they stand: warm lamplight indoors, a little moonlight outside at
+ * night. The interior's own glow lives on its surfaces, so without this the avatars looked dark inside.
+ * Set by the hall each frame-ish (a uniform, so changing it costs nothing).
+ */
+export const AVATAR_FILL = { value: new Color(0, 0, 0) }
+
+/** Rim light + the avatar fill, for character materials (your avatar and other visitors'). */
+export const avatarShade = (shader: WebGLProgramParametersWithUniforms) => {
+  injectRim(shader, RIM.strength)
+  shader.uniforms.uAvatarFill = AVATAR_FILL
+  shader.fragmentShader = shader.fragmentShader
+    .replace('uniform vec3 uRimColor;', 'uniform vec3 uRimColor; uniform vec3 uAvatarFill;')
+    .replace('gl_FragColor.rgb += uRimColor * rimF * uRimStrength;', 'gl_FragColor.rgb += uRimColor * rimF * uRimStrength + diffuseColor.rgb * uAvatarFill;')
+}
+
 /** For JSX materials: <meshStandardMaterial onBeforeCompile={rim} />. */
 export const rim = (shader: WebGLProgramParametersWithUniforms) => injectRim(shader, RIM.strength)
 
