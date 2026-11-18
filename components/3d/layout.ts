@@ -89,7 +89,7 @@ export const ELEVATOR_FRONT: P = { x: ELEVATOR_X, z: -22.6 }
 
 // ── Lobby furniture. rot is the y-rotation; 0 means the front faces +z (south, toward the entrance). ──
 
-export type FurnitureKind = 'reception' | 'sofa' | 'armchair' | 'coffeeTable' | 'sideTable' | 'rug' | 'plant' | 'floorLamp' | 'noticeBoard' | 'easel' | 'candleTable' | 'bench'
+export type FurnitureKind = 'reception' | 'sofa' | 'armchair' | 'coffeeTable' | 'sideTable' | 'rug' | 'plant' | 'floorLamp' | 'noticeBoard' | 'wallBoard' | 'easel' | 'candleTable' | 'bench'
 export interface Furniture { kind: FurnitureKind; x: number; z: number; rot: number; w: number; d: number; solid: boolean }
 const f = (kind: FurnitureKind, x: number, z: number, rot: number, w: number, d: number, solid = true): Furniture => ({ kind, x, z, rot, w, d, solid })
 
@@ -106,6 +106,8 @@ const COMMON: Furniture[] = [
   // Remembrance corner beside the elevator
   f('easel', -8.3, -19.5, Math.PI / 2, 1.2, 0.6),
   f('candleTable', -7.2, -19.5, Math.PI / 2, 1.4, 0.7),
+  // Community board hung on the wall between the candles and the elevator corner (tap it to open the board)
+  f('wallBoard', -8.97, -22.3, Math.PI / 2, 2.2, 0.08, false),
   f('plant', 2.6, -23.2, 0, 0.7, 0.7), f('plant', -2.6, -23.2, 0, 0.7, 0.7),
   f('bench', -2.5, -18.8, 0, 2, 0.6),
 ]

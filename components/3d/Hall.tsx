@@ -296,7 +296,9 @@ function sconceSpots(ground: boolean): { p: [number, number, number]; out: [numb
     if (c.axis === 'x') { along(x0, x1, 3, x => add(x, z0 + inset, 0, 1)); along(x0, x1, 3, x => add(x, z1 - inset, 0, -1)) }
     else { along(z0, z1, 3, z => add(x0 + inset, z, 1, 0)); along(z0, z1, 3, z => add(x1 - inset, z, -1, 0)) }
   }
-  return spots
+  // Leave the wall clear where a board hangs
+  const boards = furniture(ground).filter(it => it.kind === 'wallBoard')
+  return spots.filter(s => !boards.some(b => Math.hypot(s.p[0] - b.x, s.p[2] - b.z) < b.w / 2 + 0.4))
 }
 
 /** Brass wall sconces with glowing orange shades and a soft halo: one draw call for the lamps, one for the halos. */

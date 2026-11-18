@@ -33,6 +33,7 @@ export function FurniturePiece({ it, featured }: { it: Furniture; featured?: Pet
       case 'plant': return <Plant />
       case 'floorLamp': return <FloorLamp />
       case 'noticeBoard': return <NoticeBoard w={it.w} />
+      case 'wallBoard': return <NoticeBoard w={it.w} wall />
       case 'easel': return featured ? <Easel pet={featured} /> : null
       case 'candleTable': return <CandleTable w={it.w} d={it.d} />
       case 'bench': return <Bench w={it.w} d={it.d} />
@@ -162,7 +163,7 @@ function FloorLamp() {
 }
 
 /** Cork board on legs showing the latest stories and kind words; tap it to open the community board. */
-function NoticeBoard({ w }: { w: number }) {
+function NoticeBoard({ w, wall = false }: { w: number; wall?: boolean }) {
   const board = useMemo(() => boardTexture(), [])
   useEffect(() => () => board.texture.dispose(), [board])
   useEffect(() => {
@@ -182,12 +183,14 @@ function NoticeBoard({ w }: { w: number }) {
   }, [board])
   const open = (e: ThreeEvent<MouseEvent>) => { if (e.delta < 6) { e.stopPropagation(); window.dispatchEvent(new Event('mepawry:board')) } }
   const bw = w, bh = bw * (640 / 1024)
+  const cy = wall ? 1.7 : 1.45 // on a wall: clear of the candle table below, under the 2.6 wall top
   return (
     <group onClick={open} onPointerOver={() => { document.body.style.cursor = 'pointer' }} onPointerOut={() => { document.body.style.cursor = '' }}>
-      {[-1, 1].map(s => <Box key={s} size={[0.08, 2.1, 0.08]} at={[s * (bw / 2 - 0.12), 1.05, -0.02]} color={DARK_WOOD} />)}
+      {/* on legs, or hung on a wall (kept under the cut-down walls' 2.6 height) */}
+      {!wall && [-1, 1].map(s => <Box key={s} size={[0.08, 2.1, 0.08]} at={[s * (bw / 2 - 0.12), 1.05, -0.02]} color={DARK_WOOD} />)}
       {/* frame */}
-      <Box size={[bw + 0.12, bh + 0.12, 0.06]} at={[0, 1.45, 0]} color={DARK_WOOD} />
-      <mesh position={[0, 1.45, 0.035]}>
+      <Box size={[bw + 0.12, bh + 0.12, 0.06]} at={[0, cy, 0]} color={DARK_WOOD} />
+      <mesh position={[0, cy, 0.035]}>
         <planeGeometry args={[bw, bh]} />
         <meshStandardMaterial map={board.texture} roughness={0.95} onBeforeCompile={avatarShade} />
       </mesh>
