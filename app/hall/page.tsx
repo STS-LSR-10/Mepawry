@@ -5,6 +5,9 @@ import { Suspense, useCallback, useEffect, useState } from 'react'
 import { FloatingHeader } from '@/components/shrine/FloatingHeader'
 import { FloorSelector } from '@/components/shrine/FloorSelector'
 import { ELEVATOR_FRONT, FLOOR_COUNT, type P } from '@/components/3d/layout'
+
+// Just inside the VIP Garden's door, facing the arcades
+const VIP_ENTRY: P = { x: 22, z: -30.5 }
 import { loadSpot } from '@/lib/spot'
 import { describe, getVisitor, useActivity, useOnlineCount } from '@/lib/visitor'
 import { useAccount } from '@/lib/account'
@@ -155,8 +158,15 @@ export default function HallPage() {
         📖 Board
       </button>
 
-      {/* Floor Selector Button */}
-      <div className="fixed bottom-24 right-4 z-20">
+      {/* Floor Selector Button, and a shortcut to this floor's VIP Garden */}
+      <div className="fixed bottom-24 right-4 z-20 flex items-center gap-2">
+        <button
+          onClick={() => goToFloor(currentFloor, VIP_ENTRY)}
+          className="rounded-full border border-[#E8C365]/60 bg-gradient-to-r from-[#F3D99B]/90 to-[#D9B26A]/90 px-4 py-2.5 text-sm font-semibold text-[#3A2612] shadow-md hover:brightness-105"
+          aria-label={`Go to the VIP Garden on floor ${currentFloor}`}
+        >
+          ✿ VIP
+        </button>
         <button
           onClick={() => setFloorSelectorOpen(true)}
           className="glass border border-white/20 rounded-full px-4 py-2.5 text-sm text-[#FAF7F2] hover:bg-white/20 transition-colors shadow-md flex items-center gap-2"

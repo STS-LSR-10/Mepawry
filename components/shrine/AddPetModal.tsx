@@ -43,6 +43,7 @@ export function AddPetModal({ open, onClose }: AddPetModalProps) {
     epitaph: '',
   })
   const [slot, setSlot] = useState<SlotChoice>(null)
+  const [vipNiche, setVipNiche] = useState<number | null>(null) // admins only, until payments open
   const [slotsVersion, setSlotsVersion] = useState(0)
   const account = useAccount()
   const [country, setCountry] = useState('XX')
@@ -104,6 +105,11 @@ export function AddPetModal({ open, onClose }: AddPetModalProps) {
       if (res.status === 409) { setSlot(null); setSlotsVersion(v => v + 1) } // shelf just taken: show the new picture
       if (!res.ok) throw new Error(data.error)
       saveEditToken(data.pet.id, data.editToken)
+      // Admin chose a VIP niche too: place them there now
+      if (vipNiche != null) {
+        const v = await fetch(`/api/pets/${data.pet.id}/vip`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'place', position: vipNiche }) }).catch(() => null)
+        if (!v?.ok) setError('Their shrine is placed, but the VIP niche couldn’t be set. Try again from their shrine page.')
+      }
       // Email given: attach it to the guest account; confirming it lets them sign in anywhere later
       if (email.trim() && needsEmail) {
         const { error } = await account.supabase()?.auth.updateUser({ email: email.trim() }, { emailRedirectTo: `${window.location.origin}/me` })
@@ -127,6 +133,7 @@ export function AddPetModal({ open, onClose }: AddPetModalProps) {
     setExpanded(false)
     setForm({ name: '', species: 'dog', birth_year: '', death_year: '', epitaph: '' })
     setSlot(null)
+    setVipNiche(null)
     setEmail('')
     setEmailNote(null)
     setNeedLogin(false)
@@ -316,7 +323,7 @@ export function AddPetModal({ open, onClose }: AddPetModalProps) {
           </div>
 
           {/* Shelf */}
-          <SlotPicker value={slot} onChange={setSlot} reloadKey={slotsVersion + (open ? 1 : 0)} />
+          <SlotPicker value={slot} onChange={setSlot} reloadKey={slotsVersion + (open ? 1 : 0)} vip={vipNiche} onVip={setVipNiche} />
 
           {error && <p role="alert" className="text-sm text-[#C0392B]">{error}</p>}
 

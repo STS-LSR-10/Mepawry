@@ -88,10 +88,14 @@ const SPECIES: Species[] = ['dog', 'cat', 'other']
 const year = (v: unknown) => (typeof v === 'number' && v >= 1900 && v <= new Date().getFullYear() ? Math.floor(v) : null)
 
 /** The floor new shrines go on (the lowest one with a free shelf) and which shelves there are taken. */
-export async function getOpenSlots(): Promise<{ floor: number; taken: number[] }> {
+export async function getOpenSlots(): Promise<{ floor: number; taken: number[]; vipTaken: number[] }> {
   const floor = await getOpenFloor()
-  const rows = (must(await db().from('pets').select('shrine_position').eq('floor_id', floor))) ?? []
-  return { floor, taken: rows.map((r: { shrine_position: number }) => r.shrine_position) }
+  const rows = (must(await db().from('pets').select('shrine_position, vip_position').eq('floor_id', floor))) ?? []
+  return {
+    floor,
+    taken: rows.map((r: { shrine_position: number }) => r.shrine_position),
+    vipTaken: rows.filter((r: { vip_position: number | null }) => r.vip_position != null).map((r: { vip_position: number }) => r.vip_position),
+  }
 }
 
 export class SlotTakenError extends Error {}
