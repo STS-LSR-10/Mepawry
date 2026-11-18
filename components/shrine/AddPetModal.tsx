@@ -1,0 +1,307 @@
+'use client'
+// components/shrine/AddPetModal.tsx — Pet Creation Flow (S03)
+
+import { useEffect, useState, useRef } from 'react'
+import { useRouter } from 'next/navigation'
+import { Modal } from '@/components/ui/Modal'
+import { Button } from '@/components/ui/Button'
+import { cn } from '@/lib/utils'
+import { photoToDataUrl, saveEditToken } from '@/lib/photo'
+import type { Species } from '@/types'
+
+interface AddPetModalProps {
+  open: boolean
+  onClose: () => void
+}
+
+const SPECIES_OPTIONS: { value: Species; emoji: string; label: string }[] = [
+  { value: 'dog', emoji: '🐶', label: 'Dog' },
+  { value: 'cat', emoji: '🐱', label: 'Cat' },
+  { value: 'other', emoji: '🐾', label: 'Other' },
+]
+
+export function AddPetModal({ open, onClose }: AddPetModalProps) {
+  const [step, setStep] = useState<'form' | 'success'>('form')
+  const [loading, setLoading] = useState(false)
+  const [expanded, setExpanded] = useState(false)
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null)
+  const [photoBusy, setPhotoBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [createdSlug, setCreatedSlug] = useState<string | null>(null)
+  const router = useRouter()
+  const fileRef = useRef<HTMLInputElement>(null)
+
+  const [form, setForm] = useState({
+    name: '',
+    species: 'dog' as Species,
+    country_code: 'TH',
+    email: '',
+    birth_year: '',
+    death_year: '',
+    epitaph: '',
+  })
+
+  // Country from the browser's own language/region setting (e.g. th-TH → TH), so country counts are real
+  useEffect(() => {
+    if (!open) return
+    try {
+      const region = new Intl.Locale(navigator.language).maximize().region
+      if (region && /^[A-Z]{2}$/.test(region)) setForm(f => ({ ...f, country_code: region }))
+    } catch {}
+  }, [open])
+
+  const handlePhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    e.target.value = '' // lets the same file be picked again after a change
+    if (!file) return
+    setError(null)
+    setPhotoBusy(true)
+    try {
+      setPhotoPreview(await photoToDataUrl(file))
+    } catch {
+      setError("We couldn't read that photo. Try a JPG or PNG.")
+    } finally {
+      setPhotoBusy(false)
+    }
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!form.name.trim() || photoBusy) return
+    setLoading(true)
+    setError(null)
+    try {
+      const res = await fetch('/api/pets', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: form.name.trim(),
+          species: form.species,
+          country_code: form.country_code,
+          birth_year: form.birth_year ? Number(form.birth_year) : null,
+          death_year: form.death_year ? Number(form.death_year) : null,
+          epitaph: form.epitaph.trim() || null,
+          primary_photo_url: photoPreview,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
+      saveEditToken(data.pet.id, data.editToken)
+      setCreatedSlug(data.pet.slug)
+      setStep('success')
+    } catch (err) {
+      setError(err instanceof Error && err.message ? err.message : 'Something went wrong. Please try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleClose = () => {
+    setStep('form')
+    setPhotoPreview(null)
+    setError(null)
+    setCreatedSlug(null)
+    setExpanded(false)
+    setForm({ name: '', species: 'dog', country_code: 'TH', email: '', birth_year: '', death_year: '', epitaph: '' })
+    onClose()
+  }
+
+  return (
+    <Modal open={open} onClose={handleClose} title="Give your pet a place">
+      {step === 'success' ? (
+        <SuccessView
+          name={form.name}
+          onClose={() => { const slug = createdSlug; handleClose(); if (slug) router.push(`/${slug}`) }}
+        />
+      ) : (
+        <form onSubmit={handleSubmit} className="space-y-5">
+          {/* Photo Upload */}
+          <div>
+            <button
+              type="button"
+              onClick={() => fileRef.current?.click()}
+              className={cn(
+                'w-full aspect-video rounded-2xl border-2 border-dashed transition-colors',
+                'flex flex-col items-center justify-center gap-2 cursor-pointer',
+                'hover:border-[#D9823B] hover:bg-[#FDF0E5]',
+                photoPreview ? 'border-[#D9823B] p-0 overflow-hidden' : 'border-[#D4C9BF] bg-[#F4EFE6]'
+              )}
+              aria-label="Upload pet photo"
+            >
+              {photoBusy ? (
+                <span className="text-sm text-[#8E8278]">Preparing photo…</span>
+              ) : photoPreview ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={photoPreview} alt="Preview" className="w-full h-full object-cover" />
+              ) : (
+                <>
+                  <span className="text-3xl">🐾</span>
+                  <span className="text-sm text-[#8E8278]">Drop a photo here, or tap to choose</span>
+                  <span className="text-xs text-[#B5A99F]">JPG, PNG or HEIC · max 10MB</span>
+                </>
+              )}
+            </button>
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/*"
+              className="sr-only"
+              onChange={handlePhoto}
+              aria-label="Choose pet photo"
+            />
+            {photoPreview && !photoBusy && (
+              <button type="button" onClick={() => fileRef.current?.click()} className="mt-1.5 text-xs font-medium text-[#C67129] hover:underline">
+                Change photo
+              </button>
+            )}
+          </div>
+
+          {/* Pet Name */}
+          <div>
+            <label htmlFor="pet-name" className="block text-sm font-medium text-[#2A1E17] mb-1.5">
+              Your pet&apos;s name <span className="text-[#E74C3C]" aria-hidden>*</span>
+            </label>
+            <input
+              id="pet-name"
+              type="text"
+              required
+              maxLength={80}
+              placeholder="e.g. Luna, Max, Coco"
+              value={form.name}
+              onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+              className="w-full rounded-xl border border-[#D4C9BF] bg-white px-4 py-2.5 text-[#2A1E17] placeholder:text-[#B5A99F] focus:outline-none focus:ring-2 focus:ring-[#D9823B] text-base"
+            />
+          </div>
+
+          {/* Species */}
+          <div>
+            <span className="block text-sm font-medium text-[#2A1E17] mb-1.5">They were a…</span>
+            <div role="group" aria-label="Pet species" className="flex gap-2">
+              {SPECIES_OPTIONS.map(opt => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setForm(f => ({ ...f, species: opt.value }))}
+                  className={cn(
+                    'flex-1 py-2 rounded-full text-sm font-medium border transition-all',
+                    form.species === opt.value
+                      ? 'bg-[#D9823B] text-white border-[#D9823B]'
+                      : 'bg-[#F4EFE6] text-[#5C5046] border-[#E8DFD6] hover:border-[#D9823B]'
+                  )}
+                  aria-pressed={form.species === opt.value}
+                >
+                  {opt.emoji} {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Email */}
+          <div>
+            <label htmlFor="pet-email" className="block text-sm font-medium text-[#2A1E17] mb-1.5">
+              Your email
+            </label>
+            <input
+              id="pet-email"
+              type="email"
+              placeholder="So you can always find them again"
+              value={form.email}
+              onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
+              className="w-full rounded-xl border border-[#D4C9BF] bg-white px-4 py-2.5 text-[#2A1E17] placeholder:text-[#B5A99F] focus:outline-none focus:ring-2 focus:ring-[#D9823B] text-sm"
+            />
+            <p className="mt-1 text-xs text-[#8E8278]">We&apos;ll send a link to edit their memorial anytime</p>
+          </div>
+
+          {/* Expandable details */}
+          <div>
+            <button
+              type="button"
+              onClick={() => setExpanded(e => !e)}
+              className="flex items-center gap-2 text-sm text-[#C67129] font-medium hover:underline"
+              aria-expanded={expanded}
+            >
+              <span>{expanded ? '−' : '+'}</span>
+              Dates, a few words, more photos <span className="text-[#8E8278] font-normal">(optional)</span>
+            </button>
+
+            {expanded && (
+              <div className="mt-4 space-y-4 border-t border-[#E8DFD6] pt-4">
+                {/* Years */}
+                <div className="flex gap-3">
+                  <div className="flex-1">
+                    <label htmlFor="born-year" className="block text-xs font-medium text-[#2A1E17] mb-1">Born</label>
+                    <input
+                      id="born-year"
+                      type="number"
+                      min="1900"
+                      max={new Date().getFullYear()}
+                      placeholder="2010"
+                      value={form.birth_year}
+                      onChange={e => setForm(f => ({ ...f, birth_year: e.target.value }))}
+                      className="w-full rounded-xl border border-[#D4C9BF] bg-white px-3 py-2 text-sm text-[#2A1E17] placeholder:text-[#B5A99F] focus:outline-none focus:ring-2 focus:ring-[#D9823B]"
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <label htmlFor="died-year" className="block text-xs font-medium text-[#2A1E17] mb-1">Passed</label>
+                    <input
+                      id="died-year"
+                      type="number"
+                      min="1900"
+                      max={new Date().getFullYear()}
+                      placeholder="2024"
+                      value={form.death_year}
+                      onChange={e => setForm(f => ({ ...f, death_year: e.target.value }))}
+                      className="w-full rounded-xl border border-[#D4C9BF] bg-white px-3 py-2 text-sm text-[#2A1E17] placeholder:text-[#B5A99F] focus:outline-none focus:ring-2 focus:ring-[#D9823B]"
+                    />
+                  </div>
+                </div>
+
+                {/* Epitaph */}
+                <div>
+                  <label htmlFor="epitaph" className="block text-xs font-medium text-[#2A1E17] mb-1">
+                    A few words about them
+                  </label>
+                  <textarea
+                    id="epitaph"
+                    rows={3}
+                    maxLength={500}
+                    placeholder="They were the gentlest soul…"
+                    value={form.epitaph}
+                    onChange={e => setForm(f => ({ ...f, epitaph: e.target.value }))}
+                    className="w-full rounded-xl border border-[#D4C9BF] bg-white px-3 py-2 text-sm text-[#2A1E17] placeholder:text-[#B5A99F] focus:outline-none focus:ring-2 focus:ring-[#D9823B] resize-none"
+                  />
+                  <p className="text-right text-xs text-[#B5A99F]">{form.epitaph.length}/500</p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {error && <p role="alert" className="text-sm text-[#C0392B]">{error}</p>}
+
+          {/* Submit */}
+          <Button type="submit" size="lg" loading={loading} className="w-full">
+            🕯️ Place their shrine
+          </Button>
+        </form>
+      )}
+    </Modal>
+  )
+}
+
+function SuccessView({ name, onClose }: { name: string; onClose: () => void }) {
+  return (
+    <div className="text-center space-y-4 py-4">
+      <div className="text-6xl float-anim">🕯️</div>
+      <h3 className="font-serif text-2xl font-bold text-[#2A1E17]">
+        {name}&apos;s shrine is ready
+      </h3>
+      <p className="text-[#5C5046] text-sm leading-relaxed">
+        They now have a place in the memorial hall, forever.
+        We&apos;ve sent you a link so you can visit and edit anytime.
+      </p>
+      <Button onClick={onClose} variant="secondary" size="lg" className="w-full">
+        Visit their shrine →
+      </Button>
+    </div>
+  )
+}

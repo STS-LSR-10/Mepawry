@@ -1,0 +1,151 @@
+'use client'
+// components/shrine/TributeToolbar.tsx — S04 Shrine action bar
+
+import { useState } from 'react'
+import { cn, formatCount } from '@/lib/utils'
+
+interface TributeToolbarProps {
+  petId: string
+  candleCount: number
+  flowerCount: number
+  onGuestbook: () => void
+  onKeepsake: () => void
+  onShare: () => void
+  onTribute?: (type: 'candle' | 'flower') => void
+}
+
+export function TributeToolbar({
+  petId,
+  candleCount: initialCandles,
+  flowerCount: initialFlowers,
+  onGuestbook,
+  onKeepsake,
+  onShare,
+  onTribute,
+}: TributeToolbarProps) {
+  const [candles, setCandles] = useState(initialCandles)
+  const [flowers, setFlowers] = useState(initialFlowers)
+  const [justLit, setJustLit] = useState(false)
+  const [justFlowered, setJustFlowered] = useState(false)
+
+  const lightCandle = async () => {
+    if (justLit) return
+    setCandles(c => c + 1)
+    onTribute?.('candle')
+    setJustLit(true)
+    // TODO: call POST /api/pets/:id/candle
+    setTimeout(() => setJustLit(false), 3000)
+  }
+
+  const leaveFlower = async () => {
+    if (justFlowered) return
+    setFlowers(f => f + 1)
+    onTribute?.('flower')
+    setJustFlowered(true)
+    setTimeout(() => setJustFlowered(false), 3000)
+  }
+
+  return (
+    <div
+      role="toolbar"
+      aria-label="Shrine actions"
+      className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none"
+    >
+      {/* Candle */}
+      <TributeButton
+        emoji={justLit ? '🕯️' : '🕯️'}
+        label="Candle"
+        count={candles}
+        active={justLit}
+        glow={justLit}
+        onClick={lightCandle}
+        aria-label={`Light a candle. ${candles} candles lit`}
+      />
+
+      {/* Flower */}
+      <TributeButton
+        emoji="🌸"
+        label="Flower"
+        count={flowers}
+        active={justFlowered}
+        onClick={leaveFlower}
+        aria-label={`Leave a flower. ${flowers} flowers left`}
+      />
+
+      {/* Treat */}
+      <TributeButton
+        emoji="🎁"
+        label="Treat"
+        onClick={() => {/* open treat picker */}}
+        aria-label="Leave a treat"
+      />
+
+      {/* Guestbook */}
+      <TributeButton
+        emoji="📖"
+        label="Guestbook"
+        onClick={onGuestbook}
+        aria-label="Open guestbook"
+      />
+
+      {/* Share */}
+      <TributeButton
+        emoji="💌"
+        label="Share"
+        onClick={onShare}
+        aria-label="Share this memorial"
+      />
+
+      {/* Keepsake */}
+      <TributeButton
+        emoji="🖼️"
+        label="Keepsake"
+        onClick={onKeepsake}
+        aria-label="Order a keepsake"
+        highlight
+      />
+    </div>
+  )
+}
+
+interface TributeButtonProps {
+  emoji: string
+  label: string
+  count?: number
+  active?: boolean
+  glow?: boolean
+  highlight?: boolean
+  onClick: () => void
+  'aria-label'?: string
+}
+
+function TributeButton({ emoji, label, count, active, glow, highlight, onClick, 'aria-label': ariaLabel }: TributeButtonProps) {
+  return (
+    <button
+      onClick={onClick}
+      className={cn(
+        'flex-shrink-0 flex flex-col items-center gap-1 px-4 py-2.5 rounded-2xl border transition-all duration-150',
+        'hover:scale-105 active:scale-95',
+        highlight
+          ? 'bg-[#FDF0E5] border-[#D9823B] text-[#C67129]'
+          : 'glass border-white/20 text-[#FAF7F2]',
+        active && 'bg-[#D9823B]/20 border-[#D9823B]',
+        glow && 'shadow-[0_0_20px_rgba(217,130,59,0.4)]',
+      )}
+      aria-label={ariaLabel ?? label}
+      aria-pressed={active}
+    >
+      <span
+        className={cn('text-xl leading-none', glow && 'candle-flame')}
+        aria-hidden
+      >
+        {emoji}
+      </span>
+      {count !== undefined && (
+        <span className={cn('text-xs font-medium tabular-nums', active ? 'text-[#D9823B]' : '')}>
+          {formatCount(count)}
+        </span>
+      )}
+    </button>
+  )
+}

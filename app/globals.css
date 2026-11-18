@@ -1,0 +1,125 @@
+/* app/globals.css */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --night: #17131B;
+  --night-2: #1F1A24;
+  --night-3: #2A2331;
+  --parch: #FAF7F2;
+  --parch-2: #F4EFE6;
+  --ink: #2A1E17;
+  --body: #5C5046;
+  --muted: #8E8278;
+  --line: #E8DFD6;
+  --amber: #D9823B;
+  --amber-2: #C67129;
+  --amber-soft: #FDF0E5;
+  --glow: rgba(229, 149, 75, 0.55);
+  --brass-1: #E8C94A;
+  --brass-2: #C9A227;
+  --brass-3: #A07D1C;
+  --header-height: 68px;
+}
+
+html { scroll-behavior: smooth; }
+body {
+  font-family: var(--font-sans), system-ui, sans-serif;
+  color: var(--ink);
+  background: var(--parch);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+:focus-visible { outline: 2px solid var(--amber); outline-offset: 3px; border-radius: 8px; }
+
+@layer components {
+  .eyebrow { @apply text-xs font-semibold uppercase tracking-[0.18em] text-[#C67129]; }
+  .title { @apply font-serif font-medium leading-[1.15] mt-1.5 mb-3; font-size: clamp(1.9rem, 4vw, 2.75rem); }
+
+  .btn { @apply inline-flex items-center justify-center gap-2 rounded-full px-6 py-3.5 text-[0.95rem] font-semibold transition hover:-translate-y-px; }
+  .btn-amber { background: linear-gradient(135deg, #E5954B, var(--amber-2)); color: #fff; box-shadow: 0 8px 28px -8px var(--glow); }
+  .btn-amber:hover { box-shadow: 0 12px 34px -6px var(--glow); }
+  .btn-ghost { @apply border border-white/25 text-[#FAF7F2] backdrop-blur hover:bg-white/10; }
+  .btn-sm { @apply px-4 py-2 text-sm; }
+
+  .chip { @apply rounded-full border border-[#E8DFD6] bg-white px-4 py-2 text-sm text-[#5C5046] transition hover:border-[#D9823B]; }
+  .chip[aria-pressed='true'], .chip[aria-current='true'] { @apply border-[#2A1E17] bg-[#2A1E17] text-[#FAF7F2]; }
+
+  .field { @apply w-full rounded-2xl border border-[#E8DFD6] bg-white px-4 py-2.5 text-[#2A1E17] placeholder:text-[#B5A99F] focus:border-[#D9823B] focus:outline-none focus:ring-4 focus:ring-[#FDF0E5]; }
+
+  .card { @apply rounded-[20px] border border-[#E8DFD6] bg-white; }
+}
+
+/* ── Night sky ── */
+.night-sky { background: radial-gradient(120% 80% at 50% 110%, #3a2533 0%, var(--night-2) 45%, var(--night) 100%); }
+.moon {
+  position: absolute; top: 14%; right: 12%; width: 90px; height: 90px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #fff8e7, #f2dcae 60%, #d9b77a);
+  box-shadow: 0 0 80px 20px rgba(242, 220, 174, 0.18);
+}
+@media (max-width: 760px) { .moon { width: 52px; height: 52px; top: 82px; right: 7%; } }
+.text-glow {
+  background: linear-gradient(120deg, #F6D59A, #E5954B);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+
+/* ── Live dot ── */
+.live-dot { width: 8px; height: 8px; border-radius: 50%; background: #2ECC71; animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(46,204,113,.5) } 50% { box-shadow: 0 0 0 7px rgba(46,204,113,0) } }
+
+/* ── Candle-lit alcoves ── */
+.alcove {
+  position: relative; width: clamp(58px, 9vw, 96px); height: clamp(110px, 16vw, 170px);
+  border-radius: 60px 60px 6px 6px; background: linear-gradient(180deg, #3d2f2a, #2a201d);
+  border: 1px solid rgba(232, 201, 74, 0.25);
+  box-shadow: inset 0 -30px 40px -10px rgba(229,149,75,.35), 0 0 40px -10px rgba(229,149,75,.35);
+  display: flex; align-items: flex-end; justify-content: center; padding-bottom: 18%;
+}
+.alcove:nth-child(even) { height: clamp(90px, 13vw, 140px); opacity: .85; }
+.alcove:first-child, .alcove:last-child { opacity: .5; }
+.candle { position: relative; width: 12px; height: 26px; border-radius: 3px; background: linear-gradient(#fff6e3, #e9d6b5); }
+.candle.sm { width: 8px; height: 18px; }
+.flame {
+  position: absolute; left: 50%; bottom: 100%; width: 10px; height: 18px; margin-left: -5px;
+  border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+  background: radial-gradient(circle at 50% 70%, #fff 0 20%, #FFD27A 40%, #E5954B 75%, transparent 80%);
+  filter: drop-shadow(0 0 10px #FFB35C); transform-origin: 50% 100%; animation: flick 1.8s ease-in-out infinite;
+}
+.candle.sm .flame { width: 8px; height: 13px; margin-left: -4px; }
+.alcove:nth-child(2n) .flame, .candle:nth-child(2n) .flame { animation-duration: 2.3s; }
+.alcove:nth-child(3n) .flame, .candle:nth-child(3n) .flame { animation-delay: -.7s; }
+@keyframes flick { 0%,100% { transform: scale(1) rotate(-2deg) } 30% { transform: scale(1.06,.94) rotate(2deg) } 60% { transform: scale(.95,1.05) rotate(-1deg) } }
+.candle-flame { animation: flick 2s ease-in-out infinite; display: inline-block; }
+
+/* ── Shrine frame + brass nameplate ── */
+.shrine-frame {
+  border-radius: 999px 999px 16px 16px; border: 3px solid var(--brass-2); overflow: hidden;
+  box-shadow: 0 0 0 6px rgba(201,162,39,.15), 0 0 60px -10px var(--glow);
+}
+.brass-plate {
+  display: inline-block; padding: .5rem 1.6rem; border-radius: 6px;
+  background: linear-gradient(135deg, var(--brass-1), var(--brass-2) 50%, var(--brass-3));
+  color: #3b2a08; font-weight: 600;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.5), 0 6px 16px -6px rgba(0,0,0,.6);
+}
+.brass-text {
+  background: linear-gradient(135deg, var(--brass-1) 0%, var(--brass-2) 50%, var(--brass-3) 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+
+/* ── Glass (3D hall HUD) ── */
+.glass { background: rgba(23,19,27,.45); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+.world-bg { background-color: var(--night); }
+
+/* ── Motion ── */
+@keyframes float { 0%,100% { transform: translateY(0) } 50% { transform: translateY(-8px) } }
+.float-anim { animation: float 3s ease-in-out infinite; }
+@keyframes pop { from { opacity: 0; transform: translateY(16px) scale(.97) } }
+.pop-in { animation: pop .3s cubic-bezier(.34,1.56,.64,1); }
+.reveal { opacity: 0; transform: translateY(24px); transition: opacity .8s, transform .8s; }
+.reveal.in { opacity: 1; transform: none; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+  .reveal { opacity: 1; transform: none; }
+}

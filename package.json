@@ -1,0 +1,52 @@
+{
+  "name": "pawmemorial",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "db:push": "drizzle-kit push",
+    "db:studio": "drizzle-kit studio",
+    "db:generate": "drizzle-kit generate"
+  },
+  "dependencies": {
+    "next": "^15.1.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "@supabase/supabase-js": "^2.47.2",
+    "@supabase/ssr": "^0.5.1",
+    "drizzle-orm": "^0.36.3",
+    "postgres": "^3.4.4",
+    "@react-three/fiber": "^9.0.0",
+    "@react-three/drei": "^10.0.0",
+    "three": "^0.170.0",
+    "howler": "^2.2.4",
+    "framer-motion": "^11.11.17",
+    "stripe": "^17.4.0",
+    "@stripe/stripe-js": "^5.3.0",
+    "@stripe/react-stripe-js": "^3.1.0",
+    "next-intl": "^3.26.3",
+    "resend": "^4.0.1",
+    "browser-image-compression": "^2.0.2",
+    "clsx": "^2.1.1",
+    "tailwind-merge": "^2.5.4",
+    "lucide-react": "^0.462.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@types/three": "^0.170.0",
+    "@types/howler": "^2.2.12",
+    "typescript": "^5",
+    "tailwindcss": "^3.4.14",
+    "postcss": "^8",
+    "autoprefixer": "^10.0.1",
+    "eslint": "^8",
+    "eslint-config-next": "^15.1.0",
+    "drizzle-kit": "^0.28.1"
+  }
+}

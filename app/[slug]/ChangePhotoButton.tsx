@@ -1,0 +1,50 @@
+'use client'
+// app/[slug]/ChangePhotoButton.tsx — Lets the person who created this shrine upload a new photo
+
+import { useEffect, useRef, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { getEditToken, photoToDataUrl } from '@/lib/photo'
+
+export function ChangePhotoButton({ petId, hasPhoto }: { petId: string; hasPhoto: boolean }) {
+  const [token, setToken] = useState<string | null>(null)
+  const [status, setStatus] = useState<'idle' | 'busy' | 'error'>('idle')
+  const fileRef = useRef<HTMLInputElement>(null)
+  const router = useRouter()
+
+  useEffect(() => setToken(getEditToken(petId)), [petId])
+  if (!token) return null
+
+  const onPick = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    setStatus('busy')
+    try {
+      const res = await fetch(`/api/pets/${petId}/photo`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, photo: await photoToDataUrl(file) }),
+      })
+      if (!res.ok) throw new Error()
+      setStatus('idle')
+      router.refresh()
+    } catch {
+      setStatus('error')
+    }
+  }
+
+  return (
+    <div className="mt-3">
+      <button
+        type="button"
+        onClick={() => fileRef.current?.click()}
+        disabled={status === 'busy'}
+        className="rounded-full border border-white/20 bg-white/5 px-4 py-1.5 text-xs text-[#FAF7F2]/80 transition hover:bg-white/10 disabled:opacity-60"
+      >
+        {status === 'busy' ? 'Uploading…' : hasPhoto ? '📷 Change photo' : '📷 Add a photo'}
+      </button>
+      <input ref={fileRef} type="file" accept="image/*" className="sr-only" onChange={onPick} aria-label="Choose a new photo" />
+      {status === 'error' && <p role="alert" className="mt-2 text-xs text-[#FFB4A8]">Upload failed. Try a JPG or PNG.</p>}
+    </div>
+  )
+}
