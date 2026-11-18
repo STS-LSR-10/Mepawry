@@ -59,6 +59,7 @@ export function petTexture(pet: Pet, withName: boolean) {
   draw()
   if (pet.primary_photo_url) {
     const img = new Image()
+    img.crossOrigin = 'anonymous' // photos live on Supabase Storage; without this WebGL refuses the canvas
     img.onload = () => draw(img)
     img.src = pet.primary_photo_url
   }

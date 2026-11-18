@@ -1,77 +1,81 @@
-// lib/data.ts — Real data layer: pets, candles/flowers, guestbook and visits, saved to data/store.json.
-// Every number on the site is counted from here. Server-only (uses the file system).
-// shortcut: one JSON file on one server; move to Postgres (DATABASE_URL in .env.example) before running more than one instance
+// lib/data.ts — Real data layer on Supabase: pets, candles/flowers, guestbook, visits, photos and who's online.
+// Every number on the site is counted from here. Server-only: it uses the service role key,
+// which bypasses Row Level Security, so it must never be imported into a client component.
+// Tables and SQL functions live in supabase/schema.sql.
 
-import { promises as fs } from 'node:fs'
-import path from 'node:path'
 import { randomUUID } from 'node:crypto'
-import type { Floor, GlobalStats, GuestbookEntry, Pet, Species, Tribute, TributeType } from '@/types'
+import { createClient, type SupabaseClient } from '@supabase/supabase-js'
+import type { Floor, GlobalStats, GuestbookEntry, Pet, Species, TributeType } from '@/types'
 import { FLOOR_CAPACITY, FLOOR_COUNT } from '@/components/3d/layout'
 import { generateSlug, getFloorName } from '@/lib/utils'
 
-interface Store {
-  pets: Pet[]
-  tributes: Tribute[]
-  guestbook: GuestbookEntry[]
-  editTokens: Record<string, string>
-}
+const g = globalThis as typeof globalThis & { __pmDb?: SupabaseClient }
 
-const FILE = path.join(process.cwd(), 'data', 'store.json')
-
-// Next loads separate copies of this module for API routes and pages; keep one store per process
-const g = globalThis as typeof globalThis & { __pmStore?: Promise<Store>; __pmWrite?: Promise<void> }
-
-function load(): Promise<Store> {
-  g.__pmStore ??= fs.readFile(FILE, 'utf8')
-    .then(text => JSON.parse(text) as Store)
-    .catch((err: NodeJS.ErrnoException) => {
-      if (err.code === 'ENOENT') return { pets: [], tributes: [], guestbook: [], editTokens: {} }
-      throw err // a corrupt file must not be silently replaced with an empty one
-    })
-  return g.__pmStore
-}
-
-/** Writes go one at a time, to a temp file renamed into place, so a crash never leaves half a file. */
-function save(store: Store): Promise<void> {
-  const write = async () => {
-    await fs.mkdir(path.dirname(FILE), { recursive: true })
-    const tmp = `${FILE}.${process.pid}.tmp`
-    await fs.writeFile(tmp, JSON.stringify(store))
-    await fs.rename(tmp, FILE)
+/** Created on first use, so builds without keys still compile. */
+function db(): SupabaseClient {
+  if (!g.__pmDb) {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+    if (!url || !key) throw new Error('Set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in .env.local')
+    g.__pmDb = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } })
   }
-  g.__pmWrite = (g.__pmWrite ?? Promise.resolve()).then(write, write)
-  return g.__pmWrite
+  return g.__pmDb
+}
+
+/** Unwraps a Supabase reply, turning its error into a thrown one. */
+function must<T>({ data, error }: { data: T; error: { message: string } | null }): T {
+  if (error) throw new Error(error.message)
+  return data
+}
+
+// ── Photos (Supabase Storage, public bucket "pet-photos") ──
+
+/** Uploads a validated data: URL and returns its public URL. */
+async function storePhoto(petId: string, dataUrl: string): Promise<string> {
+  const m = /^data:image\/(jpeg|png|webp);base64,(.+)$/.exec(dataUrl)
+  if (!m) throw new Error('Photo must be a JPG, PNG or WebP')
+  const path = `${petId}/${Date.now()}.${m[1] === 'jpeg' ? 'jpg' : m[1]}`
+  const bucket = db().storage.from('pet-photos')
+  must(await bucket.upload(path, Buffer.from(m[2], 'base64'), { contentType: `image/${m[1]}` }))
+  return bucket.getPublicUrl(path).data.publicUrl
 }
 
 // ── Pets ──
 
 export async function getPetBySlug(slug: string): Promise<Pet | null> {
-  return (await load()).pets.find(p => p.slug === slug) ?? null
+  return must(await db().from('pets').select('*').eq('slug', slug).maybeSingle())
 }
 
 export async function getPetsOnFloor(floor: number): Promise<Pet[]> {
-  return (await load()).pets.filter(p => p.floor_id === floor).sort((a, b) => a.shrine_position - b.shrine_position)
+  return (must(await db().from('pets').select('*').eq('floor_id', floor).order('shrine_position'))) ?? []
 }
 
 export async function getMemorials(opts: { species?: string; waitingOnly?: boolean; search?: string; page?: number; limit?: number }) {
-  let results = [...(await load()).pets].reverse() // newest first
-  if (opts.species && opts.species !== 'all') results = results.filter(p => p.species === opts.species)
-  if (opts.waitingOnly) results = results.filter(p => p.candle_count === 0)
-  if (opts.search) {
-    const q = opts.search.toLowerCase()
-    results = results.filter(p => p.name.toLowerCase().includes(q))
-  }
   const page = Math.max(1, opts.page ?? 1)
   const limit = Math.min(100, opts.limit ?? 24)
-  return { pets: results.slice((page - 1) * limit, page * limit), total: results.length }
+  let q = db().from('pets').select('*', { count: 'exact' }).order('created_at', { ascending: false })
+  if (opts.species && opts.species !== 'all') q = q.eq('species', opts.species)
+  if (opts.waitingOnly) q = q.eq('candle_count', 0)
+  if (opts.search) q = q.ilike('name', `%${opts.search.replace(/[\\%_]/g, '\\$&')}%`)
+  const { data, count, error } = await q.range((page - 1) * limit, page * limit - 1)
+  if (error) throw new Error(error.message)
+  return { pets: data as Pet[], total: count ?? 0 }
 }
 
-/** Neighbours in the building, for the ‹ › arrows on a shrine page. */
+/** Neighbours on the shelves, for the ‹ › arrows on a shrine page (wraps around at the ends). */
 export async function getNeighbours(pet: Pet): Promise<{ prev: Pet | null; next: Pet | null }> {
-  const pets = (await load()).pets
-  const i = pets.findIndex(p => p.id === pet.id)
-  if (pets.length < 2) return { prev: null, next: null }
-  return { prev: pets[(i - 1 + pets.length) % pets.length], next: pets[(i + 1) % pets.length] }
+  const { floor_id: f, shrine_position: s } = pet
+  const one = async (cmp: 'lt' | 'gt', wrap: boolean) => {
+    let q = db().from('pets').select('*').neq('id', pet.id)
+    if (!wrap) q = q.or(`floor_id.${cmp}.${f},and(floor_id.eq.${f},shrine_position.${cmp}.${s})`)
+    const asc = cmp === 'gt' ? !wrap : wrap
+    return must(await q.order('floor_id', { ascending: asc }).order('shrine_position', { ascending: asc }).limit(1).maybeSingle()) as Pet | null
+  }
+  const [prev, next] = await Promise.all([one('lt', false), one('gt', false)])
+  return {
+    prev: prev ?? await one('lt', true),
+    next: next ?? await one('gt', true),
+  }
 }
 
 const SPECIES: Species[] = ['dog', 'cat', 'other']
@@ -79,123 +83,97 @@ const year = (v: unknown) => (typeof v === 'number' && v >= 1900 && v <= new Dat
 
 /** Adds a pet to the next free shelf: floor 1 fills first, then floor 2, and so on. */
 export async function createPet(data: Partial<Pet>): Promise<{ pet: Pet; editToken: string }> {
-  const store = await load()
-  const n = store.pets.length
-  if (n >= FLOOR_CAPACITY * FLOOR_COUNT) throw new Error('The memorial building is full')
-  const floor = Math.floor(n / FLOOR_CAPACITY) + 1
-  const position = n % FLOOR_CAPACITY
+  const id = randomUUID()
   const name = String(data.name ?? '').trim().slice(0, 80)
-  const now = new Date().toISOString()
-  const pet: Pet = {
-    id: randomUUID(),
-    slug: generateSlug(name || 'pet', floor, position),
-    name,
-    species: SPECIES.includes(data.species as Species) ? (data.species as Species) : 'other',
-    country_code: /^[A-Z]{2}$/.test(String(data.country_code)) ? String(data.country_code) : 'XX',
-    primary_photo_url: data.primary_photo_url ?? null,
-    gallery_urls: [],
-    birth_year: year(data.birth_year),
-    death_year: year(data.death_year),
-    epitaph: data.epitaph ? String(data.epitaph).slice(0, 500) : null,
-    epitaph_translations: {},
-    floor_id: floor,
-    shrine_position: position,
-    candle_count: 0,
-    flower_count: 0,
-    visit_count: 0,
-    created_at: now,
-    updated_at: now,
+  const photo = data.primary_photo_url ? await storePhoto(id, data.primary_photo_url) : null
+  // Two people adding at once can pick the same shelf; the unique (floor, position) rule rejects one, which retries
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const last = must(await db().from('pets').select('floor_id, shrine_position')
+      .order('floor_id', { ascending: false }).order('shrine_position', { ascending: false }).limit(1).maybeSingle())
+    const n = last ? (last.floor_id - 1) * FLOOR_CAPACITY + last.shrine_position + 1 : 0
+    if (n >= FLOOR_CAPACITY * FLOOR_COUNT) throw new Error('The memorial building is full')
+    const floor = Math.floor(n / FLOOR_CAPACITY) + 1
+    const position = n % FLOOR_CAPACITY
+    const { data: pet, error } = await db().from('pets').insert({
+      id,
+      slug: generateSlug(name || 'pet', floor, position),
+      name,
+      species: SPECIES.includes(data.species as Species) ? data.species : 'other',
+      country_code: /^[A-Z]{2}$/.test(String(data.country_code)) ? String(data.country_code) : 'XX',
+      primary_photo_url: photo,
+      birth_year: year(data.birth_year),
+      death_year: year(data.death_year),
+      epitaph: data.epitaph ? String(data.epitaph).slice(0, 500) : null,
+      floor_id: floor,
+      shrine_position: position,
+    }).select().single()
+    if (error?.code === '23505') continue // shelf (or slug) just taken
+    if (error) throw new Error(error.message)
+    const editToken = randomUUID()
+    must(await db().from('edit_tokens').insert({ pet_id: id, token: editToken }))
+    return { pet: pet as Pet, editToken }
   }
-  const editToken = randomUUID()
-  store.pets.push(pet)
-  store.editTokens[pet.id] = editToken
-  await save(store)
-  return { pet, editToken }
+  throw new Error('The hall is busy, please try again')
 }
 
-export async function updatePetPhoto(petId: string, token: string, photoUrl: string): Promise<Pet | null> {
-  const store = await load()
-  const pet = store.pets.find(p => p.id === petId)
-  if (!pet || !token || store.editTokens[petId] !== token) return null
-  pet.primary_photo_url = photoUrl
-  pet.updated_at = new Date().toISOString()
-  await save(store)
-  return pet
+export async function updatePetPhoto(petId: string, token: string, photoDataUrl: string): Promise<Pet | null> {
+  if (!token) return null
+  const row = must(await db().from('edit_tokens').select('token').eq('pet_id', petId).maybeSingle())
+  if (!row || row.token !== token) return null
+  // shortcut: the old photo file stays in the bucket; add a cleanup if storage costs ever matter
+  const url = await storePhoto(petId, photoDataUrl)
+  return must(await db().from('pets').update({ primary_photo_url: url, updated_at: new Date().toISOString() })
+    .eq('id', petId).select().maybeSingle())
 }
 
 export async function recordVisit(petId: string): Promise<void> {
-  const store = await load()
-  const pet = store.pets.find(p => p.id === petId)
-  if (!pet) return
-  pet.visit_count++
-  await save(store)
+  must(await db().rpc('record_visit', { p_pet: petId }))
 }
 
 // ── Tributes and guestbook ──
 
 const TRIBUTES: TributeType[] = ['candle', 'flower', 'treat_bone', 'treat_icecream', 'treat_ball']
 const cleanName = (v: unknown) => String(v ?? '').trim().slice(0, 40) || 'A visitor'
+const isUuid = (v: string) => /^[0-9a-f-]{36}$/i.test(v)
 
 export async function addTribute(petId: string, type: string, visitorName: unknown): Promise<Pet | null> {
-  if (!TRIBUTES.includes(type as TributeType)) return null
-  const store = await load()
-  const pet = store.pets.find(p => p.id === petId)
-  if (!pet) return null
-  if (type === 'candle') pet.candle_count++
-  if (type === 'flower') pet.flower_count++
-  store.tributes.push({ id: randomUUID(), pet_id: petId, visitor_id: null, visitor_name: cleanName(visitorName), type: type as TributeType, created_at: new Date().toISOString() })
-  await save(store)
-  return pet
+  if (!TRIBUTES.includes(type as TributeType) || !isUuid(petId)) return null
+  const { data, error } = await db().rpc('add_tribute', { p_pet: petId, p_type: type, p_name: cleanName(visitorName) })
+  if (error?.code === '23503') return null // no such pet
+  if (error) throw new Error(error.message)
+  return (data as Pet[])[0] ?? null
 }
 
 export async function getGuestbook(petId: string): Promise<GuestbookEntry[]> {
-  return (await load()).guestbook.filter(e => e.pet_id === petId && !e.is_hidden).reverse()
+  if (!isUuid(petId)) return []
+  return (must(await db().from('guestbook').select('*').eq('pet_id', petId).eq('is_hidden', false).order('created_at', { ascending: false }))) ?? []
 }
 
 export async function signGuestbook(petId: string, visitorName: unknown, message: unknown): Promise<GuestbookEntry | null> {
   const text = String(message ?? '').trim().slice(0, 500)
-  const store = await load()
-  if (!text || !store.pets.some(p => p.id === petId)) return null
-  const entry: GuestbookEntry = { id: randomUUID(), pet_id: petId, visitor_name: cleanName(visitorName), message: text, is_hidden: false, created_at: new Date().toISOString() }
-  store.guestbook.push(entry)
-  await save(store)
-  return entry
+  if (!text || !isUuid(petId)) return null
+  const { data, error } = await db().from('guestbook').insert({ pet_id: petId, visitor_name: cleanName(visitorName), message: text }).select().single()
+  if (error?.code === '23503') return null
+  if (error) throw new Error(error.message)
+  return data
 }
 
 // ── Counts ──
 
 export async function getStats(): Promise<GlobalStats & { candles_today: number; countries_today: number }> {
-  const { pets, tributes } = await load()
-  const ages = pets.filter(p => p.birth_year && p.death_year).map(p => p.death_year! - p.birth_year!)
-  const since = Date.now() - 24 * 3600 * 1000
-  const today = tributes.filter(t => t.type === 'candle' && Date.parse(t.created_at) > since)
-  const byId = new Map(pets.map(p => [p.id, p]))
-  return {
-    total_pets: pets.length,
-    total_dogs: pets.filter(p => p.species === 'dog').length,
-    total_cats: pets.filter(p => p.species === 'cat').length,
-    total_others: pets.filter(p => p.species === 'other').length,
-    total_countries: new Set(pets.map(p => p.country_code).filter(c => c !== 'XX')).size,
-    total_candles: pets.reduce((s, p) => s + p.candle_count, 0),
-    total_flowers: pets.reduce((s, p) => s + p.flower_count, 0),
-    avg_age: ages.length ? Math.round((ages.reduce((a, b) => a + b, 0) / ages.length) * 10) / 10 : null,
-    refreshed_at: new Date().toISOString(),
-    candles_today: today.length,
-    countries_today: new Set(today.map(t => byId.get(t.pet_id)?.country_code).filter(Boolean)).size,
-  }
+  const s = must(await db().rpc('get_stats'))
+  return { ...s, avg_age: s.avg_age === null ? null : Number(s.avg_age), refreshed_at: new Date().toISOString() }
 }
 
 /** Most common pet names, for the report page. */
 export async function getTopNames(limit = 10): Promise<{ name: string; count: number }[]> {
-  const counts = new Map<string, number>()
-  for (const p of (await load()).pets) counts.set(p.name, (counts.get(p.name) ?? 0) + 1)
-  return [...counts].map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count).slice(0, limit)
+  const rows: { name: string; count: number }[] = must(await db().rpc('top_names', { p_limit: limit }))
+  return rows.map(r => ({ name: r.name, count: Number(r.count) }))
 }
 
 export async function getFloors(): Promise<Floor[]> {
-  const { pets } = await load()
   const counts = new Array(FLOOR_COUNT + 1).fill(0)
-  for (const p of pets) counts[p.floor_id]++
+  for (const r of must(await db().rpc('floor_counts')) as { floor_id: number; n: number }[]) counts[r.floor_id] = Number(r.n)
   return Array.from({ length: FLOOR_COUNT }, (_, i) => ({
     id: i + 1, name: getFloorName(i + 1), capacity: FLOOR_CAPACITY, current_count: counts[i + 1],
     is_open: counts[i + 1] < FLOOR_CAPACITY, opened_at: null, created_at: '',
@@ -204,32 +182,34 @@ export async function getFloors(): Promise<Floor[]> {
 
 /** The floor new shrines go to now. */
 export async function getOpenFloor(): Promise<number> {
-  return Math.min(FLOOR_COUNT, Math.floor((await load()).pets.length / FLOOR_CAPACITY) + 1)
+  const floors = await getFloors()
+  return floors.find(f => f.is_open)?.id ?? FLOOR_COUNT
 }
 
 /** Latest real happenings: candles, flowers, guestbook messages and new shrines. */
 export async function getActivity(limit = 20): Promise<{ who: string; act: string; pet: string; slug: string; cc: string; at: string }[]> {
-  const { pets, tributes, guestbook } = await load()
-  const byId = new Map(pets.map(p => [p.id, p]))
-  const verb: Record<string, string> = { candle: 'lit a candle for', flower: 'left a flower for', treat_bone: 'left a treat for', treat_icecream: 'left a treat for', treat_ball: 'left a toy for' }
-  const items = [
-    ...tributes.map(t => ({ who: t.visitor_name, act: verb[t.type], petId: t.pet_id, at: t.created_at })),
-    ...guestbook.filter(e => !e.is_hidden).map(e => ({ who: e.visitor_name, act: 'wrote in the guestbook of', petId: e.pet_id, at: e.created_at })),
-    ...pets.map(p => ({ who: '', act: 'was given a place in the hall', petId: p.id, at: p.created_at })),
+  type P = { name: string; slug: string; country_code: string }
+  const pet = 'pets(name, slug, country_code)'
+  const [tributes, guestbook, pets] = await Promise.all([
+    db().from('tributes').select(`visitor_name, type, created_at, ${pet}`).order('created_at', { ascending: false }).limit(limit),
+    db().from('guestbook').select(`visitor_name, created_at, ${pet}`).eq('is_hidden', false).order('created_at', { ascending: false }).limit(limit),
+    db().from('pets').select('name, slug, country_code, created_at').order('created_at', { ascending: false }).limit(limit),
+  ]).then(rs => rs.map(r => must<unknown>(r) ?? [])) as [
+    { visitor_name: string; type: string; created_at: string; pets: P }[],
+    { visitor_name: string; created_at: string; pets: P }[],
+    (P & { created_at: string })[],
   ]
-  return items
-    .sort((a, b) => b.at.localeCompare(a.at))
-    .slice(0, limit)
-    .flatMap(it => { const p = byId.get(it.petId); return p ? [{ who: it.who, act: it.act, pet: p.name, slug: p.slug, cc: p.country_code, at: it.at }] : [] })
+  const verb: Record<string, string> = { candle: 'lit a candle for', flower: 'left a flower for', treat_bone: 'left a treat for', treat_icecream: 'left a treat for', treat_ball: 'left a toy for' }
+  const row = (who: string, act: string, p: P, at: string) => ({ who, act, pet: p.name, slug: p.slug, cc: p.country_code, at })
+  return [
+    ...tributes.map(t => row(t.visitor_name, verb[t.type], t.pets, t.created_at)),
+    ...guestbook.map(e => row(e.visitor_name, 'wrote in the guestbook of', e.pets, e.created_at)),
+    ...pets.map(p => row('', 'was given a place in the hall', p, p.created_at)),
+  ].sort((a, b) => Date.parse(b.at) - Date.parse(a.at)).slice(0, limit)
 }
 
-// ── Who's here now (in memory; a visitor counts while their page checks in every ~25s) ──
+// ── Who's here now (a visitor counts while their page checks in every ~25s) ──
 
-const presence = ((globalThis as typeof globalThis & { __pmPresence?: Map<string, number> }).__pmPresence ??= new Map())
-
-export function heartbeat(id: string | null): number {
-  const now = Date.now()
-  if (id && /^[\w-]{8,64}$/.test(id)) presence.set(id, now)
-  for (const [k, t] of presence) if (now - t > 60_000) presence.delete(k)
-  return presence.size
+export async function heartbeat(id: string | null): Promise<number> {
+  return must(await db().rpc('heartbeat', { p_id: id && /^[\w-]{8,64}$/.test(id) ? id : null }))
 }

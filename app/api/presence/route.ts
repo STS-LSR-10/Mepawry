@@ -7,5 +7,5 @@ export const dynamic = 'force-dynamic'
 
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null)
-  return NextResponse.json({ online: heartbeat(body?.id ?? null) })
+  return NextResponse.json({ online: await heartbeat(body?.id ?? null) })
 }
