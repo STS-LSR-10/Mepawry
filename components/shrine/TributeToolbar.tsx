@@ -5,9 +5,10 @@ import { useState } from 'react'
 import { cn, formatCount } from '@/lib/utils'
 
 interface TributeToolbarProps {
-  petId: string
   candleCount: number
   flowerCount: number
+  /** This visitor already lit today's candle (one a day, new one after midnight). */
+  litToday: boolean
   onGuestbook: () => void
   onKeepsake: () => void
   onGift: () => void
@@ -16,32 +17,23 @@ interface TributeToolbarProps {
 }
 
 export function TributeToolbar({
-  petId,
-  candleCount: initialCandles,
-  flowerCount: initialFlowers,
+  candleCount: candles,
+  flowerCount: flowers,
+  litToday,
   onGuestbook,
   onKeepsake,
   onGift,
   onShare,
   onTribute,
 }: TributeToolbarProps) {
-  const [candles, setCandles] = useState(initialCandles)
-  const [flowers, setFlowers] = useState(initialFlowers)
-  const [justLit, setJustLit] = useState(false)
   const [justFlowered, setJustFlowered] = useState(false)
 
-  const lightCandle = async () => {
-    if (justLit) return
-    setCandles(c => c + 1)
-    onTribute?.('candle')
-    setJustLit(true)
-    // TODO: call POST /api/pets/:id/candle
-    setTimeout(() => setJustLit(false), 3000)
+  const lightCandle = () => {
+    if (!litToday) onTribute?.('candle')
   }
 
   const leaveFlower = async () => {
     if (justFlowered) return
-    setFlowers(f => f + 1)
     onTribute?.('flower')
     setJustFlowered(true)
     setTimeout(() => setJustFlowered(false), 3000)
@@ -55,13 +47,13 @@ export function TributeToolbar({
     >
       {/* Candle */}
       <TributeButton
-        emoji={justLit ? '🕯️' : '🕯️'}
+        emoji="🕯️"
         label="Candle"
         count={candles}
-        active={justLit}
-        glow={justLit}
+        active={litToday}
+        glow={litToday}
         onClick={lightCandle}
-        aria-label={`Light a candle. ${candles} candles lit`}
+        aria-label={litToday ? `You lit today's candle. ${candles} candles lit. Come back tomorrow to light another` : `Light a candle. ${candles} candles lit`}
       />
 
       {/* Flower */}

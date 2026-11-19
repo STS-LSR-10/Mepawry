@@ -1,20 +1,22 @@
 'use client'
 // components/3d/ShrineCabinet.tsx — A pet's shrine as a cozy miniature shadow box: dark walnut case, midnight sky
-// with a crescent moon, a gold-framed portrait, floating shelves of keepsakes, pastel fairy lights and a glass door.
-// Candles: a jar candle on the shelf, then tea lights along the front (one per candle lit, up to 7).
+// with a crescent moon, a gold-framed portrait, floating shelves, pastel fairy lights and a glass door.
+// It starts with just a candle and a vase; gifts visitors leave fill the shelves. The candle grows a little with
+// each candle lit in the last day (each visitor can light one a day), up to a cap so it never outgrows the case.
 // On phones (quality 'low') we skip shadows, reflections and the soft halos to stay inside the GPU budget.
 
 import { useEffect, useMemo, useRef } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { Environment, Lightformer, Line, OrbitControls, RoundedBox, Sparkles } from '@react-three/drei'
 import {
-  AdditiveBlending, Color, DoubleSide, InstancedMesh, MeshPhysicalMaterial, MeshStandardMaterial, Object3D, Vector2,
+  AdditiveBlending, CanvasTexture, Color, SRGBColorSpace, DoubleSide, InstancedMesh, MeshPhysicalMaterial, MeshStandardMaterial, Object3D, Vector2,
   type Group, type Mesh, type PointLight, type Sprite, type Texture,
 } from 'three'
 import { glowTexture, midnightTexture, moonTexture, petTexture, plaqueTexture, woodTexture } from './textures'
 import { useContextLossRecovery, useQuality } from './quality'
 import { microMap, withRim } from './look'
 import type { Pet } from '@/types'
+import { giftById } from '@/lib/gifts'
 
 const W = 2.4, H = 1.9, DP = 0.9, T = 0.08
 const BACK = -DP / 2 + T / 2          // front face of the back panel
@@ -30,7 +32,7 @@ function useTex(make: () => Texture, deps: unknown[]) {
   return t
 }
 
-export default function ShrineCabinet({ pet, candles, flowers }: { pet: Pet; candles: number; flowers: number }) {
+export default function ShrineCabinet({ pet, candlesToday, flowers, gifts }: { pet: Pet; candlesToday: number; flowers: number; gifts: string[] }) {
   const low = useQuality() === 'low'
   const recovery = useContextLossRecovery()
   return (
@@ -67,7 +69,7 @@ export default function ShrineCabinet({ pet, candles, flowers }: { pet: Pet; can
         </Environment>
       )}
       <FitCamera />
-      <Cabinet pet={pet} candles={candles} flowers={flowers} low={low} />
+      <Cabinet pet={pet} candlesToday={candlesToday} flowers={flowers} gifts={gifts} low={low} />
       <Bokeh count={low ? 10 : 22} />
       <Sparkles count={low ? 25 : 60} scale={[5, 3.2, 2.5]} size={1.6} speed={0.18} color="#FFE0B0" opacity={0.55} />
       <OrbitControls
@@ -122,7 +124,7 @@ function useMaterials(low: boolean) {
 }
 type Mats = ReturnType<typeof useMaterials>
 
-function Cabinet({ pet, candles, flowers, low }: { pet: Pet; candles: number; flowers: number; low: boolean }) {
+function Cabinet({ pet, candlesToday, flowers, gifts, low }: { pet: Pet; candlesToday: number; flowers: number; gifts: string[]; low: boolean }) {
   const m = useMaterials(low)
   const photo = useTex(() => petTexture(pet, false), [pet.id, pet.primary_photo_url])
   const sky = useTex(() => midnightTexture(), [])
@@ -143,9 +145,7 @@ function Cabinet({ pet, candles, flowers, low }: { pet: Pet; candles: number; fl
       mesh.castShadow = solid
       mesh.receiveShadow = solid
     })
-  }, [low, candles, flowers])
-
-  const lit = Math.min(candles, 7)
+  }, [low, flowers, gifts.length])
 
   return (
     <group ref={root} position={[0, 0.05, 0]}>
@@ -175,18 +175,9 @@ function Cabinet({ pet, candles, flowers, low }: { pet: Pet; candles: number; fl
       {[-1, 1].map(s => SHELF_Y.map(y => (
         <RoundedBox key={`${s}${y}`} args={[0.6, 0.035, 0.4]} radius={0.008} smoothness={2} position={[s * 0.82, y, BACK + 0.2]} material={m.shelf} />
       )))}
-      <Books at={[-0.83, SHELF_Y[0] + 0.018, BACK + 0.2]} />
-      <JarCandle at={[-0.83, SHELF_Y[1] + 0.018, BACK + 0.2]} lit={lit > 0} glow={glow} m={m} low={low} />
-      <Toys at={[0.82, SHELF_Y[0] + 0.018, BACK + 0.2]} />
-      <Terrarium at={[0.7, SHELF_Y[1] + 0.018, BACK + 0.2]} m={m} />
-      <PlantJar at={[0.96, SHELF_Y[1] + 0.018, BACK + 0.2]} m={m} />
+      <GiftDecor gifts={gifts} />
       <BabysBreath at={[-0.8, FLOOR, -0.02]} stems={5 + Math.min(flowers, 7)} m={m} />
-      <Lantern at={[0.8, FLOOR, -0.02]} glow={glow} m={m} low={low} />
-
-      {/* Tea lights along the front, one per extra candle lit */}
-      {[-0.42, 0.42, -0.58, 0.58, -0.26, 0.26].slice(0, Math.max(0, lit - 1)).map(x => (
-        <TeaLight key={x} at={[x, FLOOR, 0.3]} glow={glow} low={low} />
-      ))}
+      <PillarCandle at={[0.8, FLOOR, -0.02]} today={candlesToday} glow={glow} m={m} low={low} />
 
       {/* Wooden nameplate on little gold feet */}
       <group position={[0, FLOOR, 0.02]}>
@@ -198,7 +189,7 @@ function Cabinet({ pet, candles, flowers, low }: { pet: Pet; candles: number; fl
         </mesh>
       </group>
 
-      {/* Warm light: an LED strip under the top, the candle and the lantern */}
+      {/* Warm light: an LED strip under the top, and the candle */}
       <spotLight position={[0, H / 2 - 0.08, 0.25]} angle={1.15} penumbra={1} intensity={2.4} distance={3.5} decay={1.4} color="#FFD3A0" />
       <pointLight position={[0, 0, 0.6]} intensity={0.6} distance={3} decay={1.6} color="#FFB878" />
 
@@ -275,128 +266,69 @@ function Flame({ at, size = 1 }: { at: V3; size?: number }) {
   )
 }
 
-/** Scented candle in a glass jar: the first candle lit. */
-function JarCandle({ at, lit, glow, m, low }: { at: V3; lit: boolean; glow: Texture; m: Mats; low: boolean }) {
+/** Tallest the candle gets (candles lit in the last day beyond this don't add height), so it stays well under the shelf. */
+const CANDLE_MAX_STEPS = 6
+
+/** One pillar candle on a brass dish. Each candle lit in the last 24 hours makes it a little taller, up to a cap. */
+function PillarCandle({ at, today, glow, m, low }: { at: V3; today: number; glow: Texture; m: Mats; low: boolean }) {
+  const target = 0.14 + 0.035 * Math.min(Math.max(today, 0), CANDLE_MAX_STEPS)
+  const body = useRef<Mesh>(null!)
+  const top = useRef<Group>(null!)
   const light = useRef<PointLight>(null!)
-  useFrame(({ clock }) => {
+  const h = useRef(target)
+  useFrame(({ clock }, dt) => {
+    h.current += (target - h.current) * Math.min(1, dt * 3) // grows smoothly when a candle is lit
+    body.current.scale.y = h.current
+    body.current.position.y = 0.02 + h.current / 2
+    top.current.position.y = 0.02 + h.current
     const t = clock.elapsedTime
     if (light.current) light.current.intensity = 1.5 + Math.sin(t * 9) * 0.25 + Math.sin(t * 23) * 0.15
   })
+  const lit = today > 0
   return (
     <group position={at}>
-      <mesh position={[0, 0.05, 0]}>
-        <cylinderGeometry args={[0.07, 0.07, 0.1, 24]} />
-        <meshStandardMaterial color="#F6E3C6" emissive="#FF9A40" emissiveIntensity={lit ? 0.35 : 0} roughness={0.8} />
+      <mesh position={[0, 0.01, 0]} material={m.brass}><cylinderGeometry args={[0.1, 0.085, 0.02, 28]} /></mesh>
+      <mesh ref={body}>
+        <cylinderGeometry args={[0.055, 0.058, 1, 28]} />
+        <meshStandardMaterial color="#F7ECDA" emissive="#FF9A40" emissiveIntensity={lit ? 0.18 : 0} roughness={0.75} />
       </mesh>
-      <mesh position={[0, 0.08, 0]} material={m.glass}><cylinderGeometry args={[0.08, 0.08, 0.16, 24, 1, true]} /></mesh>
-      <mesh position={[0, 0.11, 0]}><cylinderGeometry args={[0.002, 0.002, 0.025]} /><meshBasicMaterial color="#2A1A10" /></mesh>
-      {lit && (
-        <>
-          <Flame at={[0, 0.14, 0]} />
-          {!low && <Halo glow={glow} at={[0, 0.13, 0.02]} size={0.55} color="#FFA850" />}
-          <pointLight ref={light} position={[0, 0.2, 0.05]} distance={2.2} decay={1.6} color="#FFAA55" />
-        </>
-      )}
-    </group>
-  )
-}
-
-function TeaLight({ at, glow, low }: { at: V3; glow: Texture; low: boolean }) {
-  return (
-    <group position={at}>
-      <mesh position={[0, 0.02, 0]}>
-        <cylinderGeometry args={[0.035, 0.035, 0.04, 18]} />
-        <meshStandardMaterial color="#C9CDD2" metalness={0.8} roughness={0.3} />
-      </mesh>
-      <mesh position={[0, 0.041, 0]}><cylinderGeometry args={[0.031, 0.031, 0.004, 18]} /><meshStandardMaterial color="#F7EEDC" /></mesh>
-      <Flame at={[0, 0.065, 0]} size={0.8} />
-      {!low && <Halo glow={glow} at={[0, 0.065, 0.01]} size={0.3} color="#FFA850" opacity={0.7} />}
-    </group>
-  )
-}
-
-/** Miniature books, one leaning, and a tiny ceramic cat. */
-function Books({ at }: { at: V3 }) {
-  const books: [string, number, number][] = [['#7A2A2A', 0.2, 0.05], ['#2F5B4A', 0.22, 0.045], ['#3D4E7A', 0.18, 0.055], ['#C99B3A', 0.21, 0.04], ['#8C5A9A', 0.17, 0.05]]
-  let x = -0.24
-  return (
-    <group position={at}>
-      {books.map(([c, h, w], i) => {
-        const lean = i === 4 ? -0.32 : 0
-        x += w + 0.004
-        return (
-          <group key={c} position={[x - w / 2 + (lean ? 0.03 : 0), 0, 0]} rotation={[0, 0, lean]}>
-            <mesh position={[0, h / 2, 0]}>
-              <boxGeometry args={[w, h, 0.16]} />
-              <meshStandardMaterial color={c} roughness={0.75} />
-            </mesh>
-            {[0.25, 0.75].map(f => (
-              <mesh key={f} position={[0, h * f, 0.081]}><planeGeometry args={[w * 0.8, 0.008]} /><meshStandardMaterial color="#E8C365" metalness={0.6} roughness={0.4} /></mesh>
-            ))}
-          </group>
-        )
-      })}
-      {/* ceramic cat */}
-      <group position={[0.17, 0, 0.04]}>
-        <mesh position={[0, 0.04, 0]} scale={[1, 1.15, 0.9]}><sphereGeometry args={[0.035, 14, 14]} /><meshStandardMaterial color="#F4F1EC" roughness={0.3} /></mesh>
-        <mesh position={[0, 0.095, 0]}><sphereGeometry args={[0.026, 14, 14]} /><meshStandardMaterial color="#F4F1EC" roughness={0.3} /></mesh>
-        {[-1, 1].map(s => (
-          <mesh key={s} position={[s * 0.014, 0.122, 0]} rotation={[0, 0, -s * 0.3]}><coneGeometry args={[0.009, 0.02, 4]} /><meshStandardMaterial color="#F4F1EC" /></mesh>
-        ))}
+      <group ref={top}>
+        <mesh position={[0, 0.012, 0]}><cylinderGeometry args={[0.002, 0.002, 0.025]} /><meshBasicMaterial color="#2A1A10" /></mesh>
+        {lit && (
+          <>
+            <Flame at={[0, 0.045, 0]} />
+            {!low && <Halo glow={glow} at={[0, 0.04, 0.02]} size={0.55} color="#FFA850" />}
+            <pointLight ref={light} position={[0, 0.1, 0.05]} distance={2.2} decay={1.6} color="#FFAA55" />
+          </>
+        )}
       </group>
     </group>
   )
 }
 
-/** A glossy red ball and a bone. */
-function Toys({ at }: { at: V3 }) {
-  return (
-    <group position={at}>
-      <mesh position={[-0.11, 0.075, 0]}>
-        <sphereGeometry args={[0.075, 28, 28]} />
-        <meshPhysicalMaterial color="#C8322A" roughness={0.35} clearcoat={0.6} />
-      </mesh>
-      <group position={[0.11, 0.03, 0.03]} rotation={[0, 0.35, Math.PI / 2]}>
-        <mesh><capsuleGeometry args={[0.022, 0.15, 4, 12]} /><meshStandardMaterial color="#F1E6D2" roughness={0.6} /></mesh>
-        {[-1, 1].map(s => [-1, 1].map(t => (
-          <mesh key={`${s}${t}`} position={[t * 0.022, s * 0.095, 0]}><sphereGeometry args={[0.032, 14, 14]} /><meshStandardMaterial color="#F1E6D2" roughness={0.6} /></mesh>
-        )))}
-      </group>
-    </group>
-  )
+/** Gifts left by visitors, standing on the floating shelves: up to 3 per shelf, newest first, spread across both sides. */
+const GIFT_SPOTS: V3[] = [0, -0.17, 0.17].flatMap(dx => [-1, 1].flatMap(s => SHELF_Y.map(y => [s * 0.82 + dx, y + 0.018 + 0.11, BACK + 0.2] as V3)))
+function GiftDecor({ gifts }: { gifts: string[] }) {
+  const shown = gifts.slice(0, GIFT_SPOTS.length)
+  return <>{shown.map((id, i) => <GiftSprite key={`${i}${id}`} emoji={giftById(id)?.emoji ?? '🎁'} at={GIFT_SPOTS[i]} />)}</>
 }
-
-/** Moss garden sealed in a cork-stoppered jar. */
-function Terrarium({ at, m }: { at: V3; m: Mats }) {
-  const moss = useMemo(() => Array.from({ length: 9 }, (_, i) => {
-    const a = i * 2.4, r = 0.015 + (i % 3) * 0.015
-    return { p: [Math.cos(a) * r, 0.035 + (i % 2) * 0.012, Math.sin(a) * r] as V3, s: 0.022 + (i % 4) * 0.006, c: ['#4E7A2E', '#6B9A3A', '#3E6A28'][i % 3] }
-  }), [])
+function GiftSprite({ emoji, at }: { emoji: string; at: V3 }) {
+  const map = useTex(() => {
+    const c = document.createElement('canvas')
+    c.width = c.height = 128
+    const g = c.getContext('2d')!
+    g.font = '104px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif'
+    g.textAlign = 'center'
+    g.textBaseline = 'middle'
+    g.fillText(emoji, 64, 70)
+    const t = new CanvasTexture(c)
+    t.colorSpace = SRGBColorSpace
+    return t
+  }, [emoji])
   return (
-    <group position={at}>
-      <mesh position={[0, 0.015, 0]}><cylinderGeometry args={[0.058, 0.058, 0.03, 20]} /><meshStandardMaterial color="#5A3C26" roughness={1} /></mesh>
-      {moss.map((x, i) => <mesh key={i} position={x.p}><sphereGeometry args={[x.s, 10, 10]} /><meshStandardMaterial color={x.c} roughness={1} /></mesh>)}
-      <mesh position={[0, 0.07, 0]} material={m.glass}><cylinderGeometry args={[0.065, 0.065, 0.14, 24, 1, true]} /></mesh>
-      <mesh position={[0, 0.155, 0]}><cylinderGeometry args={[0.05, 0.055, 0.035, 20]} /><meshStandardMaterial color="#C9A57A" roughness={0.95} /></mesh>
-    </group>
-  )
-}
-
-/** A little plant growing in a glass jar. */
-function PlantJar({ at, m }: { at: V3; m: Mats }) {
-  const leaves = [[0.25, 0.16], [-0.4, 0.2], [1.2, 0.23], [2.3, 0.18], [3.4, 0.25], [4.6, 0.21]]
-  return (
-    <group position={at}>
-      <mesh position={[0, 0.02, 0]}><cylinderGeometry args={[0.048, 0.048, 0.04, 20]} /><meshStandardMaterial color="#4A3020" roughness={1} /></mesh>
-      <mesh position={[0, 0.065, 0]} material={m.glass}><cylinderGeometry args={[0.055, 0.05, 0.13, 22, 1, true]} /></mesh>
-      <mesh position={[0, 0.11, 0]}><cylinderGeometry args={[0.004, 0.005, 0.16]} /><meshStandardMaterial color="#4E7A2E" /></mesh>
-      {leaves.map(([a, y], i) => (
-        <mesh key={i} position={[Math.cos(a) * 0.03, y, Math.sin(a) * 0.03]} rotation={[0.4 * Math.sin(a), a, 0.8]} scale={[1, 0.35, 0.55]}>
-          <sphereGeometry args={[0.04, 12, 10]} />
-          <meshStandardMaterial color={i % 2 ? '#5E9E3A' : '#78B84A'} roughness={0.6} />
-        </mesh>
-      ))}
-    </group>
+    <sprite position={at} scale={[0.22, 0.22, 1]}>
+      <spriteMaterial map={map} transparent alphaTest={0.1} />
+    </sprite>
   )
 }
 
@@ -443,32 +375,6 @@ function BabysBreath({ at, stems, m }: { at: V3; stems: number; m: Mats }) {
         <sphereGeometry args={[0.009, 6, 6]} />
         <meshStandardMaterial roughness={0.8} />
       </instancedMesh>
-    </group>
-  )
-}
-
-/** Brass lantern with glass panes and a candle glowing inside. */
-function Lantern({ at, glow, m, low }: { at: V3; glow: Texture; m: Mats; low: boolean }) {
-  const light = useRef<PointLight>(null!)
-  useFrame(({ clock }) => { light.current.intensity = 0.9 + Math.sin(clock.elapsedTime * 7.3) * 0.12 })
-  const s = 0.2, h = 0.26
-  return (
-    <group position={at}>
-      <RoundedBox args={[s + 0.03, 0.03, s + 0.03]} radius={0.006} position={[0, 0.015, 0]} material={m.brass} />
-      {[[-1, -1], [1, -1], [-1, 1], [1, 1]].map(([a, b]) => (
-        <mesh key={`${a}${b}`} position={[a * s / 2, 0.03 + h / 2, b * s / 2]} material={m.brass}><boxGeometry args={[0.016, h, 0.016]} /></mesh>
-      ))}
-      {[0, 1, 2, 3].map(i => (
-        <mesh key={i} position={[Math.sin(i * Math.PI / 2) * s / 2, 0.03 + h / 2, Math.cos(i * Math.PI / 2) * s / 2]} rotation={[0, i * Math.PI / 2, 0]} material={m.glass}>
-          <planeGeometry args={[s, h]} />
-        </mesh>
-      ))}
-      <mesh position={[0, 0.03 + h + 0.04, 0]} rotation={[0, Math.PI / 4, 0]} material={m.brass}><coneGeometry args={[s * 0.78, 0.08, 4]} /></mesh>
-      <mesh position={[0, 0.03 + h + 0.12, 0]} material={m.brass}><torusGeometry args={[0.035, 0.007, 8, 20]} /></mesh>
-      <mesh position={[0, 0.07, 0]}><cylinderGeometry args={[0.025, 0.025, 0.08, 14]} /><meshStandardMaterial color="#F7EEDC" /></mesh>
-      <Flame at={[0, 0.13, 0]} />
-      {!low && <Halo glow={glow} at={[0, 0.13, 0.02]} size={0.5} color="#FFB060" />}
-      <pointLight ref={light} position={[0, 0.15, 0.08]} distance={1.8} decay={1.6} color="#FFB060" />
     </group>
   )
 }

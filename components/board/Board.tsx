@@ -320,7 +320,8 @@ function Today() {
   useEffect(() => { fetch('/api/board/today').then(r => r.json()).then(d => setItems(d.items ?? [])).catch(() => setItems([])) }, [])
   const light = async (pet: Pet) => {
     setLit(s => new Set(s).add(pet.id))
-    await postJSON('/api/tributes', { petId: pet.id, type: 'candle', visitorName: getVisitor().name })
+    const v = getVisitor() // one candle a day: a repeat comes back 429, which still reads as lit
+    await postJSON('/api/tributes', { petId: pet.id, type: 'candle', visitorId: v.id, visitorName: v.name, tz: Intl.DateTimeFormat().resolvedOptions().timeZone })
   }
   if (items === null) return <Empty text="Loading…" />
   if (!items.length) return <Empty text="No anniversaries or new arrivals today. Every shrine in the hall is still waiting for a candle." />

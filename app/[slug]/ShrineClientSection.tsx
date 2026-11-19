@@ -21,7 +21,11 @@ const ShrineCabinet = dynamic(() => import('@/components/3d/ShrineCabinet'), {
   loading: () => <div className="grid h-full place-items-center text-sm text-[#FAF7F2]/50">Opening the shrine…</div>,
 })
 
-export function ShrineClientSection({ pet: initialPet }: { pet: Pet }) {
+// Today's date where the visitor is (YYYY-MM-DD): candles reset at their midnight
+const localDay = () => new Date().toLocaleDateString('en-CA')
+const litKey = (petId: string) => `pm-candle:${petId}`
+
+export function ShrineClientSection({ pet: initialPet, candlesToday: initialToday }: { pet: Pet; candlesToday: number }) {
   const [pet, setPet] = useState(initialPet)
   const { user, profile } = useAccount()
   const isOwner = !!user && user.id === pet.owner_id
@@ -29,6 +33,16 @@ export function ShrineClientSection({ pet: initialPet }: { pet: Pet }) {
   // Live counts, so a candle you light appears in the cabinet straight away
   const [candles, setCandles] = useState(pet.candle_count)
   const [flowers, setFlowers] = useState(pet.flower_count)
+  // Candles in the last 24 hours (how tall the candle stands) and whether you've lit yours today
+  const [candlesToday, setCandlesToday] = useState(initialToday)
+  const [litToday, setLitToday] = useState(false)
+  useEffect(() => {
+    try { setLitToday(localStorage.getItem(litKey(pet.id)) === localDay()) } catch {}
+  }, [pet.id])
+  const markLit = () => {
+    setLitToday(true)
+    try { localStorage.setItem(litKey(pet.id), localDay()) } catch {}
+  }
   const [keepsakeOpen, setKeepsakeOpen] = useState(false)
   const [giftOpen, setGiftOpen] = useState(false)
   const [gifts, setGifts] = useState<LeftGift[]>([])
@@ -68,7 +82,32 @@ export function ShrineClientSection({ pet: initialPet }: { pet: Pet }) {
 
   /** Saves a candle or flower; the server's count is the one we show. */
   const leaveTribute = async (type: 'candle' | 'flower') => {
-    ;(type === 'candle' ? setCandles : setFlowers)(n => n + 1) // show it straight away
+    if (type === 'candle') {
+      if (litToday) return
+      markLit()
+      setCandles(n => n + 1) // show it straight away
+      setCandlesToday(n => n + 1)
+      const v = getVisitor()
+      const res = await fetch('/api/tributes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ petId: pet.id, type, visitorId: v.id, visitorName: v.name, tz: Intl.DateTimeFormat().resolvedOptions().timeZone }),
+      }).catch(() => null)
+      const d = await res?.json().catch(() => null)
+      if (d && typeof d.candle_count === 'number') { // 200, or 429 = already lit today on this browser
+        setCandles(d.candle_count)
+        setFlowers(d.flower_count)
+        setCandlesToday(d.candles_today)
+      } else {
+        // didn't save: take it back so they can try again
+        setCandles(n => n - 1)
+        setCandlesToday(n => n - 1)
+        setLitToday(false)
+        try { localStorage.removeItem(litKey(pet.id)) } catch {}
+      }
+      return
+    }
+    setFlowers(n => n + 1) // show it straight away
     const res = await fetch('/api/tributes', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -79,7 +118,7 @@ export function ShrineClientSection({ pet: initialPet }: { pet: Pet }) {
       setCandles(d.candle_count)
       setFlowers(d.flower_count)
     } else {
-      ;(type === 'candle' ? setCandles : setFlowers)(n => n - 1) // didn't save: take it back
+      setFlowers(n => n - 1) // didn't save: take it back
     }
   }
 
@@ -107,10 +146,11 @@ export function ShrineClientSection({ pet: initialPet }: { pet: Pet }) {
     <>
       {/* 3D shrine cabinet */}
       <div className="relative -mx-4 h-[360px] w-[calc(100%+2rem)] max-w-[760px] sm:h-[460px]" aria-label={`${pet.name}'s shrine, ${candles} candles lit`}>
-        <ShrineCabinet pet={pet} candles={candles} flowers={flowers} />
+        <ShrineCabinet pet={pet} candlesToday={candlesToday} flowers={flowers} gifts={gifts.map(g => g.item)} />
       </div>
       <p className="mt-1 rounded-full bg-black/30 px-4 py-1.5 text-sm text-[#FFE2C0]">
-        {candles > 0 ? <>Tap 🕯️ to light a candle for {pet.name}</> : <>Waiting for their first candle. Will you light it?</>}
+        {litToday ? <>🕯️ You lit a candle for {pet.name} today. Come back tomorrow to light another.</>
+          : candles > 0 ? <>Tap 🕯️ to light a candle for {pet.name}</> : <>Waiting for their first candle. Will you light it?</>}
       </p>
       {isOwner && (
         <Link href={`/me?edit=${pet.id}`} className="mt-3 rounded-full border border-white/20 px-4 py-1.5 text-xs text-[#FFE2C0] hover:bg-white/10">
@@ -129,9 +169,9 @@ export function ShrineClientSection({ pet: initialPet }: { pet: Pet }) {
         )}
         <div className="glass rounded-3xl p-2.5 shadow-2xl border border-white/20">
           <TributeToolbar
-            petId={pet.id}
-            candleCount={pet.candle_count}
-            flowerCount={pet.flower_count}
+            candleCount={candles}
+            flowerCount={flowers}
+            litToday={litToday}
             onGuestbook={() => setGuestbookOpen(true)}
             onKeepsake={() => setKeepsakeOpen(true)}
             onGift={() => setGiftOpen(true)}

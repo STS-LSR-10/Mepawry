@@ -262,6 +262,31 @@ export async function addTribute(petId: string, type: string, visitorName: unkno
   return (data as Pet[])[0] ?? null
 }
 
+/**
+ * Lights a candle: one per visitor per pet per day, resetting at the visitor's local midnight (tz from their browser).
+ * shortcut: the visitor is the random id saved in their browser, like gifts; clearing site data lets them light again.
+ */
+export async function lightCandle(petId: string, visitorId: unknown, visitorName: unknown, tz: unknown):
+  Promise<{ ok: boolean; candle_count: number; flower_count: number; candles_today: number; next_at: string } | null> {
+  const vid = String(visitorId ?? '')
+  if (!isUuid(petId) || !/^[\w-]{8,64}$/.test(vid)) return null
+  const { data, error } = await db().rpc('light_candle', {
+    p_pet: petId, p_visitor: vid, p_name: cleanName(visitorName), p_tz: String(tz ?? 'UTC').slice(0, 64),
+  })
+  if (error?.code === '23503') return null // no such pet
+  if (error) throw new Error(error.message)
+  return data
+}
+
+/** Candles lit for this pet in the last 24 hours (how tall its candle stands). */
+export async function getCandlesToday(petId: string): Promise<number> {
+  if (!isUuid(petId)) return 0
+  const since = new Date(Date.now() - 86_400_000).toISOString()
+  const { count } = await db().from('tributes').select('id', { count: 'exact', head: true })
+    .eq('pet_id', petId).eq('type', 'candle').gte('created_at', since)
+  return count ?? 0
+}
+
 export async function getGuestbook(petId: string): Promise<GuestbookEntry[]> {
   if (!isUuid(petId)) return []
   return (must(await db().from('guestbook').select('*').eq('pet_id', petId).eq('is_hidden', false).order('created_at', { ascending: false }))) ?? []

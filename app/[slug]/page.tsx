@@ -2,7 +2,7 @@
 
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { getNeighbours, getPetBySlug, recordVisit } from '@/lib/data'
+import { getCandlesToday, getNeighbours, getPetBySlug, recordVisit } from '@/lib/data'
 import { formatYears, formatCount, calculateAge, flagEmoji, getFloorName, SPECIES_LOOK } from '@/lib/utils'
 import { SiteNav } from '@/components/site/SiteNav'
 import { Starfield } from '@/components/site/LandingFx'
@@ -72,7 +72,7 @@ export default async function ShrinePage({ params }: ShrinePageProps) {
           <p className="mx-auto mt-3 max-w-[40ch] font-serif text-lg italic text-[#FAF7F2]/85">&ldquo;{pet.epitaph}&rdquo;</p>
         )}
 
-        <ShrineClientSection pet={pet} />
+        <ShrineClientSection pet={pet} candlesToday={await getCandlesToday(pet.id)} />
         <ChangePhotoButton petId={pet.id} hasPhoto={!!pet.primary_photo_url} />
 
         <p className="mt-6 text-xs text-[#FAF7F2]/45">
