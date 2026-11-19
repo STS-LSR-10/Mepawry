@@ -5,6 +5,7 @@
 
 import { randomUUID } from 'node:crypto'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
+import { BACKDROPS, FRAMES } from '@/lib/decor'
 import type { Floor, GlobalStats, GuestbookEntry, Pet, Profile, Species, TributeType } from '@/types'
 import { FLOOR_CAPACITY, FLOOR_COUNT, VIP_CAPACITY } from '@/components/3d/layout'
 import { generateSlug, getFloorName } from '@/lib/utils'
@@ -412,4 +413,14 @@ export async function placeInVip(petId: string, want?: number): Promise<Pet | { 
 export async function removeFromVip(petId: string): Promise<Pet | null> {
   if (!/^[0-9a-f-]{36}$/i.test(petId)) return null
   return must(await db().from('pets').update({ vip_position: null }).eq('id', petId).select().maybeSingle())
+}
+
+/** Gives a shrine a frame style and/or backdrop (they stay for good). Ids are checked against lib/decor.ts. */
+export async function setDecor(petId: string, decor: { frame?: unknown; backdrop?: unknown }): Promise<Pet | null> {
+  if (!isUuid(petId)) return null
+  const patch: { frame_style?: string; backdrop?: string } = {}
+  if (decor.frame !== undefined) { if (!FRAMES.some(f => f.id === decor.frame)) return null; patch.frame_style = String(decor.frame) }
+  if (decor.backdrop !== undefined) { if (!BACKDROPS.some(b => b.id === decor.backdrop)) return null; patch.backdrop = String(decor.backdrop) }
+  if (!Object.keys(patch).length) return null
+  return must(await db().from('pets').update(patch).eq('id', petId).select().maybeSingle())
 }

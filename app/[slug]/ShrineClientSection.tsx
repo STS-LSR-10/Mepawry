@@ -181,7 +181,7 @@ export function ShrineClientSection({ pet: initialPet, candlesToday: initialToda
         </div>
       </div>
 
-      <GiftPicker open={giftOpen} onClose={() => setGiftOpen(false)} petId={pet.id} petName={pet.name} onLeft={g => setGifts(prev => [g, ...prev])} />
+      <GiftPicker open={giftOpen} onClose={() => setGiftOpen(false)} pet={pet} onLeft={g => setGifts(prev => [g, ...prev])} onDecor={setPet} />
 
       {/* S05: Guestbook & Tributes Modal */}
       <Modal

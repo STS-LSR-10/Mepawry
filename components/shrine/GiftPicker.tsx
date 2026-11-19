@@ -1,11 +1,16 @@
 'use client'
 // components/shrine/GiftPicker.tsx — Choose a little gift to leave at a shrine.
-// Free gifts: one every few days per visitor. Special gifts show a price; payment isn't connected yet.
+// Free gifts: one every few days per visitor. Special gifts, frames and backdrops show a price; payment isn't connected
+// yet, so admins can apply a frame or backdrop directly for now.
 
 import { useEffect, useState } from 'react'
 import { Modal } from '@/components/ui/Modal'
 import { cn } from '@/lib/utils'
 import { getVisitor } from '@/lib/visitor'
+import { useAccount } from '@/lib/account'
+import { DEFAULT_BACKDROP, DEFAULT_FRAME, FRAMES, backdropsFor, type FrameStyle } from '@/lib/decor'
+import { backdropThumb } from '@/components/3d/backdrops'
+import type { Pet } from '@/types'
 import { CATEGORIES, FREE_GIFT_COOLDOWN_DAYS, SPECIAL_GIFT_SHOWS_DAYS, giftsFor, type Gift, type GiftCategory, type LeftGift } from '@/lib/gifts'
 
 const waitKey = (petId: string) => `pm-gift-wait-${petId}`
@@ -16,15 +21,30 @@ function waitText(nextAt: string) {
   return h > 24 ? `${Math.ceil(h / 24)} days` : h > 1 ? `${h} hours` : 'less than an hour'
 }
 
-export function GiftPicker({ open, onClose, petId, petName, onLeft }: {
+type Tab = GiftCategory | 'frames' | 'backdrops'
+type Decor = { kind: 'frame' | 'backdrop'; id: string; name: string; price: number }
+
+const TABS: { id: Tab; emoji: string; label: string; hint: string }[] = [
+  ...CATEGORIES,
+  { id: 'frames', emoji: '🖼️', label: 'Frames', hint: 'A new frame for their portrait. It stays for good.' },
+  { id: 'backdrops', emoji: '🌄', label: 'Backdrops', hint: 'A new scene behind their portrait. It stays for good.' },
+]
+
+export function GiftPicker({ open, onClose, pet, onLeft, onDecor }: {
   open: boolean
   onClose: () => void
-  petId: string
-  petName: string
+  pet: Pet
   onLeft: (gift: LeftGift) => void
+  /** A frame or backdrop was applied: the updated memorial */
+  onDecor: (pet: Pet) => void
 }) {
-  const [tab, setTab] = useState<GiftCategory>('food')
+  const petId = pet.id, petName = pet.name
+  const admin = !!useAccount().user?.isAdmin
+  const [tab, setTab] = useState<Tab>('food')
   const [picked, setPicked] = useState<Gift | null>(null)
+  const [decor, setDecor] = useState<Decor | null>(null)
+  const currentFrame = pet.frame_style ?? DEFAULT_FRAME
+  const currentBackdrop = pet.backdrop ?? DEFAULT_BACKDROP
   const [nextAt, setNextAt] = useState<string | null>(null)
   const [sending, setSending] = useState(false)
   const [sent, setSent] = useState<Gift | null>(null)
@@ -40,11 +60,25 @@ export function GiftPicker({ open, onClose, petId, petName, onLeft }: {
     } catch { /* private mode: the server still enforces it */ }
   }, [open, petId])
 
-  const cat = CATEGORIES.find(c => c.id === tab)!
-  const items = giftsFor(tab)
+  const cat = TABS.find(c => c.id === tab)!
+  const isDecor = tab === 'frames' || tab === 'backdrops'
+  const items = isDecor ? [] : giftsFor(tab)
   const seasonal = items.filter(i => i.months)
   const yearRound = items.filter(i => !i.months)
   const waiting = nextAt !== null && Date.parse(nextAt) > Date.now()
+
+  const applyDecor = async () => {
+    if (!decor || !admin || sending) return
+    setSending(true); setError('')
+    const res = await fetch(`/api/pets/${petId}/decor`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(decor.kind === 'frame' ? { frame: decor.id } : { backdrop: decor.id }),
+    }).catch(() => null)
+    setSending(false)
+    const d = await res?.json().catch(() => null)
+    if (res?.ok && d?.pet) { onDecor(d.pet); setDecor(null) } else setError(d?.error ?? 'That didn’t go through. Please try again.')
+  }
 
   const send = async () => {
     if (!picked || picked.price || waiting || sending) return
@@ -96,20 +130,20 @@ export function GiftPicker({ open, onClose, petId, petName, onLeft }: {
             </button>
           </div>
 
-          {/* Categories: one segmented control, not a row of pills */}
-          <div role="tablist" aria-label="Gift types" className="mt-4 grid grid-cols-4 gap-1 rounded-2xl bg-[#F4EBDD] p-1">
-            {CATEGORIES.map(c => (
+          {/* Categories: one segmented control, two rows of three */}
+          <div role="tablist" aria-label="Gift types" className="mt-4 grid grid-cols-3 gap-1 rounded-2xl bg-[#F4EBDD] p-1">
+            {TABS.map(c => (
               <button
                 key={c.id}
                 role="tab"
                 aria-selected={tab === c.id}
-                onClick={() => { setTab(c.id); setPicked(null) }}
+                onClick={() => { setTab(c.id); setPicked(null); setDecor(null); setError('') }}
                 className={cn(
-                  'flex flex-col items-center gap-0.5 rounded-xl py-2 text-[11px] font-semibold transition-all',
+                  'flex items-center justify-center gap-1.5 rounded-xl py-2 text-[12px] font-semibold transition-all',
                   tab === c.id ? 'bg-white text-[#2A1E17] shadow-sm' : 'text-[#8E8278] hover:text-[#2A1E17]',
                 )}
               >
-                <span className="text-lg leading-none" aria-hidden>{c.emoji}</span>
+                <span className="text-base leading-none" aria-hidden>{c.emoji}</span>
                 {c.label}
               </button>
             ))}
@@ -118,15 +152,43 @@ export function GiftPicker({ open, onClose, petId, petName, onLeft }: {
 
           {/* Items */}
           <div className="mt-3 max-h-[46dvh] overflow-y-auto pr-1 -mr-1">
+            {tab === 'frames' && (
+              <FrameGrid frames={FRAMES.filter(f => f.id !== DEFAULT_FRAME)} current={currentFrame} picked={decor?.id}
+                onPick={f => setDecor({ kind: 'frame', id: f.id, name: f.name, price: f.price })} />
+            )}
+            {tab === 'backdrops' && (
+              <BackdropGrid current={currentBackdrop} picked={decor?.id}
+                onPick={b => setDecor({ kind: 'backdrop', id: b.id, name: b.name, price: b.price })} />
+            )}
             {tab === 'special' && seasonal.length > 0 && <Section title="❄️ This season" items={seasonal} picked={picked} onPick={setPicked} />}
-            <Section title={tab === 'special' && seasonal.length ? '🌈 All year' : ''} items={yearRound} picked={picked} onPick={setPicked} />
+            {!isDecor && <Section title={tab === 'special' && seasonal.length ? '🌈 All year' : ''} items={yearRound} picked={picked} onPick={setPicked} />}
           </div>
 
           {/* Footer: what you're about to leave */}
           <div className="sticky bottom-0 -mx-6 -mb-6 mt-4 border-t border-[#EFE4D4] bg-[#FFFBF5]/95 px-6 pb-6 pt-4 backdrop-blur">
             {error && <p className="mb-2 text-center text-xs text-[#C0392B]">{error}</p>}
-            {picked?.price ? (
-              <FooterRow emoji={picked.emoji} title={picked.name} sub={`฿${picked.price} · stays ${SPECIAL_GIFT_SHOWS_DAYS} days with your name`}>
+            {isDecor ? (
+              decor ? (
+                <FooterRow
+                  icon={decor.kind === 'backdrop'
+                    // eslint-disable-next-line @next/next/no-img-element
+                    ? <img src={backdropThumb(decor.id)} alt="" className="h-full w-full object-cover" />
+                    : <span className="block h-full w-full rounded-xl p-1.5" style={{ background: FRAMES.find(f => f.id === decor.id)?.swatch }}><span className="block h-full w-full rounded-md bg-[#FBF6EC]" /></span>}
+                  title={decor.name} sub={`฿${decor.price} · stays for good`}
+                >
+                  {admin ? (
+                    <button onClick={applyDecor} disabled={sending} className="rounded-2xl bg-[#D9823B] px-4 py-3 text-xs font-semibold text-white shadow-md hover:bg-[#C67129] disabled:opacity-60">
+                      {sending ? 'Applying…' : 'Apply (admin)'}
+                    </button>
+                  ) : (
+                    <button disabled className="rounded-2xl bg-[#E8DFD6] px-4 py-3 text-xs font-semibold text-[#8E8278]">Opening soon</button>
+                  )}
+                </FooterRow>
+              ) : (
+                <p className="py-3 text-center text-sm text-[#8E8278]">Tap one to see it up close</p>
+              )
+            ) : picked?.price ? (
+              <FooterRow icon={picked.emoji} title={picked.name} sub={`฿${picked.price} · stays ${SPECIAL_GIFT_SHOWS_DAYS} days with your name`}>
                 <button disabled className="rounded-2xl bg-[#E8DFD6] px-4 py-3 text-xs font-semibold text-[#8E8278]">Opening soon</button>
               </FooterRow>
             ) : waiting ? (
@@ -134,7 +196,7 @@ export function GiftPicker({ open, onClose, petId, petName, onLeft }: {
                 🎁 You’ve left a gift for {petName}. Your next free gift is ready in {waitText(nextAt!)}.
               </p>
             ) : picked ? (
-              <FooterRow emoji={picked.emoji} title={picked.name} sub={`Free · one every ${FREE_GIFT_COOLDOWN_DAYS} days`}>
+              <FooterRow icon={picked.emoji} title={picked.name} sub={`Free · one every ${FREE_GIFT_COOLDOWN_DAYS} days`}>
                 <button onClick={send} disabled={sending} className="rounded-2xl bg-[#D9823B] px-5 py-3 text-sm font-semibold text-white shadow-md hover:bg-[#C67129] disabled:opacity-60">
                   {sending ? 'Leaving…' : 'Leave it'}
                 </button>
@@ -181,15 +243,62 @@ function Section({ title, items, picked, onPick }: { title: string; items: Gift[
   )
 }
 
-function FooterRow({ emoji, title, sub, children }: { emoji: string; title: string; sub: string; children: React.ReactNode }) {
+function FooterRow({ icon, title, sub, children }: { icon: React.ReactNode; title: string; sub: string; children: React.ReactNode }) {
   return (
     <div className="flex items-center gap-3">
-      <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-[#FFE9CF] text-3xl" aria-hidden>{emoji}</span>
+      <span className="grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-2xl bg-[#FFE9CF] text-3xl" aria-hidden>{icon}</span>
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-semibold text-[#2A1E17]">{title}</p>
         <p className="text-[11px] text-[#8E8278]">{sub}</p>
       </div>
       {children}
+    </div>
+  )
+}
+
+/** Frames as little framed cards: the swatch is the frame, cream inside, a paw where the portrait goes. */
+function FrameGrid({ frames, current, picked, onPick }: { frames: FrameStyle[]; current: string; picked?: string; onPick: (f: FrameStyle) => void }) {
+  return (
+    <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+      {frames.map(f => {
+        const on = picked === f.id
+        return (
+          <button key={f.id} onClick={() => onPick(f)} aria-pressed={on}
+            className={cn('relative flex flex-col items-center gap-1.5 rounded-2xl bg-white p-2 text-center transition-all active:scale-95',
+              on ? 'ring-2 ring-[#D9823B] shadow-md' : 'ring-1 ring-[#EFE4D4] hover:ring-[#D9823B]/50')}>
+            <span className="block aspect-[5/6] w-full rounded-lg p-[9%] shadow-inner" style={{ background: f.swatch }} aria-hidden>
+              <span className="grid h-full w-full place-items-center rounded-[4px] bg-[#FBF6EC] text-xl shadow-[inset_0_1px_3px_rgba(0,0,0,.25)]">🐾</span>
+            </span>
+            <span className="text-[11px] font-medium leading-tight text-[#2A1E17]">{f.name}</span>
+            <span className="text-[10px] font-semibold text-[#B8860B]">{current === f.id ? 'On their portrait' : `฿${f.price}`}</span>
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+/** Backdrops as painted thumbnails, the same paintings the cabinet uses. Seasonal ones first. */
+function BackdropGrid({ current, picked, onPick }: { current: string; picked?: string; onPick: (b: { id: string; name: string; price: number }) => void }) {
+  const list = backdropsFor().sort((a, b) => Number(!!b.months) - Number(!!a.months))
+  return (
+    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+      {list.map(b => {
+        const on = picked === b.id
+        return (
+          <button key={b.id} onClick={() => onPick(b)} aria-pressed={on}
+            className={cn('relative overflow-hidden rounded-2xl bg-white text-left transition-all active:scale-95',
+              on ? 'ring-2 ring-[#D9823B] shadow-md' : 'ring-1 ring-[#EFE4D4] hover:ring-[#D9823B]/50')}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={backdropThumb(b.id)} alt="" className="aspect-[5/4] w-full object-cover" />
+            {b.months && <span className="absolute left-1.5 top-1.5 rounded-full bg-white/85 px-2 py-0.5 text-[9px] font-semibold text-[#8A3A2A]">❄️ Seasonal</span>}
+            <span className="flex items-baseline justify-between gap-1 px-2.5 py-2">
+              <span className="truncate text-[12px] font-medium text-[#2A1E17]">{b.name}</span>
+              <span className="shrink-0 text-[10px] font-semibold text-[#B8860B]">{current === b.id ? 'Showing' : `฿${b.price}`}</span>
+            </span>
+          </button>
+        )
+      })}
     </div>
   )
 }

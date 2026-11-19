@@ -12,11 +12,13 @@ import {
   AdditiveBlending, CanvasTexture, Color, SRGBColorSpace, DoubleSide, InstancedMesh, MeshPhysicalMaterial, MeshStandardMaterial, Object3D, Vector2,
   type Group, type Mesh, type PointLight, type Sprite, type Texture,
 } from 'three'
-import { glowTexture, midnightTexture, moonTexture, petTexture, plaqueTexture, woodTexture } from './textures'
+import { glowTexture, moonTexture, petTexture, plaqueTexture, woodTexture } from './textures'
 import { useContextLossRecovery, useQuality } from './quality'
 import { microMap, withRim } from './look'
 import type { Pet } from '@/types'
 import { giftById } from '@/lib/gifts'
+import { DEFAULT_BACKDROP, frameById } from '@/lib/decor'
+import { backdropTexture } from './backdrops'
 
 const W = 2.4, H = 1.9, DP = 0.9, T = 0.08
 const BACK = -DP / 2 + T / 2          // front face of the back panel
@@ -127,7 +129,14 @@ type Mats = ReturnType<typeof useMaterials>
 function Cabinet({ pet, candlesToday, flowers, gifts, low }: { pet: Pet; candlesToday: number; flowers: number; gifts: string[]; low: boolean }) {
   const m = useMaterials(low)
   const photo = useTex(() => petTexture(pet, false), [pet.id, pet.primary_photo_url])
-  const sky = useTex(() => midnightTexture(), [])
+  const backdrop = pet.backdrop ?? DEFAULT_BACKDROP
+  const sky = useTex(() => backdropTexture(backdrop), [backdrop])
+  const style = frameById(pet.frame_style)
+  const frameMat = useMemo(() => new MeshStandardMaterial({
+    color: style.color, metalness: low ? Math.min(style.metalness, 0.45) : style.metalness, roughness: style.roughness,
+    emissive: style.metalness > 0.5 ? '#4A3205' : '#000000', emissiveIntensity: low ? 0.6 : 0.25,
+  }), [style, low])
+  useEffect(() => () => frameMat.dispose(), [frameMat])
   const moon = useTex(() => moonTexture(), [])
   const glow = useTex(() => glowTexture(), [])
   const nameplate = useTex(() => plaqueTexture(pet.name, 'wood', 640, 160), [pet.name])
@@ -158,18 +167,20 @@ function Cabinet({ pet, candlesToday, flowers, gifts, low }: { pet: Pet; candles
       <RoundedBox args={[W + 0.18, 0.17, DP + 0.16]} radius={0.03} smoothness={3} position={[0, -H / 2 - 0.06, 0]} material={m.wood} />
       <mesh position={[0, -H / 2 + 0.025, 0.01]} material={m.cream}><boxGeometry args={[W - T * 2, 0.05, DP - 0.04]} /></mesh>
 
-      {/* Midnight sky and crescent moon on the back wall */}
+      {/* The backdrop on the back wall (midnight sky with a crescent moon by default) */}
       <mesh position={[0, 0.01, BACK + 0.003]}>
         <planeGeometry args={[W - T * 2, H - 0.04]} />
         <meshBasicMaterial map={sky} toneMapped={false} />
       </mesh>
-      <mesh position={[-0.5, 0.52, BACK + 0.01]}>
-        <planeGeometry args={[0.5, 0.5]} />
-        <meshBasicMaterial map={moon} transparent depthWrite={false} toneMapped={false} />
-      </mesh>
+      {backdrop === DEFAULT_BACKDROP && (
+        <mesh position={[-0.5, 0.52, BACK + 0.01]}>
+          <planeGeometry args={[0.5, 0.5]} />
+          <meshBasicMaterial map={moon} transparent depthWrite={false} toneMapped={false} />
+        </mesh>
+      )}
 
       {/* ── Gold-framed portrait ── */}
-      <Portrait photo={photo} m={m} />
+      <Portrait photo={photo} frame={frameMat} />
 
       {/* ── Floating shelves ── */}
       {[-1, 1].map(s => SHELF_Y.map(y => (
@@ -211,8 +222,8 @@ function Cabinet({ pet, candlesToday, flowers, gifts, low }: { pet: Pet; candles
   )
 }
 
-/** Gold frame with a bevelled inner lip, a cream mat and the picture. */
-function Portrait({ photo, m }: { photo: Texture; m: Mats }) {
+/** The frame (gold unless they've been given another) with a bevelled inner lip, a cream mat and the picture. */
+function Portrait({ photo, frame }: { photo: Texture; frame: MeshStandardMaterial }) {
   const fw = 1.0, fh = 1.2, b = 0.085, z = BACK + 0.06
   const bars: [number, number, number, number][] = [
     [0, fh / 2 - b / 2, fw, b], [0, -fh / 2 + b / 2, fw, b],
@@ -221,11 +232,11 @@ function Portrait({ photo, m }: { photo: Texture; m: Mats }) {
   return (
     <group position={[0, 0.12, z]}>
       {bars.map(([x, y, w, h], i) => (
-        <RoundedBox key={i} args={[w, h, 0.07]} radius={0.015} smoothness={2} position={[x, y, 0]} material={m.gold} />
+        <RoundedBox key={i} args={[w, h, 0.07]} radius={0.015} smoothness={2} position={[x, y, 0]} material={frame} />
       ))}
       {/* thin inner lip */}
       {bars.map(([x, y, w, h], i) => (
-        <mesh key={`l${i}`} position={[x * 0.83, y * 0.86, 0.02]} material={m.gold}>
+        <mesh key={`l${i}`} position={[x * 0.83, y * 0.86, 0.02]} material={frame}>
           <boxGeometry args={[i < 2 ? w - 0.16 : 0.015, i < 2 ? 0.015 : h - 0.16, 0.02]} />
         </mesh>
       ))}
