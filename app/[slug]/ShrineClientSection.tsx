@@ -46,6 +46,7 @@ export function ShrineClientSection({ pet: initialPet, candlesToday: initialToda
   const [keepsakeOpen, setKeepsakeOpen] = useState(false)
   const [giftOpen, setGiftOpen] = useState(false)
   const [gifts, setGifts] = useState<LeftGift[]>([])
+  const [giftTotal, setGiftTotal] = useState(0)
   const [messages, setMessages] = useState<GuestbookEntry[]>([])
   const [newMsg, setNewMsg] = useState('')
   const [visitorName, setVisitorName] = useState('')
@@ -59,7 +60,7 @@ export function ShrineClientSection({ pet: initialPet, candlesToday: initialToda
   // Guestbook is saved on the server; load it once the shrine opens
   useEffect(() => {
     fetch(`/api/guestbook?petId=${encodeURIComponent(pet.id)}`).then(r => r.json()).then(d => setMessages(d.entries ?? [])).catch(() => {})
-    fetch(`/api/gifts?petId=${encodeURIComponent(pet.id)}`).then(r => r.json()).then(d => setGifts(d.gifts ?? [])).catch(() => {})
+    fetch(`/api/gifts?petId=${encodeURIComponent(pet.id)}`).then(r => r.json()).then(d => { setGifts(d.gifts ?? []); setGiftTotal(d.total ?? d.gifts?.length ?? 0) }).catch(() => {})
     setVisitorName(n => n || getVisitor().name)
   }, [pet.id])
   useEffect(() => {
@@ -171,6 +172,8 @@ export function ShrineClientSection({ pet: initialPet, candlesToday: initialToda
           <TributeToolbar
             candleCount={candles}
             flowerCount={flowers}
+            giftCount={giftTotal}
+            guestbookCount={messages.length}
             litToday={litToday}
             onGuestbook={() => setGuestbookOpen(true)}
             onKeepsake={() => setKeepsakeOpen(true)}
@@ -181,7 +184,7 @@ export function ShrineClientSection({ pet: initialPet, candlesToday: initialToda
         </div>
       </div>
 
-      <GiftPicker open={giftOpen} onClose={() => setGiftOpen(false)} pet={pet} onLeft={g => setGifts(prev => [g, ...prev])} onDecor={setPet} />
+      <GiftPicker open={giftOpen} onClose={() => setGiftOpen(false)} pet={pet} onLeft={g => { setGifts(prev => [g, ...prev]); setGiftTotal(n => n + 1) }} onDecor={setPet} />
 
       {/* S05: Guestbook & Tributes Modal */}
       <Modal

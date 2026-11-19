@@ -7,6 +7,8 @@ import { cn, formatCount } from '@/lib/utils'
 interface TributeToolbarProps {
   candleCount: number
   flowerCount: number
+  giftCount: number
+  guestbookCount: number
   /** This visitor already lit today's candle (one a day, new one after midnight). */
   litToday: boolean
   onGuestbook: () => void
@@ -19,6 +21,8 @@ interface TributeToolbarProps {
 export function TributeToolbar({
   candleCount: candles,
   flowerCount: flowers,
+  giftCount,
+  guestbookCount,
   litToday,
   onGuestbook,
   onKeepsake,
@@ -70,16 +74,18 @@ export function TributeToolbar({
       <TributeButton
         emoji="🎁"
         label="Gift"
+        count={giftCount}
         onClick={onGift}
-        aria-label="Leave a gift"
+        aria-label={`Leave a gift. ${giftCount} gifts left`}
       />
 
       {/* Guestbook */}
       <TributeButton
         emoji="📖"
         label="Guestbook"
+        count={guestbookCount}
         onClick={onGuestbook}
-        aria-label="Open guestbook"
+        aria-label={`Open guestbook. ${guestbookCount} messages`}
       />
 
       {/* Share */}

@@ -1,12 +1,14 @@
 // app/api/gifts/route.ts — See the gifts at a shrine, or leave a free one (one every few days per visitor)
 
 import { NextRequest, NextResponse } from 'next/server'
-import { getGifts, leaveGift } from '@/lib/data'
+import { countGifts, getGifts, leaveGift } from '@/lib/data'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET(req: NextRequest) {
-  return NextResponse.json({ gifts: await getGifts(req.nextUrl.searchParams.get('petId') ?? '') })
+  const petId = req.nextUrl.searchParams.get('petId') ?? ''
+  const [gifts, total] = await Promise.all([getGifts(petId), countGifts(petId)])
+  return NextResponse.json({ gifts, total })
 }
 
 export async function POST(req: NextRequest) {
