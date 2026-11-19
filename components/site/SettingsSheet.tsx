@@ -41,7 +41,8 @@ export function SettingsSheet() {
           ))}
         </div>
 
-        <div className="mt-4 max-h-[58dvh] overflow-y-auto pr-1 -mr-1">
+        {/* p-1 leaves room for the selected ring, which the scroll edge would otherwise cut off */}
+        <div className="-mx-1 mt-3 max-h-[58dvh] overflow-y-auto p-1">
           {tab === 'language' ? <LanguagePanel /> : <DisplayPanel />}
         </div>
 
@@ -56,18 +57,18 @@ export function SettingsSheet() {
 function LanguagePanel() {
   const { lang, setLang } = useLang()
   return (
-    <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Language">
+    <div className="grid grid-cols-2 gap-1.5" role="radiogroup" aria-label="Language">
       {LANGS.map(l => {
         const on = l.code === lang
         return (
           <button key={l.code} role="radio" aria-checked={on} lang={l.code} onClick={() => setLang(l.code)}
-            className={cn('flex items-center justify-between gap-2 rounded-2xl px-3.5 py-2.5 text-left transition active:scale-[.98]',
+            className={cn('flex items-center justify-between gap-2 rounded-xl px-3 py-2 text-left transition active:scale-[.98]',
               on ? 'bg-[#FDF0E5] ring-2 ring-[#D9823B]' : 'bg-white ring-1 ring-[#EFE4D4] hover:ring-[#D9823B]/50')}>
             <span className="min-w-0">
-              <span className="block truncate text-[15px] font-semibold text-[#2A1E17]">{l.name}</span>
-              <span className="block text-[11px] text-[#8E8278]">{l.english}</span>
+              <span className="block truncate text-sm font-semibold text-[#2A1E17]">{l.name}</span>
+              <span className="block text-[10px] text-[#8E8278]">{l.english}</span>
             </span>
-            <span className={cn('grid h-5 w-5 shrink-0 place-items-center rounded-full text-[11px]',
+            <span className={cn('grid h-4 w-4 shrink-0 place-items-center rounded-full text-[9px]',
               on ? 'bg-[#D9823B] text-white' : 'ring-1 ring-[#E8DFD6]')} aria-hidden>{on ? '✓' : ''}</span>
           </button>
         )
@@ -107,7 +108,7 @@ function Choice({ title, hint, value, onPick, options }: {
           const on = value === id
           return (
             <button key={id} role="radio" aria-checked={on} onClick={() => onPick(id)}
-              className={cn('flex flex-col items-center gap-1 rounded-2xl py-3 transition active:scale-[.98]',
+              className={cn('flex flex-col items-center gap-1 rounded-xl py-2.5 transition active:scale-[.98]',
                 on ? 'bg-[#FDF0E5] ring-2 ring-[#D9823B]' : 'bg-white ring-1 ring-[#EFE4D4] hover:ring-[#D9823B]/50')}>
               <span className="text-xl leading-none" aria-hidden>{icon}</span>
               <span className={cn('text-xs font-semibold', on ? 'text-[#C67129]' : 'text-[#5C5046]')}>{label}</span>
