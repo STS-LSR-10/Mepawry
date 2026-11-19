@@ -7,6 +7,12 @@ export const LANG_ORDER = ['th', 'zh', 'ja', 'ko', 'vi', 'id', 'ms', 'es', 'fr',
 const same = (s: string) => Array(LANG_ORDER.length).fill(s) as string[]
 
 export const DICT: Record<string, string[]> = {
+  // ── Opening screen ──
+  'A place that never forgets': ['สถานที่ที่ไม่เคยลืม', '永不遗忘的地方', '決して忘れない場所', '결코 잊지 않는 곳', 'Nơi không bao giờ quên', 'Tempat yang tak pernah lupa', 'Tempat yang tidak pernah lupa', 'Un lugar que nunca olvida', 'Un lieu qui n’oublie jamais', 'Ein Ort, der nie vergisst', 'Um lugar que nunca esquece'],
+  'Loading the memorial hall…': ['กำลังเปิดอาคารอนุสรณ์…', '正在打开纪念大厅…', '追悼ホールを読み込み中…', '추모관을 여는 중…', 'Đang mở sảnh tưởng niệm…', 'Membuka aula kenangan…', 'Membuka dewan kenangan…', 'Abriendo el salón conmemorativo…', 'Ouverture du hall du souvenir…', 'Die Gedenkhalle wird geladen…', 'Abrindo o salão memorial…'],
+  '{n} pets remembered': ['สัตว์เลี้ยง {n} ตัวที่ถูกระลึกถึง', '{n} 只宠物被铭记', '{n} 匹のペットを偲んで', '기억되는 반려동물 {n}마리', '{n} thú cưng được tưởng nhớ', '{n} hewan dikenang', '{n} haiwan dikenang', '{n} mascotas recordadas', '{n} animaux dans nos mémoires', '{n} Tiere in Erinnerung', '{n} pets lembrados'],
+  '{c} countries': ['{c} ประเทศ', '{c} 个国家', '{c} か国', '{c}개국', '{c} quốc gia', '{c} negara', '{c} negara', '{c} países', '{c} pays', '{c} Länder', '{c} países'],
+
   // ── Settings ──
   'Settings': ['ตั้งค่า', '设置', '設定', '설정', 'Cài đặt', 'Pengaturan', 'Tetapan', 'Ajustes', 'Réglages', 'Einstellungen', 'Configurações'],
   'Language': ['ภาษา', '语言', '言語', '언어', 'Ngôn ngữ', 'Bahasa', 'Bahasa', 'Idioma', 'Langue', 'Sprache', 'Idioma'],

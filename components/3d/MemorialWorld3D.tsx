@@ -46,6 +46,8 @@ interface MemorialWorld3DProps {
   onRequestFloor: (floor: number, at: P) => void
   /** Elevator: the page opens its floor picker. */
   onElevator: () => void
+  /** The hall has drawn its first frames (the opening screen can go). */
+  onReady?: () => void
 }
 
 const NIGHT: LocalSky = { hour: 22, phase: 'night', season: 'cool', place: '' }
@@ -55,7 +57,7 @@ const GROUND: Record<Season, string> = {
   hot: '#6B5A33', rainy: '#2E472A', cool: '#46562F',
 }
 
-export default function MemorialWorld3D({ floorId, avatarName, avatarGender, avatarLook, onPeopleHere, startAt, sky = NIGHT, arrival, guide, onRequestFloor, onElevator }: MemorialWorld3DProps) {
+export default function MemorialWorld3D({ floorId, avatarName, avatarGender, avatarLook, onPeopleHere, startAt, sky = NIGHT, arrival, guide, onRequestFloor, onElevator, onReady }: MemorialWorld3DProps) {
   const router = useRouter()
   const t = useT()
   const ground = floorId === 1
@@ -181,7 +183,7 @@ const pos = useRef<P>(
         // Phones skip post-processing; the renderer's own ACES filmic tone mapping (R3F's default) does the job there.
         flat={!low}
         gl={{ antialias: !low, powerPreference: 'high-performance' }}
-        onCreated={recovery.onCreated}
+        onCreated={state => { recovery.onCreated(state); requestAnimationFrame(() => requestAnimationFrame(() => onReady?.())) }}
       >
         {/* If frames drop, render fewer pixels; if there's headroom, go back up */}
         <PerformanceMonitor onDecline={() => setDpr(1)} onIncline={() => setDpr(1.5)} />

@@ -23,11 +23,12 @@ import { timeAgo } from '@/lib/utils'
 import type { Floor } from '@/types'
 import { getLocalSky, PHASE_LABEL, SEASON_LABEL, type LocalSky, type Season } from '@/lib/sky'
 import dynamic from 'next/dynamic'
+import { Splash } from '@/components/site/Splash'
 
 // Lazy-load the heavy 3D scene
 const MemorialWorld3D = dynamic(() => import('@/components/3d/MemorialWorld3D'), {
   ssr: false,
-  loading: () => <WorldLoader />,
+  loading: () => null, // the Splash covers loading
 })
 
 export default function HallPage() {
@@ -40,6 +41,7 @@ export default function HallPage() {
     else setStartAt(null)
   }, [])
   const [arrival, setArrival] = useState<{ at: P } | null>(null)
+  const [worldReady, setWorldReady] = useState(false)
   const [fading, setFading] = useState(false)
   // The visitor's own saved name; only on the client, or SSR and hydration disagree
   const [avatarName, setAvatarName] = useState('Visitor')
@@ -155,7 +157,8 @@ export default function HallPage() {
       />
 
       {/* 3D World */}
-      <Suspense fallback={<WorldLoader />}>
+      <Splash ready={worldReady} />
+      <Suspense fallback={null}>
         {startAt !== undefined && <MemorialWorld3D
           startAt={startAt ?? undefined}
           floorId={currentFloor}
@@ -168,6 +171,7 @@ export default function HallPage() {
           guide={guide}
           onRequestFloor={goToFloor}
           onElevator={() => setFloorSelectorOpen(true)}
+          onReady={() => setWorldReady(true)}
         />}
       </Suspense>
 
@@ -265,25 +269,6 @@ export default function HallPage() {
   )
 }
 
-function WorldLoader() {
-  return (
-    <div className="world-bg fixed inset-0 flex flex-col items-center justify-center gap-4 z-10">
-      <div className="text-6xl float-anim">🐾</div>
-      <div className="w-48 h-1.5 bg-white/10 rounded-full overflow-hidden">
-        <div
-          className="h-full bg-[#D9823B] rounded-full transition-all duration-500"
-          style={{ width: '70%' }}
-          role="progressbar"
-          aria-valuenow={70}
-          aria-valuemin={0}
-          aria-valuemax={100}
-          aria-label="Loading memorial hall"
-        />
-      </div>
-      <p className="text-sm text-[#FAF7F2]/60">Loading the memorial hall…</p>
-    </div>
-  )
-}
 
 /** Your memorials, to jump to: tap one and you're taken to its floor and walked to its shrine. */
 function MyPetsMenu({ onPick, onClose }: { onPick: (pet: Pet) => void; onClose: () => void }) {
