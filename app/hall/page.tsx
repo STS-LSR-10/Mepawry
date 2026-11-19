@@ -7,6 +7,8 @@ import { FloorSelector } from '@/components/shrine/FloorSelector'
 import { ELEVATOR_FRONT, FLOOR_COUNT, SLOTS, VIP_SLOTS, type P } from '@/components/3d/layout'
 import type { Pet } from '@/types'
 
+const PILL = 'glass rounded-full border border-white/20 px-4 py-2.5 text-sm text-[#FAF7F2] shadow-md hover:bg-white/20'
+
 // Just inside the VIP Garden's door, facing the arcades
 const VIP_ENTRY: P = { x: 22, z: -30.5 }
 import { loadSpot } from '@/lib/spot'
@@ -73,11 +75,32 @@ export default function HallPage() {
   const onPeopleHere = useCallback((n: number, st: 'connecting' | 'live' | 'offline') => { setHereNow(n); setLive(st) }, [])
   const activity = useActivity()
   const [floors, setFloors] = useState<Floor[]>([])
-  const [today, setToday] = useState<{ candles: number; countries: number } | null>(null)
   useEffect(() => {
     fetch('/api/floors').then(r => r.json()).then(d => setFloors(d.floors ?? [])).catch(() => {})
-    fetch('/api/stats').then(r => r.json()).then(d => setToday({ candles: d.candles_today, countries: d.countries_today })).catch(() => {})
   }, [currentFloor])
+  // Today's candles: pops up when you arrive and whenever someone lights a new one, then fades away
+  const [today, setToday] = useState<{ candles: number; countries: number } | null>(null)
+  const [showToday, setShowToday] = useState(false)
+  useEffect(() => {
+    let last = -1
+    let hide: ReturnType<typeof setTimeout> | undefined
+    const load = () => fetch('/api/stats').then(r => r.json()).then(d => {
+      const candles = Number(d.candles_today) || 0
+      setToday({ candles, countries: Number(d.countries_today) || 0 })
+      if (last < 0 || candles > last) {
+        setShowToday(true)
+        clearTimeout(hide)
+        hide = setTimeout(() => setShowToday(false), 8000)
+      }
+      last = candles
+    }).catch(() => {})
+    load()
+    const id = setInterval(load, 30_000)
+    return () => { clearInterval(id); clearTimeout(hide) }
+  }, [])
+  // The right-hand buttons fold away into one; open on wide screens, folded on phones
+  const [toolsOpen, setToolsOpen] = useState(false)
+  useEffect(() => setToolsOpen(window.innerWidth >= 640), [])
 
   /** Fade out, swap floors, put the avatar at the stairs or elevator, fade back in. */
   const goToFloor = (floor: number, at: P, then?: () => void) => {
@@ -151,12 +174,6 @@ export default function HallPage() {
       )}
 
       {/* Dress your character: the panel sits at the bottom so your avatar stays in view and changes live */}
-      <button
-        onClick={() => setLookOpen(true)}
-        className="fixed bottom-[11.5rem] right-4 z-20 glass rounded-full border border-white/20 px-4 py-2.5 text-sm text-[#FAF7F2] shadow-md sm:bottom-[8.5rem]"
-      >
-        👕 My look
-      </button>
       {lookOpen && (
         <div className="fixed inset-x-0 bottom-0 z-40 mx-auto max-h-[46dvh] max-w-md overflow-y-auto rounded-t-3xl bg-[#FFFBF5] p-4 shadow-2xl sm:bottom-4 sm:left-4 sm:right-auto sm:max-h-[80dvh] sm:rounded-3xl" role="dialog" aria-label="Dress your character">
           <h2 className="mb-3 font-serif text-lg font-bold text-[#2A1E17]">Dress your character</h2>
@@ -174,50 +191,47 @@ export default function HallPage() {
         />
       )}
 
-      {/* Board button for phones (the header pills are hidden on small screens) */}
-      <button
-        onClick={() => setBoardOpen(true)}
-        className="sm:hidden fixed bottom-[8.5rem] right-4 z-20 glass rounded-full border border-white/20 px-4 py-2.5 text-sm text-[#FAF7F2] shadow-md"
-      >
-        📖 Board
-      </button>
-
-      {/* Floor Selector Button, and a shortcut to this floor's VIP Garden */}
-      <div className="fixed bottom-24 right-4 z-20 flex items-center gap-2">
+      {/* My look, Board, My pet, VIP and Floor in one column that folds away */}
+      <div className="fixed bottom-24 right-4 z-20 flex flex-col items-end gap-2">
+        {toolsOpen && (
+          <div id="hall-tools" className="pop-in flex flex-col items-end gap-2">
+            <button onClick={() => setLookOpen(true)} className={PILL}>👕 My look</button>
+            {/* The header has its own Board button on wide screens */}
+            <button onClick={() => setBoardOpen(true)} className={`${PILL} sm:hidden`}>📖 Board</button>
+            <button onClick={() => setMenu(m => (m === 'pets' ? null : 'pets'))} aria-expanded={menu === 'pets'} className={PILL}>🐾 My pet</button>
+            <button
+              onClick={() => setMenu(m => (m === 'vip' ? null : 'vip'))}
+              aria-expanded={menu === 'vip'}
+              className="rounded-full border border-[#E8C365]/60 bg-gradient-to-r from-[#F3D99B]/90 to-[#D9B26A]/90 px-4 py-2.5 text-sm font-semibold text-[#3A2612] shadow-md hover:brightness-105"
+              aria-label="VIP Garden: choose a floor"
+            >
+              ✿ VIP
+            </button>
+            <button onClick={() => setFloorSelectorOpen(true)} className={PILL} aria-label={`Floor ${currentFloor}. Take the elevator to another floor`}>
+              🛗 Floor {currentFloor}
+            </button>
+          </div>
+        )}
         <button
-          onClick={() => setMenu(m => (m === 'pets' ? null : 'pets'))}
-          aria-expanded={menu === 'pets'}
-          className="glass rounded-full border border-white/20 px-4 py-2.5 text-sm text-[#FAF7F2] shadow-md hover:bg-white/20"
+          onClick={() => { setToolsOpen(o => !o); setMenu(null) }}
+          aria-expanded={toolsOpen} aria-controls="hall-tools"
+          aria-label={toolsOpen ? 'Hide buttons' : 'Show buttons'}
+          className={`${PILL} min-w-11 font-semibold`}
         >
-          🐾 My pet
-        </button>
-        <button
-          onClick={() => setMenu(m => (m === 'vip' ? null : 'vip'))}
-          aria-expanded={menu === 'vip'}
-          className="rounded-full border border-[#E8C365]/60 bg-gradient-to-r from-[#F3D99B]/90 to-[#D9B26A]/90 px-4 py-2.5 text-sm font-semibold text-[#3A2612] shadow-md hover:brightness-105"
-          aria-label="VIP Garden: choose a floor"
-        >
-          ✿ VIP
-        </button>
-        <button
-          onClick={() => setFloorSelectorOpen(true)}
-          className="glass border border-white/20 rounded-full px-4 py-2.5 text-sm text-[#FAF7F2] hover:bg-white/20 transition-colors shadow-md flex items-center gap-2"
-          aria-label={`Floor ${currentFloor}. Take the elevator to another floor`}
-        >
-          🛗 Floor {currentFloor}
+          {toolsOpen ? '✕' : <>☰ <span className="ml-1 font-normal">F{currentFloor}</span></>}
         </button>
       </div>
 
       {/* Nav hint */}
       <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-20">
-        <div className="glass rounded-full px-4 py-2 text-xs text-[#FAF7F2]/70 border border-white/10">
+        <div className="glass whitespace-nowrap rounded-full px-4 py-2 text-xs text-[#FAF7F2]/70 border border-white/10">
           Tap to walk · Drag to look around
         </div>
       </div>
 
       {/* Candles in the last 24 hours, counted from real tributes */}
-      {today && (
-        <div className="fixed bottom-16 left-1/2 -translate-x-1/2 z-20 w-full max-w-sm px-4">
+      {today && showToday && (
+        <div role="status" className="pop-in fixed bottom-16 left-1/2 -translate-x-1/2 z-20 w-full max-w-sm px-4">
           <div className="glass border border-[#D9823B]/30 rounded-full px-5 py-3 text-center text-sm text-[#FAF7F2] shadow-md">
             🕯️ {today.candles
               ? <><span className="font-medium">{today.candles.toLocaleString('en-US')} {today.candles === 1 ? 'candle' : 'candles'}</span> lit today{today.countries ? ` for pets from ${today.countries} ${today.countries === 1 ? 'country' : 'countries'}` : ''}</>
