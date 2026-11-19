@@ -65,7 +65,7 @@ function LanguagePanel() {
             className={cn('flex items-center justify-between gap-2 rounded-xl px-3 py-2 text-left transition active:scale-[.98]',
               on ? 'bg-[#FDF0E5] ring-2 ring-[#D9823B]' : 'bg-white ring-1 ring-[#EFE4D4] hover:ring-[#D9823B]/50')}>
             <span className="min-w-0">
-              <span className="block truncate text-sm font-semibold text-[#2A1E17]">{l.name}</span>
+              <span className="block text-sm font-semibold leading-tight text-[#2A1E17]">{l.name}</span>
               <span className="block text-[10px] text-[#8E8278]">{l.english}</span>
             </span>
             <span className={cn('grid h-4 w-4 shrink-0 place-items-center rounded-full text-[9px]',
