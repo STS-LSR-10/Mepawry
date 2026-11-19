@@ -18,6 +18,7 @@ import { BoardSheet } from '@/components/board/Board'
 import { LookEditor } from '@/components/account/LookEditor'
 import { MyPageSheet } from '@/components/account/MyPageSheet'
 import { useMyLook } from '@/lib/look'
+import { useLang, useT } from '@/lib/i18n'
 import { timeAgo } from '@/lib/utils'
 import type { Floor } from '@/types'
 import { getLocalSky, PHASE_LABEL, SEASON_LABEL, type LocalSky, type Season } from '@/lib/sky'
@@ -55,6 +56,10 @@ export default function HallPage() {
   // The community board opens from the header button or by tapping the board in the lobby
   const [boardOpen, setBoardOpen] = useState(false)
   const myLook = useMyLook()
+  const t = useT()
+  const { lang } = useLang()
+  // '☀️ Day' → '☀️' + the word in the visitor's language
+  const label = (s: string) => { const i = s.indexOf(' '); return `${s.slice(0, i)} ${t(s.slice(i + 1))}` }
   const [lookOpen, setLookOpen] = useState(false)
   useEffect(() => {
     const open = () => setLookOpen(true)
@@ -169,7 +174,7 @@ export default function HallPage() {
       {/* Local time and season */}
       {sky && (
         <div className="fixed bottom-24 left-4 z-20 max-w-[55vw] truncate glass rounded-full border border-white/20 px-4 py-2.5 text-sm text-[#FAF7F2] shadow-md">
-          {PHASE_LABEL[sky.phase]} · {SEASON_LABEL[sky.season]} · {sky.place}
+          {label(PHASE_LABEL[sky.phase])} · {label(SEASON_LABEL[sky.season])} · {sky.place}
         </div>
       )}
 
@@ -184,7 +189,7 @@ export default function HallPage() {
       {menu === 'pets' && <MyPetsMenu onPick={pet => { setMenu(null); findPet(pet) }} onClose={() => setMenu(null)} />}
       {menu === 'vip' && (
         <FloorGrid
-          title="✿ VIP Garden — which floor?"
+          title={`✿ ${t('VIP Garden — which floor?')}`}
           current={currentFloor}
           onPick={f => { setMenu(null); goToFloor(f, VIP_ENTRY) }}
           onClose={() => setMenu(null)}
@@ -195,10 +200,10 @@ export default function HallPage() {
       <div className="fixed bottom-24 right-4 z-20 flex flex-col items-end gap-2">
         {toolsOpen && (
           <div id="hall-tools" className="pop-in flex flex-col items-end gap-2">
-            <button onClick={() => setLookOpen(true)} className={PILL}>👕 My look</button>
+            <button onClick={() => setLookOpen(true)} className={PILL}>👕 {t('My look')}</button>
             {/* The header has its own Board button on wide screens */}
-            <button onClick={() => setBoardOpen(true)} className={`${PILL} sm:hidden`}>📖 Board</button>
-            <button onClick={() => setMenu(m => (m === 'pets' ? null : 'pets'))} aria-expanded={menu === 'pets'} className={PILL}>🐾 My pet</button>
+            <button onClick={() => setBoardOpen(true)} className={`${PILL} sm:hidden`}>📖 {t('Board')}</button>
+            <button onClick={() => setMenu(m => (m === 'pets' ? null : 'pets'))} aria-expanded={menu === 'pets'} className={PILL}>🐾 {t('My pet')}</button>
             <button
               onClick={() => setMenu(m => (m === 'vip' ? null : 'vip'))}
               aria-expanded={menu === 'vip'}
@@ -208,14 +213,14 @@ export default function HallPage() {
               ✿ VIP
             </button>
             <button onClick={() => setFloorSelectorOpen(true)} className={PILL} aria-label={`Floor ${currentFloor}. Take the elevator to another floor`}>
-              🛗 Floor {currentFloor}
+              🛗 {t('Floor {n}', { n: currentFloor })}
             </button>
           </div>
         )}
         <button
           onClick={() => { setToolsOpen(o => !o); setMenu(null) }}
           aria-expanded={toolsOpen} aria-controls="hall-tools"
-          aria-label={toolsOpen ? 'Hide buttons' : 'Show buttons'}
+          aria-label={t(toolsOpen ? 'Hide buttons' : 'Show buttons')}
           className={`${PILL} min-w-11 font-semibold`}
         >
           {toolsOpen ? '✕' : <>☰ <span className="ml-1 font-normal">F{currentFloor}</span></>}
@@ -225,7 +230,7 @@ export default function HallPage() {
       {/* Nav hint */}
       <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-20">
         <div className="glass whitespace-nowrap rounded-full px-4 py-2 text-xs text-[#FAF7F2]/70 border border-white/10">
-          Tap to walk · Drag to look around
+          {t('Tap to walk · Drag to look around')}
         </div>
       </div>
 
@@ -234,8 +239,10 @@ export default function HallPage() {
         <div role="status" className="pop-in fixed bottom-16 left-1/2 -translate-x-1/2 z-20 w-full max-w-sm px-4">
           <div className="glass border border-[#D9823B]/30 rounded-full px-5 py-3 text-center text-sm text-[#FAF7F2] shadow-md">
             🕯️ {today.candles
-              ? <><span className="font-medium">{today.candles.toLocaleString('en-US')} {today.candles === 1 ? 'candle' : 'candles'}</span> lit today{today.countries ? ` for pets from ${today.countries} ${today.countries === 1 ? 'country' : 'countries'}` : ''}</>
-              : 'No candles lit yet today. Find a shrine and light the first one.'}
+              ? lang === 'en'
+                ? <><span className="font-medium">{today.candles.toLocaleString('en-US')} {today.candles === 1 ? 'candle' : 'candles'}</span> lit today{today.countries ? ` for pets from ${today.countries} ${today.countries === 1 ? 'country' : 'countries'}` : ''}</>
+                : <>{t('{n} candles lit today', { n: today.candles.toLocaleString() })}{today.countries ? ` · ${t('for pets from {c} countries', { c: today.countries })}` : ''}</>
+              : t('No candles lit yet today. Find a shrine and light the first one.')}
           </div>
         </div>
       )}
@@ -281,13 +288,14 @@ function WorldLoader() {
 /** Your memorials, to jump to: tap one and you're taken to its floor and walked to its shrine. */
 function MyPetsMenu({ onPick, onClose }: { onPick: (pet: Pet) => void; onClose: () => void }) {
   const [pets, setPets] = useState<Pet[] | null>(null)
+  const t = useT()
   useEffect(() => {
     fetch('/api/me/pets', { cache: 'no-store' }).then(r => (r.ok ? r.json() : { pets: [] })).then(d => setPets(d.pets ?? [])).catch(() => setPets([]))
   }, [])
   return (
-    <Popover title="🐾 Take me to my pet" onClose={onClose}>
-      {pets === null ? <p className="py-3 text-center text-sm text-[#8E8278]">Loading…</p>
-        : pets.length === 0 ? <p className="py-3 text-center text-sm text-[#8E8278]">No memorials yet on this device. Add your pet with “+ Add my pet”, or sign in on My page.</p>
+    <Popover title={`🐾 ${t('Take me to my pet')}`} onClose={onClose}>
+      {pets === null ? <p className="py-3 text-center text-sm text-[#8E8278]">{t('Loading…')}</p>
+        : pets.length === 0 ? <p className="py-3 text-center text-sm text-[#8E8278]">{t('No memorials yet on this device. Add your pet, or sign in on My page.')}</p>
         : (
           <ul className="max-h-64 space-y-1.5 overflow-y-auto">
             {pets.map(p => (
@@ -300,10 +308,10 @@ function MyPetsMenu({ onPick, onClose }: { onPick: (pet: Pet) => void; onClose: 
                   <span className="min-w-0 flex-1">
                     <span className="block truncate font-semibold text-[#2A1E17]">{p.name}</span>
                     <span className="block text-xs text-[#8E8278]">
-                      Floor {p.floor_id} · {p.vip_position != null ? `✿ VIP niche ${p.vip_position + 1}` : `shelf ${p.shrine_position + 1}`}
+                      {t('Floor {n}', { n: p.floor_id })} · {p.vip_position != null ? `✿ ${t('VIP niche {n}', { n: p.vip_position + 1 })}` : t('shelf {n}', { n: p.shrine_position + 1 })}
                     </span>
                   </span>
-                  <span className="text-sm text-[#C67129]">Go →</span>
+                  <span className="text-sm text-[#C67129]">{t('Go →')}</span>
                 </button>
               </li>
             ))}
@@ -334,7 +342,7 @@ function Popover({ title, onClose, children }: { title: string; onClose: () => v
     <div className="fixed bottom-36 right-4 z-30 w-[min(22rem,calc(100vw-2rem))] rounded-3xl bg-[#FFFBF5] p-4 shadow-2xl" role="dialog" aria-label={title}>
       <div className="mb-3 flex items-center justify-between">
         <h2 className="font-serif text-base font-bold text-[#2A1E17]">{title}</h2>
-        <button onClick={onClose} aria-label="Close" className="grid h-8 w-8 place-items-center rounded-full bg-[#F4EBDD] text-[#8E8278]">✕</button>
+        <button onClick={onClose} aria-label={useT()('Close')} className="grid h-8 w-8 place-items-center rounded-full bg-[#F4EBDD] text-[#8E8278]">✕</button>
       </div>
       {children}
     </div>

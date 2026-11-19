@@ -13,6 +13,7 @@ import { getVisitor } from '@/lib/visitor'
 import { useAccount } from '@/lib/account'
 import Link from 'next/link'
 import { timeAgo } from '@/lib/utils'
+import { useT } from '@/lib/i18n'
 import type { Pet, GuestbookEntry } from '@/types'
 
 // WebGL only runs in the browser
@@ -28,6 +29,7 @@ const litKey = (petId: string) => `pm-candle:${petId}`
 export function ShrineClientSection({ pet: initialPet, candlesToday: initialToday }: { pet: Pet; candlesToday: number }) {
   const [pet, setPet] = useState(initialPet)
   const { user, profile } = useAccount()
+  const t = useT()
   const isOwner = !!user && user.id === pet.owner_id
   const [guestbookOpen, setGuestbookOpen] = useState(false)
   // Live counts, so a candle you light appears in the cabinet straight away
@@ -150,12 +152,12 @@ export function ShrineClientSection({ pet: initialPet, candlesToday: initialToda
         <ShrineCabinet pet={pet} candlesToday={candlesToday} flowers={flowers} gifts={gifts.map(g => g.item)} />
       </div>
       <p className="mt-1 rounded-full bg-black/30 px-4 py-1.5 text-sm text-[#FFE2C0]">
-        {litToday ? <>🕯️ You lit a candle for {pet.name} today. Come back tomorrow to light another.</>
-          : candles > 0 ? <>Tap 🕯️ to light a candle for {pet.name}</> : <>Waiting for their first candle. Will you light it?</>}
+        {litToday ? <>🕯️ {t('You lit a candle for {name} today. Come back tomorrow to light another.', { name: pet.name })}</>
+          : candles > 0 ? t('Tap 🕯️ to light a candle for {name}', { name: pet.name }) : t('Waiting for their first candle. Will you light it?')}
       </p>
       {isOwner && (
         <Link href={`/me?edit=${pet.id}`} className="mt-3 rounded-full border border-white/20 px-4 py-1.5 text-xs text-[#FFE2C0] hover:bg-white/10">
-          ✏️ Edit or delete this memorial
+          ✏️ {t('Edit or delete this memorial')}
         </Link>
       )}
       <VipUpgrade pet={pet} isOwner={isOwner} onChange={setPet} />
@@ -165,7 +167,7 @@ export function ShrineClientSection({ pet: initialPet, candlesToday: initialToda
       <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-20 w-full max-w-lg px-4 flex flex-col items-center gap-2">
         {shareSuccess && (
           <div className="bg-[#27AE60] text-white text-xs px-4 py-1.5 rounded-full shadow-lg animate-fade-in">
-            Link copied to clipboard! 📋
+            {t('Link copied to clipboard! 📋')}
           </div>
         )}
         <div className="glass rounded-3xl p-2.5 shadow-2xl border border-white/20">

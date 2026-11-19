@@ -14,6 +14,8 @@ import { Park } from './Park'
 import { WindClock } from './wind'
 import { AVATAR_FILL, Polish, RIM, Vignette } from './look'
 import { CrowdAvatars, useCrowd, type Me } from './Crowd'
+import { crowdLimit, usePref, type CrowdPref } from '@/lib/settings'
+import { useT } from '@/lib/i18n'
 import { getVisitor } from '@/lib/visitor'
 import { saveSpot } from '@/lib/spot'
 import { defaultLook, type AvatarLook } from '@/lib/look'
@@ -55,6 +57,7 @@ const GROUND: Record<Season, string> = {
 
 export default function MemorialWorld3D({ floorId, avatarName, avatarGender, avatarLook, onPeopleHere, startAt, sky = NIGHT, arrival, guide, onRequestFloor, onElevator }: MemorialWorld3DProps) {
   const router = useRouter()
+  const t = useT()
   const ground = floorId === 1
   // On the park path facing the fountain and the door, nudged a little so visitors arriving together don't stand on each other
 const pos = useRef<P>(
@@ -110,7 +113,8 @@ const pos = useRef<P>(
     const id = user?.id ?? v.id
     setMe({ id, name: avatarName, look: avatarLook ?? defaultLook(avatarGender) })
   }, [user?.id, avatarName, avatarGender, avatarLook])
-  const crowd = useCrowd(floorId, me, pos, low ? 20 : 40)
+  const crowdPref = usePref<CrowdPref>('pm-crowd')
+  const crowd = useCrowd(floorId, me, pos, crowdLimit(crowdPref, low))
   useEffect(() => { onPeopleHere?.(crowd.count + 1, crowd.status) }, [crowd.count, crowd.status, onPeopleHere])
 
   const walkTo = useCallback((to: P, onArrive?: () => void, face?: P) => {
@@ -284,7 +288,7 @@ const pos = useRef<P>(
           onClick={() => router.push(`/${near.slug}`)}
           className="pop-in fixed bottom-36 left-1/2 z-30 -translate-x-1/2 rounded-full bg-[#D9823B] px-6 py-3 text-base font-semibold text-white shadow-[0_10px_30px_-8px_rgba(217,130,59,.8)] transition hover:bg-[#C67129]"
         >
-          🕯️ Visit {near.name}
+          🕯️ {t('Visit {name}', { name: near.name })}
         </button>
       )}
     </div>

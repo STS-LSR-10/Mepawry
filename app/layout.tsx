@@ -4,6 +4,8 @@ import type { Metadata } from 'next'
 import { Lora, Plus_Jakarta_Sans } from 'next/font/google'
 import './globals.css'
 import { AccountProvider } from '@/lib/account'
+import { I18nProvider } from '@/lib/i18n'
+import { SettingsSheet } from '@/components/site/SettingsSheet'
 
 const serif = Lora({ subsets: ['latin'], style: ['normal', 'italic'], variable: '--font-serif' })
 const sans = Plus_Jakarta_Sans({ subsets: ['latin'], variable: '--font-sans' })
@@ -22,7 +24,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${serif.variable} ${sans.variable}`} suppressHydrationWarning>
-      <body className="antialiased"><AccountProvider>{children}</AccountProvider></body>
+      <body className="antialiased"><I18nProvider><AccountProvider>{children}</AccountProvider><SettingsSheet /></I18nProvider></body>
     </html>
   )
 }

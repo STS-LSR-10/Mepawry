@@ -5,14 +5,17 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import type { RootState } from '@react-three/fiber'
+import { getPref, usePref, type GraphicsPref } from '@/lib/settings'
 
 export type Quality = 'low' | 'high'
 
-/** ?quality=low|high forces a level (handy for testing on a desktop). */
+/** ?quality=low|high forces a level (handy for testing on a desktop); then the visitor's own setting; then the device. */
 export function detectQuality(): Quality {
   try {
     const forced = new URLSearchParams(window.location.search).get('quality')
     if (forced === 'low' || forced === 'high') return forced
+    const pref = getPref<GraphicsPref>('pm-graphics')
+    if (pref === 'low' || pref === 'high') return pref
     const ua = navigator.userAgent
     const phone = /iPhone|iPad|iPod|Android|Mobile|Line\/|FBAN|FBAV|Instagram/i.test(ua)
     const nav = navigator as Navigator & { deviceMemory?: number }
@@ -25,7 +28,8 @@ export function detectQuality(): Quality {
 
 export function useQuality(): Quality {
   const [q, setQ] = useState<Quality>('low') // start cheap; upgrade once we know the device
-  useEffect(() => setQ(detectQuality()), [])
+  const pref = usePref<GraphicsPref>('pm-graphics') // changed in Settings: switch right away
+  useEffect(() => setQ(detectQuality()), [pref])
   return q
 }
 

@@ -2,6 +2,7 @@
 
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
+import { T } from '@/lib/i18n'
 import { getCandlesToday, getNeighbours, getPetBySlug, recordVisit } from '@/lib/data'
 import { formatYears, formatCount, calculateAge, flagEmoji, getFloorName, SPECIES_LOOK } from '@/lib/utils'
 import { SiteNav } from '@/components/site/SiteNav'
@@ -60,7 +61,7 @@ export default async function ShrinePage({ params }: ShrinePageProps) {
 
       <main className="relative z-[2] flex min-h-dvh flex-col items-center px-4 pb-40 pt-24 text-center">
         <Link href="/hall" className="mb-4 self-start text-sm text-[#FAF7F2]/60 transition hover:text-[#FAF7F2] sm:ml-6">
-          ‹ Back to the hall
+          ‹ <T text="Back to the hall" />
         </Link>
 
         <h1 className="font-serif text-4xl font-medium sm:text-5xl">{pet.name}</h1>

@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/Button'
 import { formatCount } from '@/lib/utils'
 import { AddPetModal } from './AddPetModal'
+import { openSettings, useT } from '@/lib/i18n'
 
 interface FloatingHeaderProps {
   visitorCount: number
@@ -26,6 +27,7 @@ export function FloatingHeader({
   liveStatus = 'live',
 }: FloatingHeaderProps) {
   const [addPetOpen, setAddPetOpen] = useState(false)
+  const t = useT()
   const [tickerIndex, setTickerIndex] = useState(0)
 
   // Rotate activity ticker
@@ -51,22 +53,30 @@ export function FloatingHeader({
 
           {/* Center: quick pills */}
           <nav className="hidden sm:flex items-center gap-2" aria-label="Quick navigation">
-            <QuickPill href="/memorials" icon="🐾" label="All pets" />
-            <QuickPill href="/memorials?waiting=true" icon="🕯️" label="Waiting" badge />
+            <QuickPill href="/memorials" icon="🐾" label={t('All pets')} />
+            <QuickPill href="/memorials?waiting=true" icon="🕯️" label={t('Waiting')} badge />
             <button
               onClick={() => window.dispatchEvent(new Event('mepawry:board'))}
               className="glass rounded-full px-3 py-1.5 text-xs text-[#FAF7F2] border border-white/20 hover:bg-white/20 transition-colors flex items-center gap-1.5"
             >
-              <span aria-hidden>📖</span> Board
+              <span aria-hidden>📖</span> {t('Board')}
             </button>
-            <QuickPill href="#" icon="🏮" label="Lantern" />
+            <QuickPill href="#" icon="🏮" label={t('Lantern')} />
           </nav>
 
           {/* Right: CTA + audio + menu */}
           <div className="flex items-center gap-2">
             <Button size="sm" onClick={() => setAddPetOpen(true)} className="shadow-sm">
-              + Add my pet
+              {t('+ Add my pet')}
             </Button>
+            <button
+              onClick={openSettings}
+              aria-label={t('Settings')}
+              className="glass grid h-9 w-9 place-items-center rounded-full border border-white/20 text-[#FAF7F2] shadow-sm hover:bg-white/20"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" /></svg>
+            </button>
+
           </div>
         </div>
 
@@ -78,7 +88,7 @@ export function FloatingHeader({
             title={liveStatus === 'live' ? 'Connected: you can see other visitors on this floor' : liveStatus === 'connecting' ? 'Connecting to other visitors…' : 'Can’t reach other visitors right now — retrying'}
           >
             <span className={`w-2 h-2 rounded-full ${liveStatus === 'live' ? 'bg-green-400 animate-pulse' : liveStatus === 'connecting' ? 'bg-amber-400' : 'bg-red-500'}`} aria-hidden />
-            <span>{formatCount(visitorCount)} here now</span>
+            <span>{t('{n} here now', { n: formatCount(visitorCount) })}</span>
           </div>
 
           {/* Avatar */}

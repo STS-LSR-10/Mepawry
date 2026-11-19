@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react'
 import { Modal } from '@/components/ui/Modal'
 import { cn } from '@/lib/utils'
 import { getVisitor } from '@/lib/visitor'
+import { useT } from '@/lib/i18n'
 import { useAccount } from '@/lib/account'
 import { DEFAULT_BACKDROP, DEFAULT_FRAME, FRAMES, backdropsFor, type FrameStyle } from '@/lib/decor'
 import { backdropThumb } from '@/components/3d/backdrops'
@@ -15,10 +16,10 @@ import { CATEGORIES, FREE_GIFT_COOLDOWN_DAYS, SPECIAL_GIFT_SHOWS_DAYS, giftsFor,
 
 const waitKey = (petId: string) => `pm-gift-wait-${petId}`
 
-function waitText(nextAt: string) {
+function waitText(nextAt: string, t: ReturnType<typeof useT>) {
   const ms = Date.parse(nextAt) - Date.now()
   const h = Math.ceil(ms / 3_600_000)
-  return h > 24 ? `${Math.ceil(h / 24)} days` : h > 1 ? `${h} hours` : 'less than an hour'
+  return h > 24 ? t('{n} days', { n: Math.ceil(h / 24) }) : h > 1 ? t('{n} hours', { n: h }) : t('less than an hour')
 }
 
 type Tab = GiftCategory | 'frames' | 'backdrops'
@@ -39,6 +40,7 @@ export function GiftPicker({ open, onClose, pet, onLeft, onDecor }: {
   onDecor: (pet: Pet) => void
 }) {
   const petId = pet.id, petName = pet.name
+  const t = useT()
   const admin = !!useAccount().user?.isAdmin
   const [tab, setTab] = useState<Tab>('food')
   const [picked, setPicked] = useState<Gift | null>(null)
@@ -77,7 +79,7 @@ export function GiftPicker({ open, onClose, pet, onLeft, onDecor }: {
     }).catch(() => null)
     setSending(false)
     const d = await res?.json().catch(() => null)
-    if (res?.ok && d?.pet) { onDecor(d.pet); setDecor(null) } else setError(d?.error ?? 'That didn’t go through. Please try again.')
+    if (res?.ok && d?.pet) { onDecor(d.pet); setDecor(null) } else setError(d?.error ?? t('That didn’t go through. Please try again.'))
   }
 
   const send = async () => {
@@ -100,7 +102,7 @@ export function GiftPicker({ open, onClose, pet, onLeft, onDecor }: {
       try { localStorage.setItem(waitKey(petId), d.nextAt) } catch {}
       setNextAt(d.nextAt)
     } else {
-      setError('That didn’t go through. Please try again.')
+      setError(t('That didn’t go through. Please try again.'))
     }
   }
 
@@ -111,10 +113,10 @@ export function GiftPicker({ open, onClose, pet, onLeft, onDecor }: {
           <div className="mx-auto mb-4 grid h-28 w-28 place-items-center rounded-full bg-gradient-to-b from-[#FFE9CF] to-[#FFF6EA] text-6xl shadow-[0_0_40px_rgba(217,130,59,0.35)] float-anim" aria-hidden>
             {sent.emoji}
           </div>
-          <h2 className="font-serif text-2xl font-bold text-[#2A1E17]">{sent.name} for {petName}</h2>
-          <p className="mt-2 text-sm text-[#8E8278]">It’s waiting by their shrine now. Visitors will see it’s from you.</p>
+          <h2 className="font-serif text-2xl font-bold text-[#2A1E17]">{sent.name} · {t('for {name}', { name: petName })}</h2>
+          <p className="mt-2 text-sm text-[#8E8278]">{t('It’s waiting by their shrine now. Visitors will see it’s from you.')}</p>
           <button onClick={onClose} className="mt-6 w-full rounded-2xl bg-[#2A1E17] py-3 text-sm font-semibold text-[#FFF6EA] hover:bg-[#3B2B21]">
-            Back to {petName}
+            {t('Back to {name}', { name: petName })}
           </button>
         </div>
       ) : (
@@ -122,8 +124,8 @@ export function GiftPicker({ open, onClose, pet, onLeft, onDecor }: {
           {/* Header */}
           <div className="flex items-start justify-between gap-3">
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#D9823B]">A little gift</p>
-              <h2 id="modal-title" className="font-serif text-2xl font-bold leading-tight text-[#2A1E17]">for {petName}</h2>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#D9823B]">{t('A little gift')}</p>
+              <h2 id="modal-title" className="font-serif text-2xl font-bold leading-tight text-[#2A1E17]">{t('for {name}', { name: petName })}</h2>
             </div>
             <button onClick={onClose} aria-label="Close" className="rounded-full bg-[#F4EBDD] p-2.5 text-[#8E8278] hover:text-[#2A1E17]">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 6L6 18M6 6l12 12" /></svg>
@@ -144,11 +146,11 @@ export function GiftPicker({ open, onClose, pet, onLeft, onDecor }: {
                 )}
               >
                 <span className="text-base leading-none" aria-hidden>{c.emoji}</span>
-                {c.label}
+                {t(c.label)}
               </button>
             ))}
           </div>
-          <p className="mt-3 text-xs text-[#8E8278]">{cat.hint}</p>
+          <p className="mt-3 text-xs text-[#8E8278]">{tab === 'special' ? t('Stay by their shrine for {n} days with your name', { n: SPECIAL_GIFT_SHOWS_DAYS }) : t(cat.hint)}</p>
 
           {/* Items */}
           <div className="mt-3 max-h-[46dvh] overflow-y-auto pr-1 -mr-1">
@@ -160,8 +162,8 @@ export function GiftPicker({ open, onClose, pet, onLeft, onDecor }: {
               <BackdropGrid current={currentBackdrop} picked={decor?.id}
                 onPick={b => setDecor({ kind: 'backdrop', id: b.id, name: b.name, price: b.price })} />
             )}
-            {tab === 'special' && seasonal.length > 0 && <Section title="❄️ This season" items={seasonal} picked={picked} onPick={setPicked} />}
-            {!isDecor && <Section title={tab === 'special' && seasonal.length ? '🌈 All year' : ''} items={yearRound} picked={picked} onPick={setPicked} />}
+            {tab === 'special' && seasonal.length > 0 && <Section title={`❄️ ${t('This season')}`} items={seasonal} picked={picked} onPick={setPicked} />}
+            {!isDecor && <Section title={tab === 'special' && seasonal.length ? `🌈 ${t('All year')}` : ''} items={yearRound} picked={picked} onPick={setPicked} />}
           </div>
 
           {/* Footer: what you're about to leave */}
@@ -174,35 +176,35 @@ export function GiftPicker({ open, onClose, pet, onLeft, onDecor }: {
                     // eslint-disable-next-line @next/next/no-img-element
                     ? <img src={backdropThumb(decor.id)} alt="" className="h-full w-full object-cover" />
                     : <span className="block h-full w-full rounded-xl p-1.5" style={{ background: FRAMES.find(f => f.id === decor.id)?.swatch }}><span className="block h-full w-full rounded-md bg-[#FBF6EC]" /></span>}
-                  title={decor.name} sub={`฿${decor.price} · stays for good`}
+                  title={decor.name} sub={`฿${decor.price} · ${t('stays for good')}`}
                 >
                   {admin ? (
                     <button onClick={applyDecor} disabled={sending} className="rounded-2xl bg-[#D9823B] px-4 py-3 text-xs font-semibold text-white shadow-md hover:bg-[#C67129] disabled:opacity-60">
-                      {sending ? 'Applying…' : 'Apply (admin)'}
+                      {sending ? t('Applying…') : t('Apply (admin)')}
                     </button>
                   ) : (
-                    <button disabled className="rounded-2xl bg-[#E8DFD6] px-4 py-3 text-xs font-semibold text-[#8E8278]">Opening soon</button>
+                    <button disabled className="rounded-2xl bg-[#E8DFD6] px-4 py-3 text-xs font-semibold text-[#8E8278]">{t('Opening soon')}</button>
                   )}
                 </FooterRow>
               ) : (
-                <p className="py-3 text-center text-sm text-[#8E8278]">Tap one to see it up close</p>
+                <p className="py-3 text-center text-sm text-[#8E8278]">{t('Tap one to see it up close')}</p>
               )
             ) : picked?.price ? (
-              <FooterRow icon={picked.emoji} title={picked.name} sub={`฿${picked.price} · stays ${SPECIAL_GIFT_SHOWS_DAYS} days with your name`}>
-                <button disabled className="rounded-2xl bg-[#E8DFD6] px-4 py-3 text-xs font-semibold text-[#8E8278]">Opening soon</button>
+              <FooterRow icon={picked.emoji} title={picked.name} sub={`฿${picked.price} · ${t('stays {n} days with your name', { n: SPECIAL_GIFT_SHOWS_DAYS })}`}>
+                <button disabled className="rounded-2xl bg-[#E8DFD6] px-4 py-3 text-xs font-semibold text-[#8E8278]">{t('Opening soon')}</button>
               </FooterRow>
             ) : waiting ? (
               <p className="rounded-2xl bg-[#F4EBDD] px-4 py-3 text-center text-sm text-[#5C5046]">
-                🎁 You’ve left a gift for {petName}. Your next free gift is ready in {waitText(nextAt!)}.
+                🎁 {t('You’ve left a gift for {name}. Your next free gift is ready in {t}.', { name: petName, t: waitText(nextAt!, t) })}
               </p>
             ) : picked ? (
-              <FooterRow icon={picked.emoji} title={picked.name} sub={`Free · one every ${FREE_GIFT_COOLDOWN_DAYS} days`}>
+              <FooterRow icon={picked.emoji} title={picked.name} sub={t('Free · one every {n} days', { n: FREE_GIFT_COOLDOWN_DAYS })}>
                 <button onClick={send} disabled={sending} className="rounded-2xl bg-[#D9823B] px-5 py-3 text-sm font-semibold text-white shadow-md hover:bg-[#C67129] disabled:opacity-60">
-                  {sending ? 'Leaving…' : 'Leave it'}
+                  {sending ? t('Leaving…') : t('Leave it')}
                 </button>
               </FooterRow>
             ) : (
-              <p className="py-3 text-center text-sm text-[#8E8278]">Tap something {petName} would love</p>
+              <p className="py-3 text-center text-sm text-[#8E8278]">{t('Tap something {name} would love', { name: petName })}</p>
             )}
           </div>
         </div>
@@ -258,6 +260,7 @@ function FooterRow({ icon, title, sub, children }: { icon: React.ReactNode; titl
 
 /** Frames as little framed cards: the swatch is the frame, cream inside, a paw where the portrait goes. */
 function FrameGrid({ frames, current, picked, onPick }: { frames: FrameStyle[]; current: string; picked?: string; onPick: (f: FrameStyle) => void }) {
+  const t = useT()
   return (
     <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
       {frames.map(f => {
@@ -270,7 +273,7 @@ function FrameGrid({ frames, current, picked, onPick }: { frames: FrameStyle[]; 
               <span className="grid h-full w-full place-items-center rounded-[4px] bg-[#FBF6EC] text-xl shadow-[inset_0_1px_3px_rgba(0,0,0,.25)]">🐾</span>
             </span>
             <span className="text-[11px] font-medium leading-tight text-[#2A1E17]">{f.name}</span>
-            <span className="text-[10px] font-semibold text-[#B8860B]">{current === f.id ? 'On their portrait' : `฿${f.price}`}</span>
+            <span className="text-[10px] font-semibold text-[#B8860B]">{current === f.id ? t('In use') : `฿${f.price}`}</span>
           </button>
         )
       })}
@@ -280,6 +283,7 @@ function FrameGrid({ frames, current, picked, onPick }: { frames: FrameStyle[]; 
 
 /** Backdrops as painted thumbnails, the same paintings the cabinet uses. Seasonal ones first. */
 function BackdropGrid({ current, picked, onPick }: { current: string; picked?: string; onPick: (b: { id: string; name: string; price: number }) => void }) {
+  const t = useT()
   const list = backdropsFor().sort((a, b) => Number(!!b.months) - Number(!!a.months))
   return (
     <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
@@ -291,10 +295,10 @@ function BackdropGrid({ current, picked, onPick }: { current: string; picked?: s
               on ? 'ring-2 ring-[#D9823B] shadow-md' : 'ring-1 ring-[#EFE4D4] hover:ring-[#D9823B]/50')}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={backdropThumb(b.id)} alt="" className="aspect-[5/4] w-full object-cover" />
-            {b.months && <span className="absolute left-1.5 top-1.5 rounded-full bg-white/85 px-2 py-0.5 text-[9px] font-semibold text-[#8A3A2A]">❄️ Seasonal</span>}
+            {b.months && <span className="absolute left-1.5 top-1.5 rounded-full bg-white/85 px-2 py-0.5 text-[9px] font-semibold text-[#8A3A2A]">❄️ {t('Seasonal')}</span>}
             <span className="flex items-baseline justify-between gap-1 px-2.5 py-2">
               <span className="truncate text-[12px] font-medium text-[#2A1E17]">{b.name}</span>
-              <span className="shrink-0 text-[10px] font-semibold text-[#B8860B]">{current === b.id ? 'Showing' : `฿${b.price}`}</span>
+              <span className="shrink-0 text-[10px] font-semibold text-[#B8860B]">{current === b.id ? t('In use') : `฿${b.price}`}</span>
             </span>
           </button>
         )
@@ -305,11 +309,12 @@ function BackdropGrid({ current, picked, onPick }: { current: string; picked?: s
 
 /** The gifts left recently, shown under the shrine. */
 export function GiftShelf({ gifts, emojiOf, petName }: { gifts: LeftGift[]; emojiOf: (id: string) => string | undefined; petName: string }) {
+  const t = useT()
   if (!gifts.length) return null
   const shown = gifts.slice(0, 14)
   return (
     <div className="mt-3 flex max-w-full items-center gap-2 rounded-full bg-black/30 px-4 py-2 text-[#FFE2C0]" aria-label={`${gifts.length} gifts left for ${petName}`}>
-      <span className="text-xs">Gifts</span>
+      <span className="text-xs">{t('Gifts')}</span>
       <div className="flex -space-x-1 overflow-hidden">
         {shown.map(g => (
           <span key={g.id} title={`From ${g.visitor_name}`} className="grid h-7 w-7 place-items-center rounded-full bg-[#FFF6EA]/15 text-base">
