@@ -15,6 +15,7 @@ const VIEWS: { id: View; label: string }[] = [
   { id: 'aerial', label: '🕊️ Aerial' },
   { id: 'entrance', label: '🚪 Entrance' },
   { id: 'gallery', label: '📚 Gallery' },
+  { id: 'shelf', label: '🖼️ Close-up' },
   { id: 'garden', label: '✿ VIP terrace' },
 ]
 

@@ -626,12 +626,13 @@ function Willow({ at }: { at: [number, number] }) {
 
 // ── Camera views ──
 
-export type View = 'aerial' | 'entrance' | 'gallery' | 'garden'
+export type View = 'aerial' | 'entrance' | 'gallery' | 'shelf' | 'garden'
 const VIEWS: Record<View, { pos: V3; target: V3 }> = {
   aerial: { pos: [0, 48, 92], target: [0, 0, 2] },
   entrance: { pos: [0, 3.4, 58], target: [0, 4, DOME.z] },
   gallery: { pos: [...polar(FRONT + 0.28, 33, 1.65)] as V3, target: [...polar(FRONT + 0.5, 33, 1.75)] as V3 },
   garden: { pos: [0, 5, 22], target: [0, 2.5, VIP.z] },
+  shelf: { pos: [...polar(FRONT + 0.4, 33.4, 1.75)] as V3, target: [...polar(FRONT + 0.4, 36, 1.55)] as V3 },
 }
 
 function CameraRig({ view }: { view: View }) {

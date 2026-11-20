@@ -1,7 +1,8 @@
 'use client'
 // components/3d/sanctuary/GalleryInterior.tsx — Inside a gallery: walls of tall oak memorial cabinets.
-// Each bay holds a cabinet with closed doors below and open shelves above, filled with framed pet portraits,
-// little candles, urns and dried flowers; ivy trails from the crown moulding. Fluted pilasters between bays carry a
+// Each bay holds a cabinet with closed doors below and a grid of separate cubbies above: one pet per cubby, a
+// framed portrait on a white mat with a little nameplate and a candle glowing in front (a few hold an urn, a few
+// are still waiting). Ivy trails from the crown moulding. Fluted pilasters between bays carry a
 // zone sign and a wall lantern. Brass lanterns hang down the middle of the glass vault; the floor is pale marble
 // with oak inlay strips, and benches sit along the walls. Everything repeated is instanced (a few dozen draw calls).
 
@@ -15,7 +16,8 @@ import { H, leafCardTexture, polar, seeded, useInstances, VAULT_TOP, W, type V3 
 const CAB_H = 3.0        // cabinet height (the crown sits just under the timber beam)
 const CAB_D = 0.55       // cabinet depth
 const BASE_H = 0.78      // closed cupboards at the bottom
-const ROWS = 5           // open shelves above
+const ROWS = 5           // rows of cubbies above the cupboards
+const COLS = 6           // cubbies across each cabinet: one pet in each
 const ROW_H = (CAB_H - 0.2 - BASE_H) / ROWS
 const PETS = ['🐶', '🐱', '🐕', '🐈', '🐰', '🐹', '🦜', '🐾']
 
@@ -110,7 +112,7 @@ export function GalleryInterior({ r, angles, step, twoSided, m }: {
   const mats = useMemo(() => ({
     // warm honey oak with a visible grain (the grain map is shared and repeats)
     oak: new MeshStandardMaterial({ map: grain, color: '#C88B55', roughness: 0.48 }),
-    oakDark: new MeshStandardMaterial({ map: grain, color: '#8E5A33', roughness: 0.55 }),
+    oakDark: new MeshStandardMaterial({ map: grain, color: '#6A4024', roughness: 0.6 }),
     oakLight: new MeshStandardMaterial({ map: grain, color: '#D79A5E', roughness: 0.42 }),
     photoFrame: new MeshStandardMaterial({ color: '#5E3A1E', roughness: 0.4, metalness: 0.1 }),
     gilt: new MeshStandardMaterial({ color: '#C9A15A', roughness: 0.35, metalness: 0.7 }),
@@ -133,7 +135,7 @@ export function GalleryInterior({ r, angles, step, twoSided, m }: {
     const L = {
       backs: [] as Item[], sides: [] as Item[], bases: [] as Item[], doors: [] as Item[], shelves: [] as Item[], dividers: [] as Item[],
       crowns: [] as Item[], cornices: [] as Item[], pilasters: [] as Item[], capitals: [] as Item[],
-      frames: [] as Item[], photos: PETS.map(() => [] as Item[]), candles: [] as Item[], flames: [] as Item[], urns: [] as Item[], dried: [] as Item[],
+      frames: [] as Item[], mats: [] as Item[], plaques: [] as Item[], photos: PETS.map(() => [] as Item[]), candles: [] as Item[], flames: [] as Item[], urns: [] as Item[], dried: [] as Item[],
       ivy: [] as Item[], signs: signsInit(), sconces: [] as Item[], sconceGlass: [] as Item[],
       rods: [] as Item[], lanterns: [] as Item[], caps: [] as Item[], benchSeats: [] as Item[], benchBacks: [] as Item[], benchLegs: [] as Item[],
       strips: [] as Item[],
@@ -167,36 +169,29 @@ export function GalleryInterior({ r, angles, step, twoSided, m }: {
           L.doors.push({ p: at((d - (nDoors - 1) / 2) * (w / nDoors), BASE_H / 2, fz + 0.012), ry, s: [dw, BASE_H - 0.14, 0.025] })
         }
         for (let k = 0; k <= ROWS; k++) L.shelves.push({ p: at(0, BASE_H + k * ROW_H, 0.02), ry, s: [w, 0.045, CAB_D - 0.04] })
-        L.dividers.push({ p: at(0, BASE_H + (ROWS * ROW_H) / 2, 0), ry, s: [0.05, ROWS * ROW_H, CAB_D - 0.06] })
+        // uprights between cubbies
+        for (let c = 1; c < COLS; c++) L.dividers.push({ p: at(-w / 2 + (c * w) / COLS, BASE_H + (ROWS * ROW_H) / 2, 0.02), ry, s: [0.035, ROWS * ROW_H, CAB_D - 0.04] })
         L.crowns.push({ p: at(0, CAB_H - 0.1, 0.03), ry, s: [w + 0.2, 0.2, CAB_D + 0.12] })
         L.cornices.push({ p: at(0, CAB_H + 0.02, 0.06), ry, s: [w + 0.34, 0.07, CAB_D + 0.22] })
 
-        // What's on the shelves: mostly framed portraits, with candles, urns and dried flowers in between
+        // One pet per cubby: a dark frame on a white mat, a nameplate leaning in front, a candle glowing beside it
+        const cw = w / COLS
         for (let row = 0; row < ROWS; row++) {
           const y = BASE_H + row * ROW_H + 0.025
-          for (let col = 0; col < 2; col++) {
-            const x0 = (col - 0.5) * (w / 2), span = w / 2 - 0.12
-            let x = x0 - span / 2 + 0.06
-            while (x < x0 + span / 2 - 0.08) {
-              const roll = rnd()
-              if (roll < 0.62) { // a standing framed portrait, leaning back a little
-                const fw = 0.24 + rnd() * 0.08, fh = fw * 1.25
-                const tilt = -0.12, z = 0.02 - rnd() * 0.06
-                L.frames.push({ p: at(x + fw / 2, y + fh / 2, z), ry, rx: tilt, s: [fw, fh, 0.03] })
-                L.photos[Math.floor(rnd() * PETS.length)].push({ p: at(x + fw / 2, y + fh / 2 + 0.002, z + 0.018), ry, rx: tilt, s: [fw * 0.82, fh * 0.84, 1] })
-                x += fw + 0.05
-              } else if (roll < 0.8) { // a little candle, lit
-                L.candles.push({ p: at(x + 0.04, y + 0.05, 0.12), ry, s: [1, 1, 1] })
-                L.flames.push({ p: at(x + 0.04, y + 0.12, 0.12), ry, s: [1, 1.6, 1] })
-                x += 0.11
-              } else if (roll < 0.9) { // a ceramic urn
-                L.urns.push({ p: at(x + 0.08, y, 0.04), ry, s: [1, 1, 1] })
-                x += 0.19
-              } else { // dried flowers in a small posy
-                L.dried.push({ p: at(x + 0.06, y + 0.12, 0.05), ry, s: [0.07, 0.12, 0.07], c: ['#C98E8A', '#D7B07A', '#B9A3C9', '#E2C9B0'][Math.floor(rnd() * 4)] })
-                x += 0.14
-              }
-            }
+          for (let col = 0; col < COLS; col++) {
+            const x = -w / 2 + (col + 0.5) * cw
+            const roll = rnd()
+            if (roll < 0.1) continue // waiting for a pet
+            if (roll < 0.17) { L.urns.push({ p: at(x, y, -0.02), ry, s: [1.1, 1.1, 1.1] }); continue }
+            const fh = ROW_H - 0.07, fw = Math.min(cw - 0.14, fh * 0.8)
+            const z = -0.06, tilt = -0.1
+            L.frames.push({ p: at(x, y + fh / 2 + 0.02, z), ry, rx: tilt, s: [fw, fh, 0.03] })
+            L.mats.push({ p: at(x, y + fh / 2 + 0.021, z + 0.017), ry, rx: tilt, s: [fw * 0.86, fh * 0.88, 1] })
+            L.photos[Math.floor(rnd() * PETS.length)].push({ p: at(x, y + fh / 2 + 0.022, z + 0.02), ry, rx: tilt, s: [fw * 0.7, fh * 0.72, 1] })
+            L.plaques.push({ p: at(x, y + 0.03, 0.14), ry, rx: -0.5, s: [fw * 0.8, 0.045, 0.012] })
+            const side = rnd() < 0.5 ? -1 : 1
+            L.candles.push({ p: at(x + side * (fw / 2 + 0.035), y + 0.035, 0.12), ry, s: [0.75, 0.7, 0.75] })
+            L.flames.push({ p: at(x + side * (fw / 2 + 0.035), y + 0.09, 0.12), ry, s: [1, 1.6, 1] })
           }
         }
         // Ivy trailing over the crown
@@ -281,6 +276,8 @@ export function GalleryInterior({ r, angles, step, twoSided, m }: {
 
       {/* shelf contents */}
       <Inst items={built.frames} mat={mats.photoFrame} shadow><boxGeometry /></Inst>
+      <Inst items={built.mats} mat={null}><planeGeometry /><meshStandardMaterial color="#F6F1E7" roughness={0.8} /></Inst>
+      <Inst items={built.plaques} mat={mats.gilt}><boxGeometry /></Inst>
       {built.photos.map((list, i) => (
         <Inst key={i} items={list} mat={null}><planeGeometry /><meshStandardMaterial map={portraits[i]} roughness={0.5} /></Inst>
       ))}
