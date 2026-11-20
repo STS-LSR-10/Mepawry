@@ -32,20 +32,26 @@ export function Splash({ ready }: { ready: boolean }) {
 
   if (gone) return null
   const shown = Math.round(pct)
-  const k = shown / 100 // the logo comes up from faint to full as the hall loads
+  const k = pct / 100
+  // How high the colour has risen, in % of the picture from the bottom: the drawing spans about 15–87%
+  const fill = k >= 1 ? 120 : 12 + 78 * k
   return (
     <div
       className={`fixed inset-0 z-[60] flex flex-col items-center justify-center bg-[radial-gradient(ellipse_at_50%_42%,#FBF6EC_0%,#F5EDDF_55%,#EDE2CF_100%)] px-6 text-center transition-opacity duration-500 ${ready && pct >= 100 ? 'pointer-events-none opacity-0 delay-200' : 'opacity-100'}`}
       role="status"
       aria-label={t('Loading the memorial hall…')}
     >
-      <div className="relative w-[min(19rem,72vw)]">
+      {/* Feathered edges so the picture melts into the background */}
+      <div className="relative w-[min(19rem,72vw)] [mask-image:radial-gradient(circle_at_50%_50%,#000_58%,transparent_72%)]">
+        {/* A faint copy underneath… */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src="/brand/logo.webp" alt="Mepawry" width={1024} height={1024} fetchPriority="high" decoding="async"
-          className="block h-auto w-full transition-[opacity,filter] duration-500 ease-out [mask-image:radial-gradient(circle_at_50%_50%,#000_58%,transparent_72%)]"
-          style={{ opacity: 0.12 + 0.88 * k, filter: `saturate(${0.2 + 0.8 * k}) blur(${(1 - k) * 2}px)` }}
-        />
+        <img src="/brand/logo.webp" alt="Mepawry" width={1024} height={1024} fetchPriority="high" decoding="async"
+          className="block h-auto w-full opacity-[0.16] saturate-[0.3]" />
+        {/* …and the full-colour logo filling it in from the bottom up as the hall loads (a soft-edged rising line) */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/brand/logo.webp" alt="" aria-hidden width={1024} height={1024} decoding="async"
+          className="absolute inset-0 h-auto w-full"
+          style={{ maskImage: `linear-gradient(to top, #000 ${fill - 6}%, transparent ${fill + 6}%)`, WebkitMaskImage: `linear-gradient(to top, #000 ${fill - 6}%, transparent ${fill + 6}%)` }} />
         {/* The candle's warm glow, once the logo is mostly in */}
         <div className="pointer-events-none absolute h-[14%] w-[14%] -translate-x-1/2 -translate-y-1/2 transition-opacity duration-700"
           style={{ left: '59%', top: '55%', opacity: Math.max(0, k * 1.6 - 0.6) }} aria-hidden>
