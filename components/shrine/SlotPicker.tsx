@@ -32,7 +32,9 @@ export function SlotPicker({ value, onChange, reloadKey, vip, onVip }: {
       if (!byRoom.has(s.room)) byRoom.set(s.room, [])
       byRoom.get(s.room)!.push({ i, free: !taken.has(i) })
     })
-    return [...byRoom].map(([room, slots]) => ({
+    // Listed outer gallery first, then inner, each Zone A to H (the slots themselves fill nearest the entrance first)
+    const order = (room: string) => (room.startsWith('Inner') ? 1 : 0) * 100 + room.charCodeAt(room.length - 1)
+    return [...byRoom].sort(([a], [b]) => order(a) - order(b)).map(([room, slots]) => ({
       room, name: room, slots, free: slots.filter(s => s.free).length,
     }))
   }, [data])
