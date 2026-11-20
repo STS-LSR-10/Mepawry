@@ -279,7 +279,11 @@ export function FlowerUrn({ at, m, scale = 1 }: { at: V3; m: DMats; scale?: numb
 }
 
 /** A recessed arch in the panelling, softly lit from inside, holding a large portrait above a little shelf. */
-export function PortraitAlcove({ m, photo, w = 1.3, h = 2.6, seat = false }: { m: DMats; photo: Texture; w?: number; h?: number; seat?: boolean }) {
+export function PortraitAlcove({ m, photo, w = 1.3, h = 2.6, seat = false, onOpen }: {
+  m: DMats; photo: Texture | null; w?: number; h?: number; seat?: boolean
+  /** tap the portrait (a VIP niche with a pet in it) */
+  onOpen?: () => void
+}) {
   return (
     <group>
       {/* the glowing recess and its arched head */}
@@ -288,10 +292,13 @@ export function PortraitAlcove({ m, photo, w = 1.3, h = 2.6, seat = false }: { m
       {[-1, 1].map(s => <mesh key={s} position={[s * (w / 2 + 0.06), h / 2 + 0.2, -0.05]} material={m.panel} castShadow><boxGeometry args={[0.12, h - w / 2 + 0.4, 0.24]} /></mesh>)}
       <mesh position={[0, h + 0.4 - w / 2, -0.05]} material={m.panel} castShadow><torusGeometry args={[w / 2 + 0.06, 0.07, 8, 24, Math.PI]} /></mesh>
       {/* the portrait */}
-      <group position={[0, seat ? 2.05 : 1.75, -0.12]}>
+      <group position={[0, seat ? 2.05 : 1.75, -0.12]}
+        onClick={onOpen && (e => { e.stopPropagation(); if (e.delta < 6) onOpen() })}
+        onPointerOver={onOpen && (() => { document.body.style.cursor = 'pointer' })} onPointerOut={onOpen && (() => { document.body.style.cursor = '' })}>
         <mesh material={m.gilt} castShadow><boxGeometry args={[w * 0.62, w * 0.78, 0.05]} /></mesh>
         <mesh position-z={0.027} material={m.mat}><planeGeometry args={[w * 0.54, w * 0.7]} /></mesh>
-        <mesh position-z={0.029}><planeGeometry args={[w * 0.44, w * 0.58]} /><meshStandardMaterial map={photo} roughness={0.5} /></mesh>
+        {/* an empty niche shows just its mat, waiting for a pet */}
+        {photo && <mesh position-z={0.029}><planeGeometry args={[w * 0.44, w * 0.58]} /><meshStandardMaterial map={photo} roughness={0.5} /></mesh>}
       </group>
       {seat ? (
         <>

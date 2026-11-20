@@ -12,7 +12,7 @@ import type { Group } from 'three'
 import type { RealtimeChannel } from '@supabase/supabase-js'
 import { LiteAvatar } from './LiteAvatar'
 import { useAccount } from '@/lib/account'
-import type { P } from './layout'
+import { heightAt, type P } from './walk'
 import { sanitizeLook, type AvatarLook } from '@/lib/look'
 
 const SPEED = 3.2           // same walking speed as Player
@@ -198,7 +198,7 @@ function RemoteAvatar({ r, myPos, radius }: { r: Remote; myPos: React.RefObject<
     }
     walking.current = r.path.length > 0
     const g = group.current
-    g.position.set(r.pos.x, -0.5, r.pos.z)
+    g.position.set(r.pos.x, heightAt(r.pos), r.pos.z)
     crowdPositions.set(r.id, r.pos)
     // Turn smoothly toward where they're heading
     g.rotation.y += (((r.heading - g.rotation.y + Math.PI) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2) - Math.PI) * Math.min(1, h * 10)

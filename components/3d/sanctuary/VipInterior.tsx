@@ -7,14 +7,16 @@
 // The wings carry on the same way: alcoves, cabinets, a pair of armchairs and a chandelier.
 
 import { useMemo } from 'react'
-import { LatheGeometry, Vector2 } from 'three'
+import { LatheGeometry, Vector2, type Texture } from 'three'
+import type { Pet } from '@/types'
+import { useVipPhoto } from './Shrines'
 import {
   Armchair, Chandelier, FernPot, Ferns, FlowerUrn, herringboneTexture, medallionTexture, PortraitAlcove, portraitTexture,
   Roses, Rug, rugTexture, SideTable, useDecorLamps, useDecorMaterials, Vitrine, Wainscot, type DMats,
 } from './decor'
 import { polar, type V3 } from './shared'
 
-import { VIP_DOME, VIP_WING } from './plan'
+import { VIP_DOME, VIP_PLANTER_R, VIP_PLANTER_R as PLANTER_R, VIP_WING } from './plan'
 
 function TieredFountain({ m }: { m: DMats }) {
   const basin = useMemo(() => new LatheGeometry([new Vector2(0, 0), new Vector2(1.25, 0), new Vector2(1.3, 0.48), new Vector2(1.18, 0.5), new Vector2(1.14, 0.16), new Vector2(0, 0.16)], 48), [])
@@ -66,7 +68,17 @@ function PlanterRing({ r, m }: { r: number; m: DMats }) {
 const openToDoor = (a: number) => Math.abs(Math.atan2(Math.sin(a - Math.PI / 2), Math.cos(a - Math.PI / 2))) < 0.3
 
 /** Everything inside the VIP pavilion. `y` is the terrace height, `z` the centre of the domed hall. */
-export function VipInterior({ y, z }: { y: number; z: number }) {
+/** The VIP pets in niche order (see VIP_SLOTS in plan.ts), and what to do when one is tapped. Without it: sample portraits. */
+export interface VipPets { pets: (Pet | null)[]; onOpen: (k: number) => void }
+
+/** A niche: the real pet's photo when there are real pets, otherwise a sample portrait. */
+function Niche({ k, sample, vip, m, ...alcove }: { k: number; sample: Texture; vip?: VipPets; m: DMats; w?: number; h?: number; seat?: boolean }) {
+  const real = useVipPhoto(vip?.pets[k] ?? null)
+  const pet = vip?.pets[k]
+  return <PortraitAlcove m={m} photo={vip ? real : sample} onOpen={pet ? () => vip!.onOpen(k) : undefined} {...alcove} />
+}
+
+export function VipInterior({ y, z, vip }: { y: number; z: number; vip?: VipPets }) {
   const m = useDecorMaterials()
   useDecorLamps(m)
   const floor = useMemo(() => { const t = herringboneTexture(); t.repeat.set(4, 4); return t }, [])
@@ -90,7 +102,7 @@ export function VipInterior({ y, z }: { y: number; z: number }) {
     const plants: { at: V3; size: number }[] = []
     for (let i = 0; i < 8; i++) {
       const a = (i / 8) * Math.PI * 2 + Math.PI / 8
-      if (!openToDoor(a)) plants.push({ at: polar(a, 2.35, 0.42), size: 0.75 })
+      if (!openToDoor(a)) plants.push({ at: polar(a, PLANTER_R, 0.42), size: 0.75 })
     }
     const pots: V3[] = [[-3.7, 0, -1.9], [3.7, 0, -1.9], [-1.9, 0, 4.2], [1.9, 0, 4.2]]
     pots.forEach(p => plants.push({ at: [p[0], 0.44, p[2]], size: 0.7 }))
@@ -106,11 +118,11 @@ export function VipInterior({ y, z }: { y: number; z: number }) {
         <meshStandardMaterial map={floor} roughness={0.35} envMapIntensity={0.4} />
       </mesh>
       <mesh rotation-x={-Math.PI / 2} position-y={0.035} receiveShadow>
-        <circleGeometry args={[1.95, 48]} />
+        <circleGeometry args={[VIP_PLANTER_R - 0.5, 48]} />
         <meshStandardMaterial map={medallion} roughness={0.25} />
       </mesh>
       <TieredFountain m={m} />
-      <PlanterRing r={2.35} m={m} />
+      <PlanterRing r={PLANTER_R} m={m} />
       <Ferns plants={ferns.plants} hanging={ferns.hanging} />
       {ferns.pots.map((p, i) => <FernPot key={i} at={p} m={m} />)}
       {ferns.hanging.map((p, i) => <FernPot key={i} at={p.at} m={m} hanging />)}
@@ -123,9 +135,9 @@ export function VipInterior({ y, z }: { y: number; z: number }) {
       })}
       {[1, 3, 5, 7].map((i, k) => {
         const { pos, ry } = wallAt(i, 0.22)
-        return <group key={`a${i}`} position={pos} rotation-y={ry}><PortraitAlcove m={m} photo={photos[k]} /></group>
+        return <group key={`a${i}`} position={pos} rotation-y={ry}><Niche k={k} m={m} sample={photos[k]} vip={vip} /></group>
       })}
-      {(() => { const { pos, ry } = wallAt(6, 0.22); return <group position={pos} rotation-y={ry}><PortraitAlcove m={m} photo={photos[4]} w={1.8} seat /></group> })()}
+      {(() => { const { pos, ry } = wallAt(6, 0.22); return <group position={pos} rotation-y={ry}><Niche k={4} m={m} sample={photos[4]} vip={vip} w={1.8} seat /></group> })()}
       {/* display cabinets either side of each wing opening */}
       {[0, 4].flatMap(i => [-1, 1].map(s => {
         const { pos, ry, a } = wallAt(i, 0.3)
@@ -135,15 +147,8 @@ export function VipInterior({ y, z }: { y: number; z: number }) {
       {/* urns of flowers beside the door */}
       {[-1, 1].map(s => <FlowerUrn key={s} at={[s * 1.25, 0, apothem - 0.5]} m={m} scale={0.9} />)}
 
-      {/* seating: two groups of wingback chairs on rugs, front left and front right */}
-      {[-1, 1].map(s => (
-        <group key={s} position={[s * 3.1, 0, 1.7]} rotation-y={s * 0.5}>
-          <Rug at={[0, 0.04, 0]} size={[1.9, 2.5]} tex={s < 0 ? rugA : rugB} />
-          <Armchair at={[-0.55, 0, -0.55]} ry={0.5} m={m} fabric={s < 0 ? m.velvet : undefined} />
-          <Armchair at={[0.55, 0, 0.55]} ry={Math.PI + 0.5} m={m} />
-          <SideTable at={[0.45, 0, -0.55]} m={m} />
-        </group>
-      ))}
+      {/* a rug at each side of the walk round the fountain (the armchairs are in the wings, leaving the way clear) */}
+      {[-1, 1].map(s => <Rug key={s} at={[s * 3.5, 0.04, 1.6]} size={[1.2, 2.2]} tex={s < 0 ? rugA : rugB} ry={s * 0.5} />)}
 
       {/* ── the wings ── */}
       {[-1, 1].map(s => (
@@ -154,15 +159,16 @@ export function VipInterior({ y, z }: { y: number; z: number }) {
           </mesh>
           <group position={[0, 0, -VIP_WING.d / 2 + 0.06]}><Wainscot w={VIP_WING.w - 0.3} m={m} /></group>
           {[-1.5, 1.5].map((x, k) => (
-            <group key={x} position={[x, 0, -VIP_WING.d / 2 + 0.22]}><PortraitAlcove m={m} photo={photos[(k + 5 + (s > 0 ? 2 : 0)) % 8]} w={1.15} h={2.3} /></group>
+            <group key={x} position={[x, 0, -VIP_WING.d / 2 + 0.22]}><Niche k={(s < 0 ? 5 : 8) + k} m={m} sample={photos[(k + 5 + (s > 0 ? 2 : 0)) % 8]} vip={vip} w={1.15} h={2.3} /></group>
           ))}
           <Vitrine at={[0, 0, -VIP_WING.d / 2 + 0.32]} ry={0} m={m} photo={photos[s > 0 ? 6 : 1]} />
           <group position={[s * (VIP_WING.w / 2 - 0.06), 0, 0]} rotation-y={-s * Math.PI / 2}><Wainscot w={VIP_WING.d - 0.3} m={m} /></group>
-          <group position={[s * (VIP_WING.w / 2 - 0.22), 0, 0.2]} rotation-y={-s * Math.PI / 2}><PortraitAlcove m={m} photo={photos[s > 0 ? 3 : 7]} w={1.3} h={2.3} seat /></group>
-          <Rug at={[-s * 0.3, 0.04, 0.5]} size={[2.2, 1.6]} tex={rugB} />
-          <Armchair at={[-s * 0.85, 0, 0.6]} ry={s * Math.PI / 2} m={m} />
-          <Armchair at={[s * 0.35, 0, 0.6]} ry={-s * Math.PI / 2} m={m} fabric={m.velvet} />
-          <SideTable at={[-s * 0.25, 0, 1.35]} m={m} />
+          <group position={[s * (VIP_WING.w / 2 - 0.22), 0, 0.2]} rotation-y={-s * Math.PI / 2}><Niche k={s < 0 ? 7 : 10} m={m} sample={photos[s > 0 ? 3 : 7]} vip={vip} w={1.3} h={2.3} seat /></group>
+          {/* seating by the front glass, leaving the way clear from the hall to the alcoves */}
+          <Rug at={[0, 0.04, 1.35]} size={[2.4, 1.3]} tex={rugB} />
+          <Armchair at={[-0.75, 0, 1.45]} ry={Math.PI / 2} m={m} />
+          <Armchair at={[0.75, 0, 1.45]} ry={-Math.PI / 2} m={m} fabric={m.velvet} />
+          <SideTable at={[0, 0, 1.6]} m={m} />
           <Chandelier at={[0, 3.0, 0]} r={0.45} drop={0.35} m={m} light={14} />
         </group>
       ))}

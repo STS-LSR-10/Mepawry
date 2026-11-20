@@ -6,7 +6,7 @@ import { Starfield, OnlineCount, Ticker, Reveal, CountUp } from '@/components/si
 import { AddPetButton } from '@/components/site/AddPetButton'
 import { ShrineCard } from '@/components/ui/ShrineCard'
 import { getFloors, getMemorials, getOpenFloor, getStats } from '@/lib/data'
-import { FLOOR_CAPACITY, FLOOR_COUNT } from '@/components/3d/layout'
+import { FLOOR_CAPACITY, FLOOR_COUNT } from '@/components/3d/sanctuary/plan'
 import { getFloorName } from '@/lib/utils'
 import { ARTICLES } from '@/lib/articles'
 
@@ -18,7 +18,7 @@ const STEPS = [
 
 const FAQ = [
   { q: 'Is it free to create a memorial?', a: 'Yes, completely. Anyone, anywhere can create a shrine without a password or subscription.' },
-  { q: 'How do the floors work?', a: `The building has ${FLOOR_COUNT} floors of ${FLOOR_CAPACITY.toLocaleString('en-US')} shrines each, in galleries off a central lobby. Floor 1 fills first; take the stairs or the elevator to visit the others.` },
+  { q: 'How do the floors work?', a: `The building has ${FLOOR_COUNT} floors of ${FLOOR_CAPACITY.toLocaleString('en-US')} shrines each: a glass-domed reception, two ring galleries of oak cubbies, a garden and a VIP pavilion. Floor 1 fills first; the Floor button takes you to the others.` },
   { q: "Can I edit my pet's memorial later?", a: 'When you create a shrine, we email you a private edit link. You can update photos, dates and words at any time.' },
   { q: 'Can I keep a memorial private?', a: 'Yes. Choose "Unlisted" and only people with the link can visit. It won\'t appear in the public directory.' },
 ]
@@ -147,7 +147,7 @@ export default async function HomePage() {
             <span className="eyebrow !text-[#F6C48A]">The hall</span>
             <h2 className="title">{FLOOR_COUNT} floors, {FLOOR_CAPACITY.toLocaleString('en-US')} shrines each.</h2>
             <p className="max-w-[56ch] text-[#FAF7F2]/70">
-              Each floor has a lobby, corridors and three galleries of shrines; stairs and an elevator join them. Floor 1 fills first.
+              Each floor is a sanctuary: a glass-domed reception, two ring galleries of oak cubbies round a garden, and a VIP pavilion on its terrace. Floor 1 fills first.
               New shrines go to floor {openFloor}, <em className="font-serif">{getFloorName(openFloor)}</em>.
             </p>
             <div className="mt-9 grid grid-cols-6 gap-2 sm:grid-cols-11">

@@ -1,59 +1,143 @@
-// components/3d/walk.ts — Tap-to-walk routing: A* on a grid over one floor, then straightened into a few waypoints.
-// You can stand in any room or corridor, plus the garden on the ground floor; walls, shelves,
-// furniture, stairs and the elevator get in the way.
+// components/3d/walk.ts — Tap-to-walk in the Mepawry Sanctuary: where you can stand, how high the ground is there,
+// and a route to a tapped point (A* on a grid, then straightened into a few waypoints).
+// Everything is worked out from the floor plan (sanctuary/plan.ts): the ring galleries (walls and cabinets on both
+// sides), the reception dome and its four doorways, the garden, and the VIP terrace you climb by its stairs.
 
 import {
-  BBOX, BOOKCASES, CORRIDORS, ROOMS, STAIRS_DOWN, STAIRS_UP, VIP_ARCADES, bookcaseRect, footprint, furniture, inRect, parkObstacles, vipArcadeRect, wallRects,
-  type P, type Rect,
-} from './layout'
+  CAB_D, DOME, DOOR_HALF, FOUNTAIN, RINGS, SIDE_DOORS, STAIRS, TERRACE, VIP, VIP_CENTER, VIP_DOME, VIP_PLANTER_R, VIP_WING, W, type P,
+} from './sanctuary/plan'
 
-export { isInside, type P } from './layout'
+export type { P }
 
-const RADIUS = 0.35   // avatar's half-width; obstacles grow by this much
-const GARDEN = 38     // how far from the entrance you can wander outside
+const RADIUS = 0.35     // avatar's half-width; obstacles grow by this much
+const PARK = 44         // how far out you can wander (the forest starts beyond)
 const CELL = 0.5
-const X0 = -34, Z0 = -56, X1 = 34, Z1 = 16
+const X0 = -46, Z0 = -46, X1 = 46, Z1 = 46
 const NX = Math.round((X1 - X0) / CELL), NZ = Math.round((Z1 - Z0) / CELL)
+const TAU = Math.PI * 2
 
-const grow = (a: Rect): Rect => ({ x0: a.x0 - RADIUS, z0: a.z0 - RADIUS, x1: a.x1 + RADIUS, z1: a.z1 + RADIUS })
-const AREAS: Rect[] = [...ROOMS.map(rm => rm.rect), ...CORRIDORS.map(c => c.rect)]
+const angDiff = (a: number, b: number) => Math.abs(Math.atan2(Math.sin(a - b), Math.cos(a - b)))
+const inArc = (a: number, from: number, to: number) => (((a - from) % TAU) + TAU) % TAU <= to - from
+const near = (p: P, x: number, z: number, r: number) => Math.hypot(p.x - x, p.z - z) < r + RADIUS
 
-const obstacles = (ground: boolean): Rect[] => [
-  ...wallRects(ground),
-  ...BOOKCASES.map(bookcaseRect),
-  ...VIP_ARCADES.map(vipArcadeRect),
-  ...furniture(ground).filter(it => it.solid).map(footprint),
-  STAIRS_UP, STAIRS_DOWN,
-  ...(ground ? parkObstacles() : []),
-].map(grow)
+// ── The pieces of the plan ──
 
-const OBSTACLES = { ground: obstacles(true), upper: obstacles(false) }
-
-/** Exact test against the real shapes (used for straight-line checks). Upper floors have no garden. */
-export function isFree(p: P, ground = true): boolean {
-  // A hair of overlap so the seam where a corridor meets a room counts as floor
-  const walkable = AREAS.some(a => inRect(p, a, 0.01)) || (ground && !inRect(p, BBOX) && Math.hypot(p.x, p.z) < GARDEN)
-  if (!walkable) return false
-  return !OBSTACLES[ground ? 'ground' : 'upper'].some(o => inRect(p, o))
+/** Walls and cabinets of the ring galleries: two solid bands per ring, along its arc (side doors open the outer wall). */
+function ringBlocked(p: P): boolean {
+  const rad = Math.hypot(p.x, p.z), a = Math.atan2(p.z, p.x)
+  for (const g of RINGS) {
+    if (!inArc(a, g.from, g.to)) continue
+    const ri = g.r - W / 2, ro = g.r + W / 2, depth = 0.12 + CAB_D
+    if (rad > ri - 0.15 - RADIUS && rad < ri + depth + RADIUS) return true
+    if (rad > ro - depth - RADIUS && rad < ro + 0.15 + RADIUS) {
+      const door = g.r > 30 && SIDE_DOORS.some(d => angDiff(a, d) * rad < DOOR_HALF - RADIUS)
+      if (!door) return true
+    }
+  }
+  return false
 }
+
+/** True inside a gallery corridor (between its two cabinet walls). */
+function inGallery(p: P): boolean {
+  const rad = Math.hypot(p.x, p.z), a = Math.atan2(p.z, p.x)
+  return RINGS.some(g => inArc(a, g.from, g.to) && Math.abs(rad - g.r) < W / 2 - 0.12 - CAB_D)
+}
+
+/** An octagonal domed hall, its walls as a ring band with gaps for doorways at the given angles. */
+function domeBlocked(p: P, cx: number, cz: number, r: number, doors: { at: number; half: number }[]): boolean {
+  const d = Math.hypot(p.x - cx, p.z - cz)
+  const inner = r * Math.cos(Math.PI / 8) - 0.2, outer = r + 0.1
+  if (d < inner - RADIUS || d > outer + RADIUS) return false
+  const la = Math.atan2(p.z - cz, p.x - cx)
+  return !doors.some(dr => angDiff(la, dr.at) * d < dr.half - RADIUS)
+}
+
+const Q = Math.PI / 2
+/** Reception: four doorways (front to the path, back to the garden, left and right into the outer gallery). */
+const receptionBlocked = (p: P) =>
+  domeBlocked(p, DOME.x, DOME.z, DOME.r, [0, Q, Math.PI, -Q].map(at => ({ at, half: 1.05 }))) ||
+  near(p, DOME.x, DOME.z - 0.6, 1.75) ||               // the curved desk
+  near(p, -3.0, DOME.z + 1.6, 1.25) ||                 // lounge: armchairs round a coffee table
+  near(p, -3.6, DOME.z - 1.6, 1.0) ||                  // the sofa
+  near(p, 3.2, DOME.z + 2.2, 0.55)                     // the directory board
+
+const inRect = (p: P, r: { x0: number; x1: number; z0: number; z1: number }, m = 0) =>
+  p.x > r.x0 - m && p.x < r.x1 + m && p.z > r.z0 - m && p.z < r.z1 + m
+
+/** The terrace: walkable on top, its edge is a balustrade except where the stairs come up at the front. */
+function terraceBlocked(p: P): boolean {
+  if (!inRect(p, TERRACE, RADIUS) || inRect(p, TERRACE, -RADIUS)) return false
+  const atStairs = p.x > STAIRS.x0 + RADIUS && p.x < STAIRS.x1 - RADIUS && p.z > TERRACE.z1 - RADIUS * 2
+  return !atStairs
+}
+
+/** Beside the stairs (below the terrace front) there's a drop: you can only come up the steps themselves. */
+const stairSides = (p: P) => p.z > STAIRS.z0 && p.z < STAIRS.z1 && Math.abs(p.x) > STAIRS.x1 - RADIUS && Math.abs(p.x) < STAIRS.x1 + RADIUS
+
+/** The VIP hall (domed) and its two wings. */
+function vipBlocked(p: P): boolean {
+  const { x: cx, z: cz } = VIP_CENTER
+  // hall walls: the door at the front, wide openings into the wings left and right
+  if (domeBlocked(p, cx, cz, VIP_DOME.r, [{ at: Q, half: 1.05 }, { at: 0, half: 1.25 }, { at: Math.PI, half: 1.25 }])) return true
+  if (near(p, cx, cz, VIP_PLANTER_R + 0.45)) return true                  // fountain in its ring of planters
+  if ([-1, 1].some(s => near(p, s * 1.25, cz + VIP_DOME.r * 0.86, 0.3))) return true // urns by the door
+  for (const s of [-1, 1]) {
+    const wx = s * VIP_WING.x, hw = VIP_WING.w / 2, hd = VIP_WING.d / 2
+    const local = { x: (p.x - wx) * s, z: p.z - cz } // x grows away from the hall
+    const inWing = local.x > -hw - RADIUS && local.x < hw + RADIUS && local.z > -hd - RADIUS && local.z < hd + RADIUS
+    if (!inWing) continue
+    // the wing's own walls: back, front (glass) and the far end; its near end opens into the hall
+    if (local.z < -hd + 0.25 + RADIUS || local.z > hd - 0.1 - RADIUS || local.x > hw - 0.25 - RADIUS) return true
+    if (near(p, wx, cz + 1.5, 0.95)) return true                          // armchairs and side table by the front glass
+  }
+  return false
+}
+
+// ── Public ──
+
+/** Can the avatar stand here? */
+export function isFree(p: P): boolean {
+  if (Math.hypot(p.x, p.z) > PARK) return false
+  if (ringBlocked(p) || receptionBlocked(p)) return false
+  if (near(p, FOUNTAIN.x, FOUNTAIN.z, FOUNTAIN.r)) return false
+  if (near(p, -11, 1, 0.5) || near(p, 12, -1, 0.5)) return false       // the willows' trunks
+  if (terraceBlocked(p) || stairSides(p)) return false
+  if (inRect(p, TERRACE, -RADIUS) && vipBlocked(p)) return false
+  return true
+}
+
+/** Indoors (the reception, a gallery, the VIP hall or wings): for the lighting and the camera. */
+export function isInside(p: P): boolean {
+  if (Math.hypot(p.x - DOME.x, p.z - DOME.z) < DOME.r - 0.3) return true
+  if (inGallery(p)) return true
+  if (Math.hypot(p.x - VIP_CENTER.x, p.z - VIP_CENTER.z) < VIP_DOME.r - 0.3) return true
+  return [-1, 1].some(s => Math.abs(p.x - s * VIP_WING.x) < VIP_WING.w / 2 && Math.abs(p.z - VIP_CENTER.z) < VIP_WING.d / 2)
+}
+
+/** Ground height: the terrace is raised; the stairs ramp up to it. */
+export function heightAt(p: P): number {
+  if (inRect(p, TERRACE)) return VIP.y
+  if (p.x > STAIRS.x0 && p.x < STAIRS.x1 && p.z >= STAIRS.z0 && p.z < STAIRS.z1) return VIP.y * (1 - (p.z - STAIRS.z0) / (STAIRS.z1 - STAIRS.z0))
+  return 0
+}
+
+// ── Routing ──
 
 const toI = (x: number) => Math.min(NX - 1, Math.max(0, Math.floor((x - X0) / CELL)))
 const toJ = (z: number) => Math.min(NZ - 1, Math.max(0, Math.floor((z - Z0) / CELL)))
 const cx = (i: number) => X0 + (i + 0.5) * CELL
 const cz = (j: number) => Z0 + (j + 0.5) * CELL
 
-const grids: { ground?: Uint8Array; upper?: Uint8Array } = {}
-function grid(ground: boolean): Uint8Array {
-  const key = ground ? 'ground' : 'upper'
-  if (grids[key]) return grids[key]!
+let cached: Uint8Array | null = null
+function grid(): Uint8Array {
+  if (cached) return cached
   const g = new Uint8Array(NX * NZ)
   // A cell is open only if its centre and all four corners are, so steps between open cells never clip an obstacle
   const h = CELL / 2
   const open = (x: number, z: number) =>
-    isFree({ x, z }, ground) && isFree({ x: x - h, z: z - h }, ground) && isFree({ x: x + h, z: z - h }, ground) &&
-    isFree({ x: x - h, z: z + h }, ground) && isFree({ x: x + h, z: z + h }, ground)
+    isFree({ x, z }) && isFree({ x: x - h, z: z - h }) && isFree({ x: x + h, z: z - h }) && isFree({ x: x - h, z: z + h }) && isFree({ x: x + h, z: z + h })
   for (let i = 0; i < NX; i++) for (let j = 0; j < NZ; j++) g[j * NX + i] = open(cx(i), cz(j)) ? 0 : 1
-  return (grids[key] = g)
+  return (cached = g)
 }
 
 /** Nearest open cell to (i, j), searching outward in rings. */
@@ -70,11 +154,11 @@ function nearestOpen(g: Uint8Array, i: number, j: number): number {
 
 /** A* over the grid, 8 directions, no cutting corners. Returns cell indices from start to goal. */
 function astar(g: Uint8Array, start: number, goal: number): number[] {
-  const cost = new Float32Array(NX * NZ).fill(Infinity)
+  // Float64: a float32 cost can round up, making the same step look cheaper every time and looping forever
+  const cost = new Float64Array(NX * NZ).fill(Infinity)
   const from = new Int32Array(NX * NZ).fill(-1)
   const gi = goal % NX, gj = Math.floor(goal / NX)
   const h = (c: number) => { const dx = Math.abs((c % NX) - gi), dz = Math.abs(Math.floor(c / NX) - gj); return Math.max(dx, dz) + 0.414 * Math.min(dx, dz) }
-  // Binary heap of [priority, cell]
   const heap: [number, number][] = []
   const push = (item: [number, number]) => {
     heap.push(item)
@@ -95,7 +179,6 @@ function astar(g: Uint8Array, start: number, goal: number): number[] {
     }
     return top
   }
-
   cost[start] = 0
   push([h(start), start])
   while (heap.length) {
@@ -119,48 +202,33 @@ function astar(g: Uint8Array, start: number, goal: number): number[] {
   return path
 }
 
-/** Does the segment a→b pass through rectangle o? (slab test, exact) */
-function hits(a: P, b: P, o: Rect): boolean {
-  let t0 = 0, t1 = 1
-  const dx = b.x - a.x, dz = b.z - a.z
-  for (const [d, p, lo, hi] of [[dx, a.x, o.x0, o.x1], [dz, a.z, o.z0, o.z1]]) {
-    if (Math.abs(d) < 1e-9) { if (p <= lo || p >= hi) return false; continue }
-    let u = (lo - p) / d, v = (hi - p) / d
-    if (u > v) [u, v] = [v, u]
-    t0 = Math.max(t0, u); t1 = Math.min(t1, v)
-    if (t0 >= t1) return false
-  }
-  return true
-}
-
-function clearLine(a: P, b: P, ground: boolean): boolean {
-  if (OBSTACLES[ground ? 'ground' : 'upper'].some(o => hits(a, b, o))) return false
-  // Obstacles are exact; staying on walkable floor is checked by sampling (it only matters at the garden's edge)
+/** Every point along a→b is free (sampled every 0.2 m). */
+function clearLine(a: P, b: P): boolean {
   const steps = Math.ceil(Math.hypot(b.x - a.x, b.z - a.z) / 0.2)
   for (let i = 1; i <= steps; i++) {
     const k = i / steps
-    if (!isFree({ x: a.x + (b.x - a.x) * k, z: a.z + (b.z - a.z) * k }, ground)) return false
+    if (!isFree({ x: a.x + (b.x - a.x) * k, z: a.z + (b.z - a.z) * k })) return false
   }
   return true
 }
 
 /** Waypoints from where the avatar stands to the tapped point (or the nearest reachable spot to it). */
-export function planRoute(from: P, to: P, ground = true): P[] {
-  const g = grid(ground)
+export function planRoute(from: P, to: P): P[] {
+  const g = grid()
   const start = nearestOpen(g, toI(from.x), toJ(from.z))
   const goal = nearestOpen(g, toI(to.x), toJ(to.z))
   const cells = astar(g, start, goal)
   if (!cells.length) return []
   const pts = cells.map(c => ({ x: cx(c % NX), z: cz(Math.floor(c / NX)) }))
-  pts[pts.length - 1] = isFree(to, ground) ? to : pts[pts.length - 1]
+  pts[pts.length - 1] = isFree(to) ? to : pts[pts.length - 1]
 
-  // Straighten: from each anchor, jump to the farthest point still in plain sight
+  // Straighten: from each anchor, walk forward while the next point is still in plain sight
   const out: P[] = []
   let anchor = from
   let i = 0
   while (i < pts.length) {
     let far = i
-    for (let k = pts.length - 1; k > i; k--) if (clearLine(anchor, pts[k], ground)) { far = k; break }
+    while (far + 1 < pts.length && clearLine(anchor, pts[far + 1])) far++
     out.push(pts[far])
     anchor = pts[far]
     i = far + 1

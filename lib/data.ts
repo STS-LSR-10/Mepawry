@@ -7,7 +7,7 @@ import { randomUUID } from 'node:crypto'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { BACKDROPS, FRAMES } from '@/lib/decor'
 import type { Floor, GlobalStats, GuestbookEntry, Pet, Profile, Species, TributeType } from '@/types'
-import { FLOOR_CAPACITY, FLOOR_COUNT, VIP_CAPACITY } from '@/components/3d/layout'
+import { FLOOR_CAPACITY, FLOOR_COUNT, VIP_CAPACITY } from '@/components/3d/sanctuary/plan'
 import { generateSlug, getFloorName } from '@/lib/utils'
 import { FREE_GIFT_COOLDOWN_DAYS, FREE_GIFT_SHOWS_DAYS, giftById, type LeftGift } from '@/lib/gifts'
 

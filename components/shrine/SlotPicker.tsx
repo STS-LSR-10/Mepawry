@@ -4,7 +4,7 @@
 // Shelves are shown room by room in the order a visitor meets them, eye-level rows first.
 
 import { useEffect, useMemo, useState } from 'react'
-import { ROOMS, SLOTS, VIP_CAPACITY } from '@/components/3d/layout'
+import { SLOTS, VIP_CAPACITY } from '@/components/3d/sanctuary/plan'
 import { useAccount } from '@/lib/account'
 import { VIP_PRICE_THB } from '@/components/shrine/VipUpgrade'
 import { cn } from '@/lib/utils'
@@ -33,7 +33,7 @@ export function SlotPicker({ value, onChange, reloadKey, vip, onVip }: {
       byRoom.get(s.room)!.push({ i, free: !taken.has(i) })
     })
     return [...byRoom].map(([room, slots]) => ({
-      room, name: ROOMS.find(r => r.id === room)?.name ?? room, slots, free: slots.filter(s => s.free).length,
+      room, name: room, slots, free: slots.filter(s => s.free).length,
     }))
   }, [data])
 

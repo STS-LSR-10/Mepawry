@@ -21,10 +21,13 @@ import { ToneMappingMode } from 'postprocessing'
 import { useQuality } from '../quality'
 import { H, LampContext, leafCardTexture, polar, seeded, useInstances, W, type V3 } from './shared'
 import { GalleryInterior } from './GalleryInterior'
-import { VipInterior } from './VipInterior'
+import { VipInterior, type VipPets } from './VipInterior'
 import { EntranceHall } from './EntranceHall'
 
 import { DOME, FRONT, PLINTH, RINGS, SIDE_DOORS, SILL, VIP, VIP_BACK, VIP_DOME, VIP_WING } from './plan'
+
+/** Glass lets taps through to whatever is behind it. */
+const noRay = () => null
 
 const SUN: V3 = [-86, 27, 58] // golden hour: low and warm, from the front-left
 
@@ -64,7 +67,7 @@ type Mats = ReturnType<typeof useMaterials>
 
 // ── Galleries ──
 
-function Gallery({ r, from, to, m }: { r: number; from: number; to: number; m: Mats }) {
+function Gallery({ r, from, to, m, demo }: { r: number; from: number; to: number; m: Mats; demo: boolean }) {
   const len = to - from
   const ri = r - W / 2, ro = r + W / 2
   const bays = Math.ceil((len * r) / 3.4)
@@ -150,11 +153,11 @@ function Gallery({ r, from, to, m }: { r: number; from: number; to: number; m: M
       <instancedMesh ref={refs.transoms} args={[undefined, undefined, transoms.length]} material={m.frame}>
         <boxGeometry />
       </instancedMesh>
-      <GalleryInterior r={r} angles={angles} step={step} twoSided m={m} demo />
-      <instancedMesh ref={refs.panes} args={[undefined, undefined, panes.length]} material={m.glass} renderOrder={2}>
+      <GalleryInterior r={r} angles={angles} step={step} twoSided m={m} demo={demo} />
+      <instancedMesh ref={refs.panes} args={[undefined, undefined, panes.length]} material={m.glass} raycast={noRay} renderOrder={2}>
         <planeGeometry />
       </instancedMesh>
-      <instancedMesh ref={refs.vaults} args={[vaultGeo, m.glass, vaults.length]} renderOrder={2} />
+      <instancedMesh ref={refs.vaults} args={[vaultGeo, m.glass, vaults.length]} renderOrder={2} raycast={noRay} />
       {purlins.map(({ rr, y, t }, i) => (
         <mesh key={i} position-y={y} rotation-y={-from} material={m.frame} castShadow={t > 0.05}>
           <torusGeometry args={[rr, t, 5, 200, len]} />
@@ -164,7 +167,7 @@ function Gallery({ r, from, to, m }: { r: number; from: number; to: number; m: M
       {[from, to].map(a => (
         <group key={a} position={polar(a, r, 0)} rotation-y={-a}>
           {r < 30 && ( // the outer gallery's ends open straight into the reception dome
-            <mesh position-y={H + 0.28} rotation-y={Math.PI / 2} material={m.glass} renderOrder={2}>
+            <mesh position-y={H + 0.28} rotation-y={Math.PI / 2} material={m.glass} raycast={noRay} renderOrder={2}>
               <circleGeometry args={[W / 2, 28, 0, Math.PI]} />
             </mesh>
           )}
@@ -217,7 +220,7 @@ function DomePavilion({ m, sign, at, r, wall, y = 0, doors = [2] }: { m: Mats; s
                 {[1, 0.55].map(k => <mesh key={k} position-y={wall - side / 2 * 0.95} material={m.frame}><torusGeometry args={[k * side / 2 * 0.92, 0.05, 5, 24, Math.PI]} /></mesh>)}
                 {[-1, 1].map(k => <mesh key={k} position={[k * side / 4, (SILL + wall) / 2, 0]} material={m.frame}><boxGeometry args={[0.05, wall - SILL, 0.07]} /></mesh>)}
               </>}
-              <mesh position-y={isDoor ? wall - 0.55 : SILL + (wall - SILL) / 2} material={m.glass} renderOrder={2}>
+              <mesh position-y={isDoor ? wall - 0.55 : SILL + (wall - SILL) / 2} material={m.glass} raycast={noRay} renderOrder={2}>
                 <planeGeometry args={[side, isDoor ? 1.1 : wall - SILL]} />
               </mesh>
               <mesh position-y={wall - 1.1} material={m.frame}><boxGeometry args={[side, 0.08, 0.1]} /></mesh>
@@ -241,7 +244,7 @@ function DomePavilion({ m, sign, at, r, wall, y = 0, doors = [2] }: { m: Mats; s
       })}
       <mesh position-y={wall} rotation-x={Math.PI / 2} material={m.frame} castShadow><torusGeometry args={[r, 0.16, 8, 8]} /></mesh>
       {/* glass dome with ribs and rings */}
-      <mesh position-y={wall} material={m.glass} renderOrder={2}><sphereGeometry args={[r, 40, 20, 0, Math.PI * 2, 0, Math.PI / 2]} /></mesh>
+      <mesh position-y={wall} material={m.glass} raycast={noRay} renderOrder={2}><sphereGeometry args={[r, 40, 20, 0, Math.PI * 2, 0, Math.PI / 2]} /></mesh>
       {/* a heavy drum beam, then the dome's ribs (every other one heavier) and rings */}
       <mesh position-y={wall + 0.18} material={m.frame} castShadow><cylinderGeometry args={[r + 0.12, r + 0.18, 0.36, 8, 1, true]} /></mesh>
       {Array.from({ length: 24 }, (_, i) => (
@@ -257,7 +260,7 @@ function DomePavilion({ m, sign, at, r, wall, y = 0, doors = [2] }: { m: Mats; s
       {/* cupola */}
       <group position-y={wall + r - 0.15}>
         <mesh position-y={0.55} material={m.frame} castShadow><cylinderGeometry args={[1.1, 1.2, 1.1, 8, 1, true]} /></mesh>
-        <mesh position-y={0.55} material={m.glass}><cylinderGeometry args={[1.05, 1.15, 1.0, 8]} /></mesh>
+        <mesh position-y={0.55} material={m.glass} raycast={noRay}><cylinderGeometry args={[1.05, 1.15, 1.0, 8]} /></mesh>
         <mesh position-y={1.1} material={m.frame} castShadow><sphereGeometry args={[1.15, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2]} /></mesh>
         <mesh position-y={2.4} material={m.frame}><coneGeometry args={[0.12, 0.6, 8]} /></mesh>
         <mesh position-y={2.1} material={m.frame}><sphereGeometry args={[0.16, 12, 8]} /></mesh>
@@ -515,7 +518,7 @@ function SideDoor({ a, m }: { a: number; m: Mats }) {
 }
 
 /** The VIP zone: a raised stone terrace with balustrades and a staircase, a big domed pavilion and two glass wings with small domes. */
-function VipPavilion({ m }: { m: Mats }) {
+function VipPavilion({ m, vip }: { m: Mats; vip?: VipPets }) {
   const { z, y } = VIP
   const rails = useMemo(() => {
     const out: { p: V3; s: V3 }[] = []
@@ -556,12 +559,12 @@ function VipPavilion({ m }: { m: Mats }) {
       ))}
       {/* main domed pavilion and its two wings */}
       <DomePavilion m={m} at={[0, z - VIP_BACK]} r={VIP_DOME.r} wall={VIP_DOME.wall} y={y} doors={[2]} />
-      <VipInterior y={y} z={z - VIP_BACK} />
+      <VipInterior y={y} z={z - VIP_BACK} vip={vip} />
       {[-1, 1].map(s => (
         <group key={s} position={[s * VIP_WING.x, y, z - VIP_BACK]}>
           <Wing m={m} />
           <group position-y={3.4}>
-            <mesh material={m.glass} renderOrder={2}><sphereGeometry args={[1.9, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2]} /></mesh>
+            <mesh material={m.glass} raycast={noRay} renderOrder={2}><sphereGeometry args={[1.9, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2]} /></mesh>
             {Array.from({ length: 8 }, (_, i) => (
               <mesh key={i} rotation-y={(i / 8) * Math.PI} material={m.frame}><torusGeometry args={[1.9, 0.045, 5, 24, Math.PI]} /></mesh>
             ))}
@@ -584,12 +587,12 @@ function Wing({ m }: { m: Mats }) {
       {[[0, d / 2, w, 0], [0, -d / 2, w, 0], [-w / 2, 0, d, Math.PI / 2], [w / 2, 0, d, Math.PI / 2]].map(([x, z, len, ry], i) => (
         <group key={i} position={[x, 0, z]} rotation-y={ry}>
           <mesh position-y={SILL / 2} material={m.frame} castShadow><boxGeometry args={[len, SILL, 0.2]} /></mesh>
-          <mesh position-y={(SILL + h) / 2} material={m.glass} renderOrder={2}><planeGeometry args={[len, h - SILL]} /></mesh>
+          <mesh position-y={(SILL + h) / 2} material={m.glass} raycast={noRay} renderOrder={2}><planeGeometry args={[len, h - SILL]} /></mesh>
           {[-len / 4, len / 4].map(ax => <mesh key={ax} position={[ax, h - 0.9, 0.02]} material={m.frame}><torusGeometry args={[len / 4 - 0.12, 0.05, 5, 16, Math.PI]} /></mesh>)}
         </group>
       ))}
       <mesh position-y={h} material={m.frame} castShadow><boxGeometry args={[w + 0.3, 0.22, d + 0.3]} /></mesh>
-      <mesh position-y={h + 0.1} rotation-x={-Math.PI / 2} material={m.glass}><planeGeometry args={[w, d]} /></mesh>
+      <mesh position-y={h + 0.1} rotation-x={-Math.PI / 2} material={m.glass} raycast={noRay}><planeGeometry args={[w, d]} /></mesh>
     </group>
   )
 }
@@ -709,18 +712,25 @@ function EnvStrength({ value }: { value: number }) {
 
 // ── Scene ──
 
-function Scene({ view, time, low, onReady }: { view: View; time: TimeOfDay; low: boolean; onReady?: () => void }) {
-  const interior = INTERIOR_VIEWS.includes(view)
+/**
+ * The whole sanctuary — sky and light for the time of day, the grounds, the galleries, the reception, the VIP pavilion
+ * and the finishing pass — for the concept preview and for the walkable hall. `children` (the real pets, the
+ * avatars) sit inside it and share its lamps. `demo` fills the cubbies with sample portraits.
+ */
+export function SanctuaryWorld({ time, interior, low, demo = false, vip, onFloor, children }: {
+  time: TimeOfDay; interior: boolean; low: boolean; demo?: boolean; vip?: VipPets
+  /** a tap on the floor, the grounds or the building: walk there */
+  onFloor?: (p: { x: number; z: number }) => void
+  children?: React.ReactNode
+}) {
   const t = TIMES[time]
   const m = useMaterials(low)
-  const told = useRef(false)
-  useFrame(() => { if (!told.current) { told.current = true; requestAnimationFrame(() => onReady?.()) } })
   const sign = useMemo(() => signTexture('🐾 Mepawry Sanctuary 🐾', { w: 900, h: 160, bg: '#F6EFE2', fg: '#3E2A1A', font: 'italic 700 70px Georgia, serif' }), [])
   return (
     <>
       {/* The sun (or moon), the sky, the haze and every reflection in the glass all follow the time of day */}
       <Sky sunPosition={t.skySun ?? t.sun} turbidity={t.sky[0]} rayleigh={t.sky[1]} mieCoefficient={t.sky[2]} mieDirectionalG={0.88} />
-      {time === 'night' && <Stars radius={260} depth={60} count={2500} factor={5} fade speed={0.3} />}
+      {time === 'night' && <Stars radius={260} depth={60} count={low ? 1200 : 2500} factor={5} fade speed={0.3} />}
       <fog attach="fog" args={t.fog} />
       <hemisphereLight key={`${time}${interior}`} args={interior ? [t.inside.sky ?? t.hemi[0], t.inside.ground ?? t.hemi[1], t.inside.hemi] : t.hemi} />
       <EnvStrength value={interior ? t.inside.env : t.env} />
@@ -738,26 +748,37 @@ function Scene({ view, time, low, onReady }: { view: View; time: TimeOfDay; low:
       </Environment>
 
       <LampContext.Provider value={t.lamp}>
-      <Ground low={low} />
-      <FlattenTori>
-        {RINGS.map(g => <Gallery key={g.r} {...g} m={m} />)}
-      </FlattenTori>
-      <DomePavilion m={m} sign={sign} at={[DOME.x, DOME.z]} r={DOME.r} wall={DOME.wall} doors={[0, 2, 4, 6]} />
-      <EntranceHall at={[DOME.x, DOME.z]} r={DOME.r} />
-      {SIDE_DOORS.map(a => <SideDoor key={a} a={a} m={m} />)}
-      <VipPavilion m={m} />
-      <group position={[0, 0, 5]}><Fountain m={m} /></group>
-      <Willow at={[-11, 1]} />
-      <Willow at={[12, -1]} />
-      <Trees low={low} />
-      <Flowers low={low} />
-      <Hedges />
-
-      <OrbitControls makeDefault enableDamping maxPolarAngle={Math.PI / 2 - 0.03} minDistance={4} maxDistance={220} autoRotate={view === 'aerial'} autoRotateSpeed={0.25} />
-      <CameraRig view={view} />
+      <group onClick={onFloor && (e => { if (e.delta < 6) { e.stopPropagation(); onFloor({ x: e.point.x, z: e.point.z }) } })}>
+        <Ground low={low} />
+        <FlattenTori>
+          {RINGS.map(g => <Gallery key={g.r} {...g} m={m} demo={demo} />)}
+        </FlattenTori>
+        <DomePavilion m={m} sign={sign} at={[DOME.x, DOME.z]} r={DOME.r} wall={DOME.wall} doors={[0, 2, 4, 6]} />
+        <EntranceHall at={[DOME.x, DOME.z]} r={DOME.r} />
+        {SIDE_DOORS.map(a => <SideDoor key={a} a={a} m={m} />)}
+        <VipPavilion m={m} vip={vip} />
+        <group position={[0, 0, 5]}><Fountain m={m} /></group>
+        <Willow at={[-11, 1]} />
+        <Willow at={[12, -1]} />
+        <Trees low={low} />
+        <Flowers low={low} />
+        <Hedges />
+      </group>
+        {children}
       </LampContext.Provider>
       {!low && <Grade interior={interior} night={time === 'night'} day={time === 'day'} />}
     </>
+  )
+}
+
+function Scene({ view, time, low, onReady }: { view: View; time: TimeOfDay; low: boolean; onReady?: () => void }) {
+  const told = useRef(false)
+  useFrame(() => { if (!told.current) { told.current = true; requestAnimationFrame(() => onReady?.()) } })
+  return (
+    <SanctuaryWorld time={time} interior={INTERIOR_VIEWS.includes(view)} low={low} demo>
+      <OrbitControls makeDefault enableDamping maxPolarAngle={Math.PI / 2 - 0.03} minDistance={4} maxDistance={220} autoRotate={view === 'aerial'} autoRotateSpeed={0.25} />
+      <CameraRig view={view} />
+    </SanctuaryWorld>
   )
 }
 

@@ -27,8 +27,9 @@ export const VIP_BACK = 0.8                                         // the VIP h
 export const VIP_DOME = { r: 5.3, wall: 4.6 }
 export const VIP_WING = { w: 5.2, d: 4.4, x: 7.7 }
 export const VIP_CENTER: P = { x: 0, z: VIP.z - VIP_BACK }
+export const VIP_PLANTER_R = 2.05                                  // the ring of planters round the VIP fountain (0.9 m deep)
 export const TERRACE = { x0: -11.2, x1: 11.2, z0: VIP.z - 0.8 - 6, z1: VIP.z - 0.8 + 6 }   // its footprint
-export const STAIRS = { x0: -1.8, x1: 1.8, z0: VIP.z + 5, z1: VIP.z + 7.3 }                  // down to the garden
+export const STAIRS = { x0: -1.8, x1: 1.8, z0: TERRACE.z1, z1: TERRACE.z1 + 2.2 }            // down to the garden
 export const FOUNTAIN = { x: 0, z: 5, r: 3.4 }                                               // the garden fountain
 
 // Cabinets (gallery interior)
@@ -128,6 +129,6 @@ export const VIP_CAPACITY = VIP_SLOTS.length
 
 // ── Where people appear ──
 
-export const SPAWN: P = { x: 0, z: 44 }                       // on the path in front of the reception
+export const SPAWN: P = { x: 0, z: 42 }                       // on the path in front of the reception
 export const ARRIVAL: P = { x: 0, z: DOME.z + 2.6 }           // inside the reception, in front of the desk (changing floors)
 export const VIP_ENTRY: P = { x: 0, z: VIP.z + 4.2 }          // on the terrace, in front of the VIP hall's door

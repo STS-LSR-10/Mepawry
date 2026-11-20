@@ -4,13 +4,10 @@
 import { Suspense, useCallback, useEffect, useState } from 'react'
 import { FloatingHeader } from '@/components/shrine/FloatingHeader'
 import { FloorSelector } from '@/components/shrine/FloorSelector'
-import { ELEVATOR_FRONT, FLOOR_COUNT, SLOTS, VIP_SLOTS, type P } from '@/components/3d/layout'
+import { ARRIVAL, FLOOR_COUNT, SLOTS, VIP_ENTRY, VIP_SLOTS, type P } from '@/components/3d/sanctuary/plan'
 import type { Pet } from '@/types'
 
 const PILL = 'glass rounded-full border border-white/20 px-4 py-2.5 text-sm text-[#FAF7F2] shadow-md hover:bg-white/20'
-
-// Just inside the VIP Garden's door, facing the arcades
-const VIP_ENTRY: P = { x: 22, z: -30.5 }
 import { loadSpot } from '@/lib/spot'
 import { describe, getVisitor, useActivity, useOnlineCount } from '@/lib/visitor'
 import { useAccount } from '@/lib/account'
@@ -109,7 +106,7 @@ export default function HallPage() {
   const [toolsOpen, setToolsOpen] = useState(false)
   useEffect(() => setToolsOpen(window.innerWidth >= 640), [])
 
-  /** Fade out, swap floors, put the avatar at the stairs or elevator, fade back in. */
+  /** Fade out, swap floors, put the avatar in the reception, fade back in. */
   const goToFloor = (floor: number, at: P, then?: () => void) => {
     setFading(true)
     setTimeout(() => {
@@ -127,7 +124,7 @@ export default function HallPage() {
     if (!slot) return
     const go = () => setGuide({ pet, at: slot.standAt, face: { x: slot.x, z: slot.z }, nonce: Date.now() })
     if (pet.floor_id === currentFloor) go()
-    else goToFloor(pet.floor_id, ELEVATOR_FRONT, go)
+    else goToFloor(pet.floor_id, ARRIVAL, go)
   }
   const [menu, setMenu] = useState<'pets' | 'vip' | null>(null)
 
@@ -169,8 +166,6 @@ export default function HallPage() {
           sky={sky}
           arrival={arrival}
           guide={guide}
-          onRequestFloor={goToFloor}
-          onElevator={() => setFloorSelectorOpen(true)}
           onReady={() => setWorldReady(true)}
         />}
       </Suspense>
@@ -263,7 +258,7 @@ export default function HallPage() {
         onClose={() => setFloorSelectorOpen(false)}
         floors={floors}
         currentFloorId={currentFloor}
-        onSelectFloor={f => { if (f !== currentFloor) goToFloor(f, ELEVATOR_FRONT) }}
+        onSelectFloor={f => { if (f !== currentFloor) goToFloor(f, ARRIVAL) }}
       />
     </main>
   )
