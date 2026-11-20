@@ -6,11 +6,12 @@ import { useFrame, useThree } from '@react-three/fiber'
 import type * as THREE from 'three'
 import { CuteAvatar } from './CuteAvatar'
 import type { AvatarLook } from '@/lib/look'
-import { heightAt, inGallery, isFree, isInside, type P } from './walk'
+import { heightAt, isFree, isInside, type P } from './walk'
 import type { Stick } from './Joystick'
-import { DOME, H, RINGS, VIP_CENTER, W } from './sanctuary/plan'
+import { DOME, VIP_CENTER } from './sanctuary/plan'
 
 const SPEED = 3.2 // world units per second
+const MIN_INDOOR_TILT = 0.87 // radians above the horizon (~50°): indoors the camera looks down over the cabinets
 
 export interface Route { points: P[]; onArrive?: () => void; face?: P }
 
@@ -132,8 +133,8 @@ export function Player({ name, gender, look, pos, route, onInsideChange, stick, 
         let ux = 0, uz = 1
         if (isInside(p) && hall && d > 0.5) { ux = (hall.x - p.x) / d; uz = (hall.z - p.z) / d }
         else if (isInside(p) && !hall) { ux = -p.z / r; uz = p.x / r }
-        const back = isInside(p) ? 5.5 : 8.5
-        camera.position.set(p.x + ux * back, y + (isInside(p) ? 4.6 : 4), p.z + uz * back)
+        const back = isInside(p) ? 7.1 : 8.5
+        camera.position.set(p.x + ux * back, y + (isInside(p) ? 8.4 : 4), p.z + uz * back)
         follow.current = { ...p }
       }
       else {
@@ -163,29 +164,20 @@ export function Player({ name, gender, look, pos, route, onInsideChange, stick, 
       // A distance we didn't set means you zoomed: that's the distance you want now
       if (armSet.current == null || Math.abs(len - armSet.current) > 0.01) want.current = len
       let next = want.current
-      let nx = t.x + (dx / len) * next, ny = t.y + (dy / len) * next, nz = t.z + (dz / len) * next
-      if (inGallery(t) && flat > 0.01) {
-        // In a ring gallery (6 m wide, under a glass vault): back off along your view only as far as the aisle allows,
-        // then make up the rest of your distance by rising towards the vault and looking down, so you never fill the
-        // screen in front of the cubbies. The camera always stays inside, under the glass.
-        const reach = (want.current * flat) / len
-        let clear = 0
-        while (clear < reach + 0.6 && inGallery({ x: t.x + (dx / flat) * (clear + 0.2), z: t.z + (dz / flat) * (clear + 0.2) })) clear += 0.2
-        const f = Math.min(reach, Math.max(0.8, clear - 0.6))
-        if (f < reach - 0.05) {
-          const px = t.x + (dx / flat) * f, pz = t.z + (dz / flat) * f, rad = Math.hypot(px, pz)
-          const ring = RINGS.find(g => Math.abs(rad - g.r) < W / 2), u = ring ? Math.abs(rad - ring.r) : W / 2
-          const roof = heightAt(t) + H + 0.28 + Math.sqrt(Math.max(0, (W / 2) ** 2 - u * u)) - 0.45
-          const up = Math.max(0, Math.min(roof - t.y, Math.sqrt(Math.max(0, want.current ** 2 - f * f))))
-          nx = px; nz = pz; ny = t.y + up
-          next = Math.hypot(f, up)
+      // Indoors the roofs are off (a dollhouse cutaway), so the camera looks down into the room from above: at least
+      // ~50° up, enough to see over the cubby cabinets. It eases up to that rather than jumping; you can still turn,
+      // zoom and tilt higher.
+      let ux = dx / len, uy = dy / len, uz = dz / len
+      if (inside.current && flat > 0.01) {
+        const e = Math.atan2(dy, flat)
+        if (e < MIN_INDOOR_TILT) {
+          const ne = e + (MIN_INDOOR_TILT - e) * (1 - Math.exp(-Math.min(dt, 0.25) * 3 * turnSpeed)), h = Math.cos(ne)
+          ux = (dx / flat) * h; uy = Math.sin(ne); uz = (dz / flat) * h
         }
       }
-      // Pull in at once (never through a wall), ease back out
-      const k = 1 - Math.exp(-Math.min(dt, 0.25) * 3)
-      if (next < len) c.set(nx, ny, nz)
-      else c.set(c.x + (nx - c.x) * k, c.y + (ny - c.y) * k, c.z + (nz - c.z) * k)
-      next = c.distanceTo(t)
+      // Ease to your chosen distance (after a zoom it's already there)
+      if (next !== len) next = len + (next - len) * (1 - Math.exp(-Math.min(dt, 0.25) * 3))
+      c.set(t.x + ux * next, t.y + uy * next, t.z + uz * next)
       armSet.current = next
       last.current = { ...p }
     }

@@ -1,8 +1,8 @@
 'use client'
 // components/3d/sanctuary/shared.ts — Small helpers shared by the Sanctuary preview's parts.
 
-import { createContext, useContext, useEffect, useLayoutEffect } from 'react'
-import { CanvasTexture, Color, Object3D, SRGBColorSpace, type InstancedMesh, type MeshStandardMaterial } from 'three'
+import { createContext, createElement, useContext, useEffect, useLayoutEffect, useRef, type ReactNode } from 'react'
+import { CanvasTexture, Color, Object3D, SRGBColorSpace, type Group, type InstancedMesh, type MeshStandardMaterial } from 'three'
 
 import { H, W } from './plan'
 export { H, W }
@@ -87,4 +87,16 @@ export function useLampGlow(list: [MeshStandardMaterial, number, number?][], lam
   useEffect(() => {
     for (const [mat, full, min = 0] of list) mat.emissiveIntensity = full * (min + (1 - min) * lamp)
   }, [list, lamp])
+}
+
+/**
+ * Roofs and what hangs from them. Off while you're indoors, like a dollhouse cutaway, so a top-down camera sees into
+ * the rooms. Roof parts never take taps (hidden or not), so tapping the floor always reaches the floor.
+ */
+export const RoofContext = createContext(true)
+export function Roof({ children }: { children: ReactNode }) {
+  const show = useContext(RoofContext)
+  const ref = useRef<Group>(null)
+  useLayoutEffect(() => { ref.current?.traverse(o => { o.raycast = () => {} }) })
+  return createElement('group', { ref, visible: show }, children)
 }

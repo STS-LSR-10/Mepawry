@@ -170,12 +170,12 @@ export default function MemorialWorld3D({ floorId, avatarName, avatarGender, ava
         <PerformanceMonitor onDecline={() => setDpr(1)} onIncline={() => setDpr(1.5)} />
         <Suspense fallback={null}>
           <StatsProbe />
-          <SanctuaryWorld time={time} interior={inside} low={low} vip={vip} onFloor={p => walkTo(p)}>
+          <SanctuaryWorld time={time} interior={inside} cutaway={inside} low={low} vip={vip} onFloor={p => walkTo(p)}>
             <GalleryShrines pets={pets} playerPos={pos} onOpen={(pet, slot) => walkTo(slot.standAt, () => setNear(pet), slot)} />
             {WEATHER[sky.season] && <Weather {...WEATHER[sky.season]!} count={Math.round(WEATHER[sky.season]!.count / (low ? 3 : 1))} />}
             <Player name={avatarName} gender={avatarGender} look={avatarLook} pos={pos} route={route} onInsideChange={setInside} stick={stick} walkSpeed={walkSpeed} turnSpeed={turnSpeed} />
             <CrowdAvatars list={crowd.list} myPos={pos} radius={low ? 16 : 24} />
-            <OrbitControls makeDefault enablePan={false} enableZoom rotateSpeed={turnSpeed} minDistance={inside ? 2 : 3} maxDistance={inside ? 9 : 30} minPolarAngle={0.35} maxPolarAngle={Math.PI / 2.1} />
+            <OrbitControls makeDefault enablePan={false} enableZoom rotateSpeed={turnSpeed} minDistance={inside ? 3 : 3} maxDistance={inside ? 18 : 30} minPolarAngle={0.35} maxPolarAngle={Math.PI / 2.1} />
           </SanctuaryWorld>
         </Suspense>
       </Canvas>

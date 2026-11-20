@@ -19,7 +19,7 @@ import { microMap } from '../look'
 import { Bloom, BrightnessContrast, EffectComposer, HueSaturation, N8AO, SMAA, ToneMapping, Vignette } from '@react-three/postprocessing'
 import { ToneMappingMode } from 'postprocessing'
 import { useQuality } from '../quality'
-import { H, LampContext, leafCardTexture, polar, seeded, useInstances, W, type V3 } from './shared'
+import { H, LampContext, leafCardTexture, polar, Roof, RoofContext, seeded, useInstances, W, type V3 } from './shared'
 import { GalleryInterior } from './GalleryInterior'
 import { VipInterior, type VipPets } from './VipInterior'
 import { EntranceHall } from './EntranceHall'
@@ -141,9 +141,11 @@ function Gallery({ r, from, to, m, demo }: { r: number; from: number; to: number
       <instancedMesh ref={refs.arches} args={[undefined, undefined, arches.length]} material={m.frame}>
         <torusGeometry args={[1, 0.045, 5, 24, Math.PI]} />
       </instancedMesh>
-      <instancedMesh ref={refs.ribs} args={[undefined, undefined, ribs.length]} material={m.frame} castShadow>
-        <torusGeometry args={[W / 2, 0.08, 6, 32, Math.PI]} />
-      </instancedMesh>
+      <Roof>
+        <instancedMesh ref={refs.ribs} args={[undefined, undefined, ribs.length]} material={m.frame} castShadow>
+          <torusGeometry args={[W / 2, 0.08, 6, 32, Math.PI]} />
+        </instancedMesh>
+      </Roof>
       <instancedMesh ref={refs.sills} args={[undefined, undefined, sills.length]} material={m.frame} castShadow receiveShadow>
         <boxGeometry />
       </instancedMesh>
@@ -157,6 +159,7 @@ function Gallery({ r, from, to, m, demo }: { r: number; from: number; to: number
       <instancedMesh ref={refs.panes} args={[undefined, undefined, panes.length]} material={m.glass} raycast={noRay} renderOrder={2}>
         <planeGeometry />
       </instancedMesh>
+      <Roof>
       <instancedMesh ref={refs.vaults} args={[vaultGeo, m.glass, vaults.length]} renderOrder={2} raycast={noRay} />
       {purlins.map(({ rr, y, t }, i) => (
         <mesh key={i} position-y={y} rotation-y={-from} material={m.frame} castShadow={t > 0.05}>
@@ -179,6 +182,7 @@ function Gallery({ r, from, to, m, demo }: { r: number; from: number; to: number
           </mesh>
         </group>
       ))}
+      </Roof>
     </group>
   )
 }
@@ -244,6 +248,7 @@ function DomePavilion({ m, sign, at, r, wall, y = 0, doors = [2] }: { m: Mats; s
       })}
       <mesh position-y={wall} rotation-x={Math.PI / 2} material={m.frame} castShadow><torusGeometry args={[r, 0.16, 8, 8]} /></mesh>
       {/* glass dome with ribs and rings */}
+      <Roof>
       <mesh position-y={wall} material={m.glass} raycast={noRay} renderOrder={2}><sphereGeometry args={[r, 40, 20, 0, Math.PI * 2, 0, Math.PI / 2]} /></mesh>
       {/* a heavy drum beam, then the dome's ribs (every other one heavier) and rings */}
       <mesh position-y={wall + 0.18} material={m.frame} castShadow><cylinderGeometry args={[r + 0.12, r + 0.18, 0.36, 8, 1, true]} /></mesh>
@@ -265,6 +270,7 @@ function DomePavilion({ m, sign, at, r, wall, y = 0, doors = [2] }: { m: Mats; s
         <mesh position-y={2.4} material={m.frame}><coneGeometry args={[0.12, 0.6, 8]} /></mesh>
         <mesh position-y={2.1} material={m.frame}><sphereGeometry args={[0.16, 12, 8]} /></mesh>
       </group>
+      </Roof>
     </group>
   )
 }
@@ -563,13 +569,13 @@ function VipPavilion({ m, vip }: { m: Mats; vip?: VipPets }) {
       {[-1, 1].map(s => (
         <group key={s} position={[s * VIP_WING.x, y, z - VIP_BACK]}>
           <Wing m={m} />
-          <group position-y={3.4}>
+          <Roof><group position-y={3.4}>
             <mesh material={m.glass} raycast={noRay} renderOrder={2}><sphereGeometry args={[1.9, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2]} /></mesh>
             {Array.from({ length: 8 }, (_, i) => (
               <mesh key={i} rotation-y={(i / 8) * Math.PI} material={m.frame}><torusGeometry args={[1.9, 0.045, 5, 24, Math.PI]} /></mesh>
             ))}
             <mesh position-y={2.05} material={m.frame}><coneGeometry args={[0.1, 0.5, 8]} /></mesh>
-          </group>
+          </group></Roof>
         </group>
       ))}
     </group>
@@ -592,7 +598,7 @@ function Wing({ m }: { m: Mats }) {
         </group>
       ))}
       <mesh position-y={h} material={m.frame} castShadow><boxGeometry args={[w + 0.3, 0.22, d + 0.3]} /></mesh>
-      <mesh position-y={h + 0.1} rotation-x={-Math.PI / 2} material={m.glass} raycast={noRay}><planeGeometry args={[w, d]} /></mesh>
+      <Roof><mesh position-y={h + 0.1} rotation-x={-Math.PI / 2} material={m.glass} raycast={noRay}><planeGeometry args={[w, d]} /></mesh></Roof>
     </group>
   )
 }
@@ -717,13 +723,16 @@ function EnvStrength({ value }: { value: number }) {
  * and the finishing pass — for the concept preview and for the walkable hall. `children` (the real pets, the
  * avatars) sit inside it and share its lamps. `demo` fills the cubbies with sample portraits.
  */
-export function SanctuaryWorld({ time, interior, low, demo = false, vip, onFloor, children }: {
+export function SanctuaryWorld({ time, interior: inRoom, cutaway = false, low, demo = false, vip, onFloor, children }: {
   time: TimeOfDay; interior: boolean; low: boolean; demo?: boolean; vip?: VipPets
+  /** roofs off (you're indoors in the walkable hall): the rooms are lit by the open sky, like outside */
+  cutaway?: boolean
   /** a tap on the floor, the grounds or the building: walk there */
   onFloor?: (p: { x: number; z: number }) => void
   children?: React.ReactNode
 }) {
   const t = TIMES[time]
+  const interior = inRoom && !cutaway
   const m = useMaterials(low)
   const sign = useMemo(() => signTexture('🐾 Mepawry Sanctuary 🐾', { w: 900, h: 160, bg: '#F6EFE2', fg: '#3E2A1A', font: 'italic 700 70px Georgia, serif' }), [])
   return (
@@ -748,6 +757,7 @@ export function SanctuaryWorld({ time, interior, low, demo = false, vip, onFloor
       </Environment>
 
       <LampContext.Provider value={t.lamp}>
+      <RoofContext.Provider value={!cutaway}>
       <group onClick={onFloor && (e => { if (e.delta < 6) { e.stopPropagation(); onFloor({ x: e.point.x, z: e.point.z }) } })}>
         <Ground low={low} />
         <FlattenTori>
@@ -765,6 +775,7 @@ export function SanctuaryWorld({ time, interior, low, demo = false, vip, onFloor
         <Hedges />
       </group>
         {children}
+      </RoofContext.Provider>
       </LampContext.Provider>
       {!low && <Grade interior={interior} night={time === 'night'} day={time === 'day'} />}
     </>

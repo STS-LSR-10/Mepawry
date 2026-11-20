@@ -11,7 +11,7 @@ import {
   CanvasTexture, DoubleSide, InstancedMesh, LatheGeometry, MeshStandardMaterial, RepeatWrapping, SRGBColorSpace,
   Vector2,
 } from 'three'
-import { H, leafCardTexture, polar, seeded, useInstances, useLamp, useLampGlow, VAULT_TOP, W, type V3 } from './shared'
+import { H, leafCardTexture, polar, seeded, useInstances, useLamp, useLampGlow, VAULT_TOP, W, Roof, type V3 } from './shared'
 
 import { BASE_H, CAB_D, CAB_H, COLS, isDoorBay, ROW_H, ROWS } from './plan'
 
@@ -290,9 +290,12 @@ export function GalleryInterior({ r, angles, step, twoSided, m, demo = false }: 
       <Inst items={built.sconceGlass} mat={mats.lantern}><cylinderGeometry args={[1, 1, 1, 6]} /></Inst>
 
       {/* hanging lanterns */}
-      <Inst items={built.rods} mat={mats.iron}><cylinderGeometry args={[1, 1, 1, 6]} /></Inst>
-      <Inst items={built.lanterns} mat={mats.lantern}><cylinderGeometry args={[1, 0.8, 1, 8]} /></Inst>
-      <Inst items={built.caps} mat={mats.brass}><coneGeometry args={[1, 1, 8]} /></Inst>
+      {/* lanterns hang from the vault, so they go with it */}
+      <Roof>
+        <Inst items={built.rods} mat={mats.iron}><cylinderGeometry args={[1, 1, 1, 6]} /></Inst>
+        <Inst items={built.lanterns} mat={mats.lantern}><cylinderGeometry args={[1, 0.8, 1, 8]} /></Inst>
+        <Inst items={built.caps} mat={mats.brass}><coneGeometry args={[1, 1, 8]} /></Inst>
+      </Roof>
 
     </group>
   )
