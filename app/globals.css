@@ -125,8 +125,6 @@ body {
 }
 
 /* Opening screen: the candle flame in the logo flickers, its glow breathes */
-.splash-flame { transform-origin: 60px 70px; animation: splash-flicker 1.6s ease-in-out infinite; }
 .splash-glow { animation: splash-breathe 3s ease-in-out infinite; }
-@keyframes splash-flicker { 0%, 100% { transform: scale(1, 1) } 30% { transform: scale(.94, 1.08) } 60% { transform: scale(1.04, .95) } }
 @keyframes splash-breathe { 0%, 100% { opacity: .6; transform: scale(.95) } 50% { opacity: 1; transform: scale(1.05) } }
-@media (prefers-reduced-motion: reduce) { .splash-flame, .splash-glow { animation: none } }
+@media (prefers-reduced-motion: reduce) { .splash-glow { animation: none } }
