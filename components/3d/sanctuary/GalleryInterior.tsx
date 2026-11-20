@@ -4,7 +4,7 @@
 // framed portrait on a white mat with a little nameplate and a candle glowing in front (a few hold an urn, a few
 // are still waiting). Ivy trails from the crown moulding. Fluted pilasters between bays carry a
 // zone sign and a wall lantern. Brass lanterns hang down the middle of the glass vault; the floor is pale marble
-// with oak inlay strips, and benches sit along the walls. Everything repeated is instanced (a few dozen draw calls).
+// with oak inlay strips. Everything repeated is instanced (a few dozen draw calls).
 
 import { useMemo, useRef } from 'react'
 import {
@@ -143,7 +143,7 @@ export function GalleryInterior({ r, angles, step, twoSided, m, demo = false }: 
       crowns: [] as Item[], cornices: [] as Item[], pilasters: [] as Item[], capitals: [] as Item[],
       frames: [] as Item[], mats: [] as Item[], plaques: [] as Item[], leds: [] as Item[], photos: PETS.map(() => [] as Item[]), candles: [] as Item[], flames: [] as Item[], urns: [] as Item[], dried: [] as Item[],
       ivy: [] as Item[], signs: signsInit(), sconces: [] as Item[], sconceGlass: [] as Item[],
-      rods: [] as Item[], lanterns: [] as Item[], caps: [] as Item[], benchSeats: [] as Item[], benchBacks: [] as Item[], benchLegs: [] as Item[],
+      rods: [] as Item[], lanterns: [] as Item[], caps: [] as Item[],
       strips: [] as Item[],
     }
     function signsInit() { return Array.from({ length: 8 }, () => [] as Item[]) }
@@ -237,24 +237,8 @@ export function GalleryInterior({ r, angles, step, twoSided, m, demo = false }: 
       L.caps.push({ p: polar(a, r, ly + 0.27), ry: -a, s: [0.24, 0.16, 0.24] })
     })
 
-    // Oak inlay across the marble at every bay, and benches along the walls every few bays
-    angles.forEach((a, i) => {
-      L.strips.push({ p: polar(a, r, 0.026), ry: -a, s: [W - 0.4, 0.004, 0.14] })
-      if (i % 3 === 1 && i < angles.length - 1) {
-        const a2 = a + step / 2
-        for (const off of twoSided ? [-1, 1] : [-1]) {
-          const rr = r + off * 1.65, facing = (off < 0 ? 1 : -1) as 1 | -1
-          const { ry, at } = wall(a2, rr, facing)
-          ;[-0.14, 0, 0.14].forEach(z => L.benchSeats.push({ p: at(0, 0.45, z), ry, s: [1.5, 0.04, 0.11] }))
-          ;[0.62, 0.78, 0.94].forEach(y => L.benchBacks.push({ p: at(0, y, -0.21 - (y - 0.62) * 0.12), ry, rx: -0.12, s: [1.5, 0.09, 0.03] }))
-          ;[-0.68, 0.68].forEach(x => {
-            ;[-0.17, 0.17].forEach(z => L.benchLegs.push({ p: at(x, 0.22, z), ry, s: [0.045, 0.44, 0.045] }))
-            L.benchLegs.push({ p: at(x, 0.62, -0.02), ry, s: [0.04, 0.04, 0.42] }) // armrest
-            L.benchLegs.push({ p: at(x, 0.7, -0.22), ry, rx: -0.12, s: [0.045, 0.6, 0.045] }) // back upright
-          })
-        }
-      }
-    })
+    // Oak inlay across the marble at every bay (no benches in the aisles: seating is by the windows in the halls)
+    angles.forEach(a => L.strips.push({ p: polar(a, r, 0.026), ry: -a, s: [W - 0.4, 0.004, 0.14] }))
     return L
   }, [r, angles, step, twoSided, ri, ro, demo])
 
@@ -310,10 +294,6 @@ export function GalleryInterior({ r, angles, step, twoSided, m, demo = false }: 
       <Inst items={built.lanterns} mat={mats.lantern}><cylinderGeometry args={[1, 0.8, 1, 8]} /></Inst>
       <Inst items={built.caps} mat={mats.brass}><coneGeometry args={[1, 1, 8]} /></Inst>
 
-      {/* benches */}
-      <Inst items={built.benchSeats} mat={mats.oakLight} shadow><boxGeometry /></Inst>
-      <Inst items={built.benchBacks} mat={mats.oakLight} shadow><boxGeometry /></Inst>
-      <Inst items={built.benchLegs} mat={mats.iron} shadow><boxGeometry /></Inst>
     </group>
   )
 }
