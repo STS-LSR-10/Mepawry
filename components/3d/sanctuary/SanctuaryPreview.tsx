@@ -9,7 +9,7 @@ import { Suspense, useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { Environment, Lightformer, OrbitControls, Sky } from '@react-three/drei'
 import {
-  BufferAttribute, Color, CylinderGeometry, DoubleSide, IcosahedronGeometry, InstancedMesh, LatheGeometry,
+  BufferAttribute, CanvasTexture, Color, SRGBColorSpace, CylinderGeometry, DoubleSide, IcosahedronGeometry, InstancedMesh, LatheGeometry,
   MeshPhysicalMaterial, MeshStandardMaterial, Object3D, RepeatWrapping, Vector2, type BufferGeometry, type Texture,
 } from 'three'
 import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
@@ -22,7 +22,8 @@ import { useQuality } from '../quality'
 const FRONT = Math.PI / 2
 const W = 6           // gallery width
 const H = 3.2         // wall height (the glass vault sits on top)
-const SILL = 0.55     // wooden sill under the glass
+const SILL = 0.62     // top of the stone base wall + wooden sill; the glass starts here
+const PLINTH = 0.5   // stone base wall under every window
 const RINGS = [
   { r: 33, from: FRONT + 0.15, to: FRONT - 0.15 + Math.PI * 2 },  // outer gallery: a full ring, the dome closes it at the front
   { r: 21, from: FRONT + 0.42, to: FRONT - 0.42 + Math.PI * 2 },  // inner gallery: open at the front, steps lead through
@@ -63,18 +64,29 @@ function useMaterials(low: boolean) {
   return useMemo(() => {
     const wood = woodTexture()
     wood.repeat.set(1, 3)
+    // Real glass: nearly clear when you look straight through it, bright and mirror-like at grazing angles
+    // (Fresnel), reflecting the sky. That is what makes a glasshouse read as glass rather than an empty frame.
     const glass = new MeshPhysicalMaterial({
-      color: '#D8EEF2', transparent: true, opacity: low ? 0.14 : 0.09, roughness: 0.03, metalness: 0,
-      clearcoat: low ? 0 : 1, clearcoatRoughness: 0.03, envMapIntensity: 0.7, side: DoubleSide, depthWrite: false,
+      color: '#C8DDE4', transparent: true, opacity: 0.18, roughness: 0.04, metalness: 0.05,
+      clearcoat: low ? 0 : 1, clearcoatRoughness: 0.02, envMapIntensity: 1.6, side: DoubleSide, depthWrite: false,
     })
+    glass.onBeforeCompile = sh => {
+      sh.fragmentShader = sh.fragmentShader.replace('#include <opaque_fragment>', `
+        float facing = abs(dot(normalize(normal), normalize(vViewPosition)));
+        float fres = pow(1.0 - facing, 2.6);
+        diffuseColor.a = clamp(diffuseColor.a + fres * 0.55, 0.0, 0.85);
+        outgoingLight += vec3(0.78, 0.88, 0.94) * fres * 0.18;
+        #include <opaque_fragment>`)
+    }
     return {
       // honey-toned oak: a warm base with a fine grain in the bump, not the dark walnut texture
-      frame: new MeshStandardMaterial({ color: '#C88A4C', roughness: 0.48, bumpMap: microMap('grain'), bumpScale: 0.8 }),
+      frame: new MeshStandardMaterial({ color: '#A9662E', roughness: 0.42, bumpMap: microMap('grain'), bumpScale: 0.8 }),
       shelf: new MeshStandardMaterial({ color: '#A8703E', roughness: 0.6, bumpMap: microMap('grain'), bumpScale: 0.6 }),
       photoFrame: new MeshStandardMaterial({ color: '#E8D2A6', roughness: 0.4, metalness: 0.3 }),
       glass,
       stone: new MeshStandardMaterial({ color: '#9E8A72', roughness: 0.85, bumpMap: microMap('stone'), bumpScale: 1 }),
       white: new MeshStandardMaterial({ color: '#F1ECE2', roughness: 0.5 }),
+      plinth: new MeshStandardMaterial({ color: '#B8A487', roughness: 0.9, bumpMap: microMap('stone'), bumpScale: 1.4 }),
       frameCard: new MeshStandardMaterial({ color: '#ffffff', roughness: 0.55 }),
     }
   }, [low])
@@ -92,20 +104,27 @@ function Gallery({ r, from, to, m }: { r: number; from: number; to: number; m: M
 
   // Posts on both walls, ribs across the vault at every post
   const posts = useMemo(() => angles.flatMap(a => [ri, ro].map(rr => ({ p: polar(a, rr, H / 2), ry: -a }))), [angles, ri, ro])
-  const ribs = useMemo(() => angles.map(a => ({ p: polar(a, r, H), ry: -a })), [angles, r])
+  const ribs = useMemo(() => angles.slice(0, -1).flatMap(a0 => [0, 1 / 3, 2 / 3].map(f => ({ p: polar(a0 + step * f, r, H + 0.28), ry: -(a0 + step * f), s: [1, 1, f ? 0.6 : 1] as V3 }))).concat([{ p: polar(to, r, H + 0.28), ry: -to, s: [1, 1, 1] }]), [angles, r, step, to])
   // Glass panes and wooden sills between posts, on both walls
   const panes = useMemo(() => angles.slice(0, -1).flatMap(a0 => [ri, ro].map(rr => {
     const a = a0 + step / 2, w = 2 * rr * Math.sin(step / 2)
-    return { p: polar(a, rr, SILL + (H - SILL) / 2), ry: -a + Math.PI / 2, s: [w, H - SILL, 1] as V3 }
+    return { a, w, p: polar(a, rr, SILL + (H - SILL) / 2), ry: -a + Math.PI / 2, s: [w, H - SILL, 1] as V3 }
   })), [angles, ri, ro, step])
-  const sills = useMemo(() => panes.map(pn => ({ p: [pn.p[0], SILL / 2, pn.p[2]] as V3, ry: pn.ry, s: [pn.s![0], SILL, 0.22] as V3 })), [panes])
-  // Mullions: one upright in the middle of each pane, one transom across
-  const mullions = useMemo(() => panes.map(pn => ({ p: [pn.p[0], pn.p[1], pn.p[2]] as V3, ry: pn.ry, s: [0.06, H - SILL, 0.08] as V3 })), [panes])
-  const transoms = useMemo(() => panes.map(pn => ({ p: [pn.p[0], H - 0.75, pn.p[2]] as V3, ry: pn.ry, s: [pn.s![0], 0.07, 0.08] as V3 })), [panes])
+  // Along a pane: a point `off` metres sideways from its centre, at height y
+  const along = (pn: { a: number; p: V3 }, off: number, y: number): V3 => [pn.p[0] + Math.sin(pn.a) * off, y, pn.p[2] - Math.cos(pn.a) * off]
+  // Stone base wall, a wooden sill on it, and a heavy timber beam along the top of every bay
+  const plinths = useMemo(() => panes.map(pn => ({ p: [pn.p[0], PLINTH / 2, pn.p[2]] as V3, ry: pn.ry, s: [pn.w + 0.24, PLINTH, 0.55] as V3 })), [panes])
+  const sills = useMemo(() => panes.map(pn => ({ p: [pn.p[0], PLINTH + 0.06, pn.p[2]] as V3, ry: pn.ry, s: [pn.w + 0.1, 0.12, 0.34] as V3 })), [panes])
+  const beams = useMemo(() => panes.map(pn => ({ p: [pn.p[0], H + 0.12, pn.p[2]] as V3, ry: pn.ry, s: [pn.w + 0.24, 0.34, 0.42] as V3 })), [panes])
+  // Glazing bars: three uprights and two rails per window, small panes like a real conservatory
+  const mullions = useMemo(() => panes.flatMap(pn => [-1, 0, 1].map(k => ({ p: along(pn, k * pn.w / 4, (SILL + H) / 2), ry: pn.ry, s: [0.055, H - SILL, 0.07] as V3 }))), [panes])
+  const transoms = useMemo(() => panes.flatMap(pn => [SILL + 0.75, SILL + 1.45].map(y => ({ p: along(pn, 0, y), ry: pn.ry, s: [pn.w, 0.05, 0.07] as V3 }))), [panes])
+  // An arched head in every window: an outer and an inner arch springing from the transom
+  const arches = useMemo(() => panes.flatMap(pn => [1, 0.55].map(k => ({ p: along(pn, 0, H - pn.w / 2 * 0.98), ry: pn.ry, s: [k * pn.w / 2 * 0.96, k * pn.w / 2 * 0.96, 1] as V3 }))), [panes])
   // Vault glass: a half-cylinder per bay, laid along the curve
   const vaults = useMemo(() => angles.slice(0, -1).map(a0 => {
     const a = a0 + step / 2
-    return { p: polar(a, r, H), ry: -a - Math.PI / 2, s: [1, 1, 1] as V3 }
+    return { p: polar(a, r, H + 0.28), ry: -a - Math.PI / 2, s: [1, 1, 1] as V3 }
   }), [angles, r, step])
   const vaultGeo = useMemo(() => {
     const g = new CylinderGeometry(W / 2, W / 2, 2 * r * Math.sin(step / 2) + 0.02, 28, 1, true, 0, Math.PI)
@@ -140,14 +159,15 @@ function Gallery({ r, from, to, m }: { r: number; from: number; to: number; m: M
   }, [angles, ro, r, step])
 
   // Purlins: thin wooden rails running round the vault
-  const purlins = useMemo(() => [0.18, 0.4, 0.6, 0.82].map(f => {
+  const purlins = useMemo(() => [0.07, 0.17, 0.28, 0.39, 0.5, 0.61, 0.72, 0.83, 0.93].map(f => {
     const b = Math.PI * f
-    return { rr: r + (W / 2) * Math.cos(b), y: H + (W / 2) * Math.sin(b) }
+    return { rr: r + (W / 2) * Math.cos(b), y: H + 0.28 + (W / 2) * Math.sin(b), t: f === 0.5 ? 0.09 : 0.04 }
   }), [r])
 
   const refs = {
     posts: useRef<InstancedMesh>(null), ribs: useRef<InstancedMesh>(null), panes: useRef<InstancedMesh>(null),
     sills: useRef<InstancedMesh>(null), vaults: useRef<InstancedMesh>(null), cases: useRef<InstancedMesh>(null),
+    plinths: useRef<InstancedMesh>(null), beams: useRef<InstancedMesh>(null), arches: useRef<InstancedMesh>(null),
     portraits: useRef<InstancedMesh>(null), frames: useRef<InstancedMesh>(null), boards: useRef<InstancedMesh>(null), mullions: useRef<InstancedMesh>(null), transoms: useRef<InstancedMesh>(null),
   }
   useInstances(refs.posts, posts)
@@ -161,6 +181,9 @@ function Gallery({ r, from, to, m }: { r: number; from: number; to: number; m: M
   useInstances(refs.boards, boards)
   useInstances(refs.mullions, mullions)
   useInstances(refs.transoms, transoms)
+  useInstances(refs.plinths, plinths)
+  useInstances(refs.beams, beams)
+  useInstances(refs.arches, arches)
 
   return (
     <group>
@@ -169,10 +192,19 @@ function Gallery({ r, from, to, m }: { r: number; from: number; to: number; m: M
         <ringGeometry args={[ri, ro, 160, 1, -to, len]} />
       </mesh>
       <instancedMesh ref={refs.posts} args={[undefined, undefined, posts.length]} material={m.frame} castShadow receiveShadow>
-        <boxGeometry args={[0.16, H, 0.16]} />
+        <boxGeometry args={[0.24, H, 0.24]} />
+      </instancedMesh>
+      <instancedMesh ref={refs.plinths} args={[undefined, undefined, plinths.length]} material={m.plinth} castShadow receiveShadow>
+        <boxGeometry />
+      </instancedMesh>
+      <instancedMesh ref={refs.beams} args={[undefined, undefined, beams.length]} material={m.frame} castShadow receiveShadow>
+        <boxGeometry />
+      </instancedMesh>
+      <instancedMesh ref={refs.arches} args={[undefined, undefined, arches.length]} material={m.frame}>
+        <torusGeometry args={[1, 0.045, 5, 24, Math.PI]} />
       </instancedMesh>
       <instancedMesh ref={refs.ribs} args={[undefined, undefined, ribs.length]} material={m.frame} castShadow>
-        <torusGeometry args={[W / 2, 0.07, 6, 28, Math.PI]} />
+        <torusGeometry args={[W / 2, 0.08, 6, 32, Math.PI]} />
       </instancedMesh>
       <instancedMesh ref={refs.sills} args={[undefined, undefined, sills.length]} material={m.frame} castShadow receiveShadow>
         <boxGeometry />
@@ -199,18 +231,18 @@ function Gallery({ r, from, to, m }: { r: number; from: number; to: number; m: M
         <planeGeometry />
       </instancedMesh>
       <instancedMesh ref={refs.vaults} args={[vaultGeo, m.glass, vaults.length]} renderOrder={2} />
-      {purlins.map(({ rr, y }, i) => (
-        <mesh key={i} position-y={y} rotation-y={-from} material={m.frame}>
-          <torusGeometry args={[rr, 0.045, 5, 160, len]} />
+      {purlins.map(({ rr, y, t }, i) => (
+        <mesh key={i} position-y={y} rotation-y={-from} material={m.frame} castShadow={t > 0.05}>
+          <torusGeometry args={[rr, t, 5, 200, len]} />
         </mesh>
       ))}
       {/* Gable ends where the ring opens: a wooden arch with glass */}
       {[from, to].map(a => (
         <group key={a} position={polar(a, r, 0)} rotation-y={-a}>
-          <mesh position-y={H} rotation-y={Math.PI / 2} material={m.glass} renderOrder={2}>
+          <mesh position-y={H + 0.28} rotation-y={Math.PI / 2} material={m.glass} renderOrder={2}>
             <circleGeometry args={[W / 2, 28, 0, Math.PI]} />
           </mesh>
-          <mesh position-y={H} rotation-y={Math.PI / 2} material={m.frame} castShadow>
+          <mesh position-y={H + 0.28} rotation-y={Math.PI / 2} material={m.frame} castShadow>
             <torusGeometry args={[W / 2, 0.11, 6, 28, Math.PI]} />
           </mesh>
           <mesh position-y={H} rotation-y={Math.PI / 2} material={m.frame}>
@@ -252,7 +284,13 @@ function DomePavilion({ m, sign, at, r, wall, y = 0, doors = [2] }: { m: Mats; s
           <group key={i}>
             <mesh position={polar(a, r, wall / 2)} material={m.frame} castShadow><boxGeometry args={[0.22, wall, 0.22]} /></mesh>
             <group position={polar(a2, r * Math.cos(Math.PI / sides), 0)} rotation-y={-a2 + Math.PI / 2}>
-              {!isDoor && <mesh position-y={SILL / 2} material={m.frame} castShadow><boxGeometry args={[side, SILL, 0.24]} /></mesh>}
+              {!isDoor && <>
+                <mesh position-y={PLINTH / 2} material={m.plinth} castShadow receiveShadow><boxGeometry args={[side, PLINTH, 0.5]} /></mesh>
+                <mesh position-y={PLINTH + 0.06} material={m.frame} castShadow><boxGeometry args={[side, 0.12, 0.34]} /></mesh>
+                {/* arched window head with an inner arch, and two extra glazing bars */}
+                {[1, 0.55].map(k => <mesh key={k} position-y={wall - side / 2 * 0.95} material={m.frame}><torusGeometry args={[k * side / 2 * 0.92, 0.05, 5, 24, Math.PI]} /></mesh>)}
+                {[-1, 1].map(k => <mesh key={k} position={[k * side / 4, (SILL + wall) / 2, 0]} material={m.frame}><boxGeometry args={[0.05, wall - SILL, 0.07]} /></mesh>)}
+              </>}
               <mesh position-y={isDoor ? wall - 0.55 : SILL + (wall - SILL) / 2} material={m.glass} renderOrder={2}>
                 <planeGeometry args={[side, isDoor ? 1.1 : wall - SILL]} />
               </mesh>
@@ -278,12 +316,14 @@ function DomePavilion({ m, sign, at, r, wall, y = 0, doors = [2] }: { m: Mats; s
       <mesh position-y={wall} rotation-x={Math.PI / 2} material={m.frame} castShadow><torusGeometry args={[r, 0.16, 8, 8]} /></mesh>
       {/* glass dome with ribs and rings */}
       <mesh position-y={wall} material={m.glass} renderOrder={2}><sphereGeometry args={[r, 40, 20, 0, Math.PI * 2, 0, Math.PI / 2]} /></mesh>
-      {Array.from({ length: 16 }, (_, i) => (
-        <mesh key={i} position-y={wall} rotation-y={(i / 16) * Math.PI} material={m.frame} castShadow>
-          <torusGeometry args={[r, 0.055, 5, 40, Math.PI]} />
+      {/* a heavy drum beam, then the dome's ribs (every other one heavier) and rings */}
+      <mesh position-y={wall + 0.18} material={m.frame} castShadow><cylinderGeometry args={[r + 0.12, r + 0.18, 0.36, 8, 1, true]} /></mesh>
+      {Array.from({ length: 24 }, (_, i) => (
+        <mesh key={i} position-y={wall} rotation-y={(i / 24) * Math.PI} material={m.frame} castShadow>
+          <torusGeometry args={[r, i % 2 ? 0.04 : 0.075, 5, 48, Math.PI]} />
         </mesh>
       ))}
-      {[0.3, 0.55, 0.78].map(f => (
+      {[0.18, 0.36, 0.52, 0.67, 0.8, 0.9].map(f => (
         <mesh key={f} position-y={wall + r * Math.sin(f * Math.PI / 2)} rotation-x={Math.PI / 2} material={m.frame}>
           <torusGeometry args={[r * Math.cos(f * Math.PI / 2), 0.05, 5, 48]} />
         </mesh>
@@ -315,7 +355,7 @@ function Ground({ low }: { low: boolean }) {
     <group>
       <mesh rotation-x={-Math.PI / 2} receiveShadow>
         <circleGeometry args={[260, 64]} />
-        <meshStandardMaterial map={lawn} color="#7FA05C" roughness={0.95} />
+        <meshStandardMaterial map={lawn} color="#6C8E4C" roughness={0.95} />
       </mesh>
       {rings.map(({ inner, outer, t }) => (
         <mesh key={inner} rotation-x={-Math.PI / 2} position-y={0.015} receiveShadow>
@@ -405,11 +445,48 @@ function leafGeo() {
   return g
 }
 
+/** A cluster of small leaves on a transparent card. Many crossed cards make a canopy that reads as foliage. */
+function leafCardTexture(kind: 'tree' | 'willow') {
+  const c = document.createElement('canvas')
+  c.width = c.height = 256
+  const g = c.getContext('2d')!
+  const rnd = seeded(kind === 'tree' ? 5 : 9)
+  const greens = kind === 'tree' ? ['#2F5A22', '#3D6E2B', '#4E8235', '#5E9440', '#76A84E', '#8DBA5C'] : ['#7FA548', '#94B85A', '#A9C86E', '#6E9640', '#BCD685']
+  if (kind === 'tree') {
+    for (let i = 0; i < 260; i++) {
+      const a = rnd() * Math.PI * 2, d = Math.sqrt(rnd()) * 112
+      const x = 128 + Math.cos(a) * d, y = 128 + Math.sin(a) * d
+      g.save(); g.translate(x, y); g.rotate(rnd() * Math.PI * 2)
+      g.fillStyle = greens[Math.floor((1 - d / 112) * 3 + rnd() * 3)]
+      g.beginPath(); g.ellipse(0, 0, 5 + rnd() * 5, 2.5 + rnd() * 2.5, 0, 0, Math.PI * 2); g.fill()
+      g.restore()
+    }
+  } else {
+    // long hanging strands of narrow leaves
+    for (let sx = 6; sx < 256; sx += 9 + rnd() * 6) {
+      const len = 140 + rnd() * 116
+      for (let y = 0; y < len; y += 5) {
+        g.save(); g.translate(sx + Math.sin(y * 0.03) * 3, y); g.rotate((rnd() - 0.5) * 0.9)
+        g.fillStyle = greens[Math.floor(rnd() * greens.length)]
+        g.beginPath(); g.ellipse(0, 0, 1.6, 4.5, 0, 0, Math.PI * 2); g.fill()
+        g.restore()
+      }
+    }
+  }
+  const t = new CanvasTexture(c)
+  t.colorSpace = SRGBColorSpace
+  t.anisotropy = 4
+  return t
+}
+
 function Trees({ low }: { low: boolean }) {
   const leaves = useMemo(leafGeo, [])
-  const { trunks, clumps } = useMemo(() => {
+  const leafTex = useMemo(() => leafCardTexture('tree'), [])
+  const { trunks, clumps, cards } = useMemo(() => {
     const rnd = seeded(11)
     const trunks: { p: V3; s: V3; ry: number }[] = [], clumps: { p: V3; s: V3; ry: number; c: string }[] = []
+    const cards: { p: V3; s: V3; rx: number; ry: number; rz: number; c: string }[] = []
+    const tints = ['#FFFFFF', '#EEF5DF', '#DCE9C6', '#F4F0D8', '#D2E2B8']
     const greens = ['#3E6B2C', '#4A7A34', '#567F3A', '#33602A', '#62893F', '#2E5626']
     const place = (x: number, z: number, size: number) => {
       trunks.push({ p: [x, size * 1.1, z], s: [size * 0.5, size * 2.2, size * 0.5], ry: 0 })
@@ -417,7 +494,16 @@ function Trees({ low }: { low: boolean }) {
       for (let k = 0; k < n; k++) {
         const a = rnd() * Math.PI * 2, d = rnd() * size * 1.1
         const s = size * (0.6 + rnd() * 0.45)
-        clumps.push({ p: [x + Math.cos(a) * d, size * (2.4 + rnd() * 1.4), z + Math.sin(a) * d], s: [s, s, s], ry: rnd() * 6, c: greens[Math.floor(rnd() * greens.length)] })
+        const cy = size * (2.4 + rnd() * 1.4), cx = x + Math.cos(a) * d, cz = z + Math.sin(a) * d
+        // a dark inner volume so the canopy never looks see-through, wrapped in leaf cards
+        clumps.push({ p: [cx, cy, cz], s: [s * 0.78, s * 0.7, s * 0.78], ry: rnd() * 6, c: greens[Math.floor(rnd() * greens.length)] })
+        const nc = low ? 2 : 5
+        for (let j = 0; j < nc; j++) {
+          const u = rnd() * Math.PI * 2, v = Math.acos(2 * rnd() - 1)
+          const nx = Math.sin(v) * Math.cos(u), ny = Math.cos(v) * 0.8, nz = Math.sin(v) * Math.sin(u)
+          const cs = s * (1.3 + rnd() * 0.6)
+          cards.push({ p: [cx + nx * s * 0.7, cy + ny * s * 0.7, cz + nz * s * 0.7], s: [cs, cs, cs], rx: rnd() * 6, ry: rnd() * 6, rz: rnd() * 6, c: tints[Math.floor(rnd() * tints.length)] })
+        }
       }
     }
     // a few big trees in the inner garden and between the rings
@@ -430,11 +516,12 @@ function Trees({ low }: { low: boolean }) {
       if (z > 30 && Math.abs(x) < 12) continue // keep the entrance path clear
       place(x, z, 1.4 + rnd() * 1.6)
     }
-    return { trunks, clumps }
+    return { trunks, clumps, cards }
   }, [low])
-  const tRef = useRef<InstancedMesh>(null), cRef = useRef<InstancedMesh>(null)
+  const tRef = useRef<InstancedMesh>(null), cRef = useRef<InstancedMesh>(null), kRef = useRef<InstancedMesh>(null)
   useInstances(tRef, trunks)
   useInstances(cRef, clumps)
+  useInstances(kRef, cards)
   // a gentle sway in the canopy
   useFrame(({ clock }) => { if (cRef.current) cRef.current.rotation.z = Math.sin(clock.elapsedTime * 0.6) * 0.002 })
   return (
@@ -444,7 +531,11 @@ function Trees({ low }: { low: boolean }) {
         <meshStandardMaterial color="#5A4130" roughness={0.95} />
       </instancedMesh>
       <instancedMesh ref={cRef} args={[leaves, undefined, clumps.length]} castShadow receiveShadow>
-        <meshStandardMaterial vertexColors roughness={0.9} />
+        <meshStandardMaterial vertexColors roughness={0.9} color="#B8C8A4" />
+      </instancedMesh>
+      <instancedMesh ref={kRef} args={[undefined, undefined, cards.length]} castShadow receiveShadow>
+        <planeGeometry />
+        <meshStandardMaterial map={leafTex} alphaTest={0.45} side={DoubleSide} roughness={0.85} />
       </instancedMesh>
     </>
   )
@@ -614,20 +705,22 @@ function Wing({ m }: { m: Mats }) {
 function Willow({ at }: { at: [number, number] }) {
   const strands = useMemo(() => {
     const rnd = seeded(at[0] * 31 + at[1] * 7 + 100)
-    return Array.from({ length: 150 }, () => {
-      const a = rnd() * Math.PI * 2, d = 1.4 + Math.sqrt(rnd()) * 2.2, len = 1.4 + rnd() * 1.8
-      return { p: [Math.cos(a) * d, 5.6 - len * 0.9 - (d - 1.4) * 0.5, Math.sin(a) * d] as V3, s: [0.09 + rnd() * 0.06, len, 0.09 + rnd() * 0.06] as V3, rx: (rnd() - 0.5) * 0.25, ry: rnd() * 6, c: ['#A3C266', '#8DB053', '#B5CF7A', '#7FA34A'][Math.floor(rnd() * 4)] }
+    // curtains of hanging strands all round the crown, facing outwards, longer at the edge
+    return Array.from({ length: 64 }, () => {
+      const a = rnd() * Math.PI * 2, d = 1.2 + Math.sqrt(rnd()) * 2.2, len = 3.4 + rnd() * 2
+      return { p: [Math.cos(a) * d, 6.2 - len / 2, Math.sin(a) * d] as V3, s: [1.6 + rnd(), len, 1] as V3, ry: -a + Math.PI / 2 + (rnd() - 0.5) * 0.6, c: ['#FFFFFF', '#E6F0D2', '#F2F6E4'][Math.floor(rnd() * 3)] }
     })
   }, [at])
   const ref = useRef<InstancedMesh>(null)
+  const tex = useMemo(() => leafCardTexture('willow'), [])
   useInstances(ref, strands)
   return (
     <group position={[at[0], 0, at[1]]}>
       <mesh position-y={2.2} castShadow><cylinderGeometry args={[0.28, 0.45, 4.4, 9]} /><meshStandardMaterial color="#5B4634" roughness={0.95} /></mesh>
-      <mesh position-y={5.7} scale={[2.9, 1.2, 2.9]} castShadow><sphereGeometry args={[1, 18, 12]} /><meshStandardMaterial color="#8FB257" roughness={0.9} /></mesh>
+      <mesh position-y={6.1} scale={[2.6, 1.0, 2.6]} castShadow><sphereGeometry args={[1, 18, 12]} /><meshStandardMaterial color="#86A84E" roughness={0.9} /></mesh>
       <instancedMesh ref={ref} args={[undefined, undefined, strands.length]} castShadow>
-        <capsuleGeometry args={[0.5, 1.2, 4, 8]} />
-        <meshStandardMaterial roughness={0.9} />
+        <planeGeometry />
+        <meshStandardMaterial map={tex} alphaTest={0.4} side={DoubleSide} roughness={0.85} />
       </instancedMesh>
     </group>
   )
@@ -663,16 +756,17 @@ function Scene({ view, low }: { view: View; low: boolean }) {
     <>
       <Sky sunPosition={[90, 38, 70]} turbidity={6} rayleigh={1.2} mieCoefficient={0.004} mieDirectionalG={0.85} />
       <fog attach="fog" args={['#DCE6E2', 150, 460]} />
-      <hemisphereLight args={['#CFE3FF', '#5C6E3E', 0.45]} />
+      <hemisphereLight args={['#CFE3FF', '#5C6E3E', 0.35]} />
       <directionalLight
-        position={[60, 55, 70]} intensity={3.4} color="#FFDDB0" castShadow={!low}
+        position={[60, 55, 70]} intensity={2.7} color="#FFD9A8" castShadow={!low}
         shadow-mapSize={[4096, 4096]} shadow-bias={-0.0003} shadow-normalBias={0.04}
         shadow-camera-left={-60} shadow-camera-right={60} shadow-camera-top={60} shadow-camera-bottom={-60} shadow-camera-far={220}
       />
-      <Environment resolution={128} frames={1}>
-        <Lightformer intensity={2.2} color="#DCEBFF" position={[0, 30, 0]} rotation-x={Math.PI / 2} scale={[80, 80, 1]} />
-        <Lightformer intensity={3} color="#FFE2BC" position={[60, 25, 45]} scale={[30, 20, 1]} />
-        <Lightformer intensity={0.8} color="#9FC28A" position={[0, -5, 0]} rotation-x={-Math.PI / 2} scale={[100, 100, 1]} />
+      {/* reflections come from the same sky you see, plus the sun and the green of the lawn */}
+      <Environment resolution={256} frames={1}>
+        <Sky sunPosition={[90, 38, 70]} turbidity={6} rayleigh={1.2} mieCoefficient={0.004} mieDirectionalG={0.85} />
+        <Lightformer intensity={6} color="#FFE2BC" position={[60, 28, 46]} scale={[14, 10, 1]} />
+        <Lightformer intensity={0.9} color="#7FA05C" position={[0, -4, 0]} rotation-x={-Math.PI / 2} scale={[200, 200, 1]} />
       </Environment>
 
       <Ground low={low} />
