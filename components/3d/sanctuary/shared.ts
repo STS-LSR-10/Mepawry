@@ -4,8 +4,8 @@
 import { createContext, useContext, useEffect, useLayoutEffect } from 'react'
 import { CanvasTexture, Color, Object3D, SRGBColorSpace, type InstancedMesh, type MeshStandardMaterial } from 'three'
 
-export const W = 6     // gallery width (metres)
-export const H = 3.2   // gallery wall height; the glass vault sits on top
+import { H, W } from './plan'
+export { H, W }
 export const VAULT_TOP = H + 0.28 + W / 2
 
 export type V3 = [number, number, number]

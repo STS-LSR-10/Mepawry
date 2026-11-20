@@ -14,8 +14,7 @@ import {
 } from './decor'
 import { polar, type V3 } from './shared'
 
-export const VIP_DOME = { r: 5.3, wall: 4.6 }
-export const VIP_WING = { w: 5.2, d: 4.4, x: 7.7 }
+import { VIP_DOME, VIP_WING } from './plan'
 
 function TieredFountain({ m }: { m: DMats }) {
   const basin = useMemo(() => new LatheGeometry([new Vector2(0, 0), new Vector2(1.25, 0), new Vector2(1.3, 0.48), new Vector2(1.18, 0.5), new Vector2(1.14, 0.16), new Vector2(0, 0.16)], 48), [])

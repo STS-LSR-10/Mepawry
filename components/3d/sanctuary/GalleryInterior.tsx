@@ -13,12 +13,8 @@ import {
 } from 'three'
 import { H, leafCardTexture, polar, seeded, useInstances, useLamp, useLampGlow, VAULT_TOP, W, type V3 } from './shared'
 
-const CAB_H = 3.0        // cabinet height (the crown sits just under the timber beam)
-const CAB_D = 0.55       // cabinet depth
-const BASE_H = 0.78      // closed cupboards at the bottom
-const ROWS = 5           // rows of cubbies above the cupboards
-const COLS = 6           // cubbies across each cabinet: one pet in each
-const ROW_H = (CAB_H - 0.2 - BASE_H) / ROWS
+import { BASE_H, CAB_D, CAB_H, COLS, isDoorBay, ROW_H, ROWS } from './plan'
+
 const PETS = ['🐶', '🐱', '🐕', '🐈', '🐰', '🐹', '🦜', '🐾']
 
 type Item = { p: V3; ry?: number; rx?: number; s?: V3; c?: string }
@@ -102,9 +98,11 @@ function signTexture(label: string) {
   return t
 }
 
-export function GalleryInterior({ r, angles, step, twoSided, m }: {
+export function GalleryInterior({ r, angles, step, twoSided, m, demo = false }: {
   r: number; angles: number[]; step: number; twoSided: boolean
   m: { frame: MeshStandardMaterial }
+  /** fill the cubbies with sample portraits (the concept preview); the real hall draws real pets separately */
+  demo?: boolean
 }) {
   const ri = r - W / 2, ro = r + W / 2
 
@@ -162,8 +160,9 @@ export function GalleryInterior({ r, angles, step, twoSided, m }: {
     const sides: { rr: number; facing: 1 | -1 }[] = [{ rr: ro - 0.12 - CAB_D / 2, facing: -1 }]
     if (twoSided) sides.push({ rr: ri + 0.12 + CAB_D / 2, facing: 1 })
 
-    angles.slice(0, -1).forEach((a0, bay) => {
+    angles.slice(0, -1).forEach(a0 => {
       const a = a0 + step / 2
+      if (isDoorBay(r, a, step)) return // a doorway out to the park: no cabinet here
       for (const { rr, facing } of sides) {
         const w = 2 * rr * Math.sin(step / 2) - 0.34 // leave room for the pilasters
         const { ry, at } = wall(a, rr, facing)
@@ -190,6 +189,7 @@ export function GalleryInterior({ r, angles, step, twoSided, m }: {
             const x = -w / 2 + (col + 0.5) * cw
             // a warm LED strip under the top of every cubby, lighting the portrait from above
             L.leds.push({ p: at(x, y + ROW_H - 0.06, 0.2), ry, s: [cw - 0.08, 0.014, 0.03] })
+            if (!demo) continue
             const roll = rnd()
             if (roll < 0.1) continue // waiting for a pet
             if (roll < 0.17) { L.urns.push({ p: at(x, y, -0.02), ry, s: [1.1, 1.1, 1.1] }); continue }
@@ -256,7 +256,7 @@ export function GalleryInterior({ r, angles, step, twoSided, m }: {
       }
     })
     return L
-  }, [r, angles, step, twoSided, ri, ro])
+  }, [r, angles, step, twoSided, ri, ro, demo])
 
   return (
     <group>

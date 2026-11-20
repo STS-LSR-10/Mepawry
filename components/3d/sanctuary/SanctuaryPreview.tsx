@@ -21,21 +21,10 @@ import { ToneMappingMode } from 'postprocessing'
 import { useQuality } from '../quality'
 import { H, LampContext, leafCardTexture, polar, seeded, useInstances, W, type V3 } from './shared'
 import { GalleryInterior } from './GalleryInterior'
-import { VIP_DOME, VIP_WING, VipInterior } from './VipInterior'
+import { VipInterior } from './VipInterior'
 import { EntranceHall } from './EntranceHall'
 
-// ── Plan (metres). Angles go round from +x towards +z; the front of the site (the entrance path) is +z. ──
-const FRONT = Math.PI / 2
-const SILL = 0.62     // top of the stone base wall + wooden sill; the glass starts here
-const PLINTH = 0.5   // stone base wall under every window
-const RINGS = [
-  { r: 33, from: FRONT + 0.15, to: FRONT - 0.15 + Math.PI * 2 },  // outer gallery: a full ring, the dome closes it at the front
-  { r: 21, from: FRONT + 0.42, to: FRONT - 0.42 + Math.PI * 2 },  // inner gallery: open at the front, steps lead through
-]
-const DOME = { x: 0, z: 33, r: 5.6, wall: 4.4 }                    // the entrance pavilion, facing the front
-const SIDE_DOORS = [FRONT + 0.5, FRONT - 0.5]                       // smaller doors with steps either side of the dome
-const VIP = { z: -9, y: 1.3 }
-const VIP_BACK = 0.8 // the VIP hall sits this far behind the terrace centre                                       // the raised terrace with the VIP pavilion
+import { DOME, FRONT, PLINTH, RINGS, SIDE_DOORS, SILL, VIP, VIP_BACK, VIP_DOME, VIP_WING } from './plan'
 
 const SUN: V3 = [-86, 27, 58] // golden hour: low and warm, from the front-left
 
@@ -161,7 +150,7 @@ function Gallery({ r, from, to, m }: { r: number; from: number; to: number; m: M
       <instancedMesh ref={refs.transoms} args={[undefined, undefined, transoms.length]} material={m.frame}>
         <boxGeometry />
       </instancedMesh>
-      <GalleryInterior r={r} angles={angles} step={step} twoSided m={m} />
+      <GalleryInterior r={r} angles={angles} step={step} twoSided m={m} demo />
       <instancedMesh ref={refs.panes} args={[undefined, undefined, panes.length]} material={m.glass} renderOrder={2}>
         <planeGeometry />
       </instancedMesh>
