@@ -135,7 +135,7 @@ export async function createPet(
     if (taken.length >= FLOOR_CAPACITY) throw new Error('The memorial building is full')
     let position: number
     if (pick) {
-      if (!openFloors.includes(pick.floor)) throw new SlotTakenError('That floor just filled up. Please pick a shelf again.')
+      if (!openFloors.includes(pick.floor)) throw new SlotTakenError('That dome just filled up. Please pick a shelf again.')
       if (!Number.isInteger(pick.position) || pick.position < 0 || pick.position >= FLOOR_CAPACITY) throw new SlotTakenError('Please pick a shelf.')
       if (taken.includes(pick.position)) throw new SlotTakenError('Someone just took that shelf. Please pick another.')
       position = pick.position
@@ -351,8 +351,8 @@ export async function getTopNames(limit = 10): Promise<{ name: string; count: nu
   return rows.map(r => ({ name: r.name, count: Number(r.count) }))
 }
 
-/** A floor this close to full opens the next one too, so people can choose there while the last shelves go. */
-export const OPEN_NEXT_AT_FREE = 10
+/** A dome this close to full opens (and shows) the next one too, so people can choose there while the last shelves go. */
+export const OPEN_NEXT_AT_FREE = 150
 
 export async function getFloors(): Promise<Floor[]> {
   const counts = new Array(FLOOR_COUNT + 1).fill(0)
@@ -364,11 +364,11 @@ export async function getFloors(): Promise<Floor[]> {
   }))
 }
 
-/** Floors fill one at a time: the lowest with a free shelf, plus the next one once it has 10 or fewer left. */
+/** Domes fill one at a time: the lowest with a free shelf, plus the next one once it has fewer than 150 left. */
 export function openFloorsFrom(counts: number[]): number[] {
   let f = 1
   while (f < FLOOR_COUNT && counts[f] >= FLOOR_CAPACITY) f++
-  return FLOOR_CAPACITY - counts[f] <= OPEN_NEXT_AT_FREE && f < FLOOR_COUNT ? [f, f + 1] : [f]
+  return FLOOR_CAPACITY - counts[f] < OPEN_NEXT_AT_FREE && f < FLOOR_COUNT ? [f, f + 1] : [f]
 }
 
 export async function getOpenFloors(): Promise<number[]> {

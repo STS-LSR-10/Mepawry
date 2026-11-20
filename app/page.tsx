@@ -1,4 +1,4 @@
-// app/page.tsx — Landing page: candlelit hero, stats, featured memorials, how it works, floors, guides, FAQ
+// app/page.tsx — Landing page: candlelit hero, stats, featured memorials, how it works, domes, guides, FAQ
 
 import Link from 'next/link'
 import { SiteNav, SiteFooter } from '@/components/site/SiteNav'
@@ -6,19 +6,19 @@ import { Starfield, OnlineCount, Ticker, Reveal, CountUp } from '@/components/si
 import { AddPetButton } from '@/components/site/AddPetButton'
 import { ShrineCard } from '@/components/ui/ShrineCard'
 import { getFloors, getMemorials, getOpenFloor, getStats } from '@/lib/data'
-import { FLOOR_CAPACITY, FLOOR_COUNT } from '@/components/3d/sanctuary/plan'
+import { FLOOR_CAPACITY } from '@/components/3d/sanctuary/plan'
 import { getFloorName } from '@/lib/utils'
 import { ARTICLES } from '@/lib/articles'
 
 const STEPS = [
   { icon: '📷', title: 'Share a photo and a name', text: "No password, no account. Add their years and a few words if you'd like." },
-  { icon: '🏛️', title: 'Their shrine takes its place', text: 'It appears right away on the open floor of the hall, beside companions from around the world.' },
+  { icon: '🏛️', title: 'Their shrine takes its place', text: 'It appears right away in the open dome of the sanctuary, beside companions from around the world.' },
   { icon: '🕯️', title: 'Others keep the light on', text: "Visitors leave candles, flowers and words. We'll send you a gentle note when someone stops by." },
 ]
 
 const FAQ = [
   { q: 'Is it free to create a memorial?', a: 'Yes, completely. Anyone, anywhere can create a shrine without a password or subscription.' },
-  { q: 'How do the floors work?', a: `The building has ${FLOOR_COUNT} floors of ${FLOOR_CAPACITY.toLocaleString('en-US')} shrines each: a glass-domed reception, two ring galleries of oak cubbies, a garden and a VIP pavilion. Floor 1 fills first; the Floor button takes you to the others.` },
+  { q: 'How do the domes work?', a: `The sanctuary is made of domes of ${FLOOR_CAPACITY.toLocaleString('en-US')} shrines each: a glass-domed reception, two ring galleries of oak cubbies, a garden and a VIP pavilion. Dome 1 fills first; when it has fewer than 150 shelves left the next dome opens, and the Dome button takes you between them.` },
   { q: "Can I edit my pet's memorial later?", a: 'When you create a shrine, we email you a private edit link. You can update photos, dates and words at any time.' },
   { q: 'Can I keep a memorial private?', a: 'Yes. Choose "Unlisted" and only people with the link can visit. It won\'t appear in the public directory.' },
 ]
@@ -141,23 +141,23 @@ export default async function HomePage() {
           </Reveal>
         </section>
 
-        {/* Floors */}
+        {/* Domes */}
         <section className="bg-[#17131B] py-24 text-[#FAF7F2]">
           <Reveal className="mx-auto max-w-[1180px] px-5">
             <span className="eyebrow !text-[#F6C48A]">The hall</span>
-            <h2 className="title">{FLOOR_COUNT} floors, {FLOOR_CAPACITY.toLocaleString('en-US')} shrines each.</h2>
+            <h2 className="title">Domes of {FLOOR_CAPACITY.toLocaleString('en-US')} shrines each.</h2>
             <p className="max-w-[56ch] text-[#FAF7F2]/70">
-              Each floor is a sanctuary: a glass-domed reception, two ring galleries of oak cubbies round a garden, and a VIP pavilion on its terrace. Floor 1 fills first.
-              New shrines go to floor {openFloor}, <em className="font-serif">{getFloorName(openFloor)}</em>.
+              Each dome is a whole sanctuary: a glass-domed reception, two ring galleries of oak cubbies round a garden, and a VIP pavilion on its terrace. Dome 1 fills first; the next opens when it's nearly full.
+              New shrines go to dome {openFloor}, <em className="font-serif">{getFloorName(openFloor)}</em>.
             </p>
             <div className="mt-9 grid grid-cols-6 gap-2 sm:grid-cols-11">
-              {floors.map(fl => {
+              {floors.filter(fl => fl.id <= Math.max(openFloor, ...floors.filter(f => f.is_open).map(f => f.id))).map(fl => {
                 const n = fl.id, open = n === openFloor, fill = fl.current_count / fl.capacity
                 return (
                   <Link
                     key={n}
                     href="/hall"
-                    title={`Floor ${n} · ${getFloorName(n)} · ${fl.current_count.toLocaleString('en-US')} of ${fl.capacity.toLocaleString('en-US')} shrines`}
+                    title={`Dome ${n} · ${getFloorName(n)} · ${fl.current_count.toLocaleString('en-US')} of ${fl.capacity.toLocaleString('en-US')} shrines`}
                     className={`relative flex aspect-square flex-col justify-end overflow-hidden rounded-xl border bg-[#2A2331] p-2 text-[0.6rem] text-[#FAF7F2]/55 transition hover:border-[#D9823B]/60 sm:text-xs ${open ? 'border-[#D9823B] shadow-[0_0_30px_-6px_rgba(229,149,75,.55)]' : 'border-white/[.07]'}`}
                   >
                     <i className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#E5954B]/35 to-[#E5954B]/10" style={{ height: `${Math.round(fill * 100)}%` }} />

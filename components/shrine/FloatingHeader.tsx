@@ -85,7 +85,7 @@ export function FloatingHeader({
           {/* Live presence */}
           <div
             className="glass rounded-full px-3 py-1.5 flex items-center gap-2 text-sm text-[#FAF7F2] shadow-sm border border-white/10"
-            title={liveStatus === 'live' ? 'Connected: you can see other visitors on this floor' : liveStatus === 'connecting' ? 'Connecting to other visitors…' : 'Can’t reach other visitors right now — retrying'}
+            title={liveStatus === 'live' ? 'Connected: you can see other visitors in this dome' : liveStatus === 'connecting' ? 'Connecting to other visitors…' : 'Can’t reach other visitors right now — retrying'}
           >
             <span className={`w-2 h-2 rounded-full ${liveStatus === 'live' ? 'bg-green-400 animate-pulse' : liveStatus === 'connecting' ? 'bg-amber-400' : 'bg-red-500'}`} aria-hidden />
             <span>{t('{n} here now', { n: formatCount(visitorCount) })}</span>

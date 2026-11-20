@@ -140,7 +140,7 @@ function Cabinet({ pet, candlesToday, flowers, gifts, low }: { pet: Pet; candles
   const moon = useTex(() => moonTexture(), [])
   const glow = useTex(() => glowTexture(), [])
   const nameplate = useTex(() => plaqueTexture(pet.name, 'wood', 640, 160), [pet.name])
-  const stone = useTex(() => plaqueTexture(`Floor ${pet.floor_id} · ${pet.name}'s place`, 'stone', 800, 128), [pet.name, pet.floor_id])
+  const stone = useTex(() => plaqueTexture(`Dome ${pet.floor_id} · ${pet.name}'s place`, 'stone', 800, 128), [pet.name, pet.floor_id])
 
   const root = useRef<Group>(null!)
   // Everything solid casts and catches soft shadows (glass and glows don't)

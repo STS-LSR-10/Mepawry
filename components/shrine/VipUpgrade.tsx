@@ -50,7 +50,7 @@ export function VipUpgrade({ pet, isOwner, onChange }: { pet: Pet; isOwner: bool
           <ul className="space-y-1.5 text-sm text-[#2A1E17]">
             <li>🌸 A large gold-framed portrait, easy to find</li>
             <li>✨ Fairy lights and lanterns around the niche</li>
-            <li>📍 Signposted from the East Gallery on every floor</li>
+            <li>📍 In the VIP pavilion at the heart of every dome</li>
             <li>🕯️ Candles, flowers and the guestbook stay the same</li>
           </ul>
           {error && <p role="alert" className="text-sm text-[#C0392B]">{error}</p>}

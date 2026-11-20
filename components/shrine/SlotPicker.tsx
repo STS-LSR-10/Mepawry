@@ -1,6 +1,6 @@
 'use client'
-// components/shrine/SlotPicker.tsx — Choose a shelf on the floor that's filling now (floors fill one at a time;
-// when it's down to its last 10 shelves the next floor opens too, and you can pick either).
+// components/shrine/SlotPicker.tsx — Choose a shelf in the dome that's filling now (domes fill one at a time;
+// when it's down to its last 150 shelves the next dome opens too, and you can pick either).
 // Shelves are shown room by room in the order a visitor meets them, eye-level rows first.
 
 import { useEffect, useMemo, useState } from 'react'
@@ -44,16 +44,16 @@ export function SlotPicker({ value, onChange, reloadKey, vip, onVip }: {
     <div className="space-y-2">
       <div className="flex items-baseline justify-between">
         <span className="text-sm font-medium text-[#2A1E17]">Choose their shelf</span>
-        <span className="text-xs text-[#8E8278]">{(data.openFloors?.length ?? 1) > 1 ? 'Two floors are open' : `Floor ${data.floor} is filling now`}</span>
+        <span className="text-xs text-[#8E8278]">{(data.openFloors?.length ?? 1) > 1 ? 'Two domes are open' : `Dome ${data.floor} is filling now`}</span>
       </div>
 
       {(data.openFloors?.length ?? 1) > 1 && (
-        <div role="tablist" aria-label="Floor" className="grid grid-cols-2 gap-1 rounded-xl bg-[#F4EBDD] p-1">
+        <div role="tablist" aria-label="Dome" className="grid grid-cols-2 gap-1 rounded-xl bg-[#F4EBDD] p-1">
           {data.openFloors!.map((f, i) => (
             <button key={f} type="button" role="tab" aria-selected={data.floor === f}
               onClick={() => { setFloor(f); onChange(null); onVip?.(null) }}
               className={cn('rounded-lg py-1.5 text-xs font-semibold', data.floor === f ? 'bg-white text-[#2A1E17] shadow-sm' : 'text-[#8E8278]')}>
-              Floor {f} {i === 0 ? '· last few shelves' : '· just opened'}
+              Dome {f} {i === 0 ? '· almost full' : '· just opened'}
             </button>
           ))}
         </div>
@@ -105,7 +105,7 @@ export function SlotPicker({ value, onChange, reloadKey, vip, onVip }: {
       />
 
       <p className="text-xs text-[#8E8278]">
-        {value ? <>Chosen: <b>{roomOf(value.position)} · shelf {value.position + 1}</b>, floor {value.floor}</> : <>Dark squares are taken; light ones are free.</>}
+        {value ? <>Chosen: <b>{roomOf(value.position)} · shelf {value.position + 1}</b>, dome {value.floor}</> : <>Dark squares are taken; light ones are free.</>}
       </p>
     </div>
   )

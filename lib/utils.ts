@@ -83,7 +83,7 @@ export function timeAgo(dateStr: string): string {
 
 /** ชื่อ floor ที่กำหนดไว้ */
 const FLOOR_NAMES: Record<number, string> = {
-  1: 'Ground Floor', 2: 'Warm Hearth', 3: 'Candle Light', 4: 'Fern Valley',
+  1: 'First Light', 2: 'Warm Hearth', 3: 'Candle Light', 4: 'Fern Valley',
   5: 'Snowy Pine', 6: 'Northern Lights', 7: 'Golden Leaf', 8: 'Starry Night',
   9: 'Apple Blossom', 10: 'Rose Evening', 11: 'Lilac Garden', 12: 'Ivy Cottage',
   13: 'Misty Hill', 14: 'Orange Grove', 15: 'Cotton Cloud', 16: 'Quiet Forest',

@@ -77,7 +77,7 @@ export default async function ShrinePage({ params }: ShrinePageProps) {
         <ChangePhotoButton petId={pet.id} hasPhoto={!!pet.primary_photo_url} />
 
         <p className="mt-6 text-xs text-[#FAF7F2]/45">
-          Floor {pet.floor_id} · {getFloorName(pet.floor_id)} · 🐾 {formatCount(pet.visit_count)} visits
+          Dome {pet.floor_id} · {getFloorName(pet.floor_id)} · 🐾 {formatCount(pet.visit_count)} visits
         </p>
       </main>
     </div>

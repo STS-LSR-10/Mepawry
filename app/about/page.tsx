@@ -61,8 +61,8 @@ export default async function AboutPage() {
                 a: 'Yes, 100% free. Any pet owner in the world can place a memorial shrine without needing a password or subscription.',
               },
               {
-                q: 'How does the Floor elevator work?',
-                a: 'To guarantee smooth 3D graphics on every device, our memorial building is divided into floors of 1,000 shrines, each with a lobby, corridors and three galleries. Floor 1 fills first; stairs and an elevator take you between floors.',
+                q: 'How do the domes work?',
+                a: 'To guarantee smooth 3D graphics on every device, our sanctuary is divided into domes: each is its own glass-domed reception, two ring galleries of oak cubbies, a garden and a VIP pavilion. Dome 1 fills first; the next dome opens when it is nearly full, and the Dome button takes you between them.',
               },
               {
                 q: 'Can I edit my pet’s memorial later?',

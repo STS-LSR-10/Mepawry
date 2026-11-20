@@ -1,5 +1,5 @@
 'use client'
-// components/shrine/FloorSelector.tsx — S07 Floor Elevator UI
+// components/shrine/FloorSelector.tsx — Pick which dome (sanctuary) to visit; only the opened ones are passed in
 
 import { Modal } from '@/components/ui/Modal'
 import { cn, getFloorName, formatCount } from '@/lib/utils'
@@ -17,9 +17,9 @@ export function FloorSelector({ open, onClose, floors, currentFloorId, onSelectF
   const totalPets = floors.reduce((s, f) => s + f.current_count, 0)
 
   return (
-    <Modal open={open} onClose={onClose} title="🛗 Which floor?">
+    <Modal open={open} onClose={onClose} title="🏛️ Which dome?">
       <p className="text-center text-sm text-[#8E8278] -mt-2 mb-4">
-        {formatCount(totalPets)} friends · {floors.length}F
+        {formatCount(totalPets)} {totalPets === 1 ? 'friend' : 'friends'} · {floors.length} {floors.length === 1 ? 'dome' : 'domes'}
       </p>
 
       <div
@@ -42,11 +42,11 @@ export function FloorSelector({ open, onClose, floors, currentFloorId, onSelectF
                   ? 'bg-[#D9823B] border-[#D9823B] text-white scale-[1.03] shadow-md'
                   : 'bg-[#F8F4EC] border-[#E8DFD6] text-[#2A1E17] hover:border-[#D9823B] hover:shadow-sm active:scale-[0.97]'
               )}
-              aria-label={`Floor ${floor.id}: ${getFloorName(floor.id)}, ${isFull ? 'full' : `${floor.current_count} pets`}`}
+              aria-label={`Dome ${floor.id}: ${getFloorName(floor.id)}, ${isFull ? 'full' : `${floor.current_count} pets`}`}
               aria-current={isActive ? 'true' : undefined}
             >
               <div className="font-serif font-bold text-lg leading-none">
-                {floor.id}F
+                Dome {floor.id}
               </div>
               <div className={cn('text-xs mt-0.5', isActive ? 'text-white/80' : 'text-[#8E8278]')}>
                 {getFloorName(floor.id)}

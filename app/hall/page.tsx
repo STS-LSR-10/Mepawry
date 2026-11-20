@@ -1,5 +1,5 @@
 'use client'
-// app/hall/page.tsx — S01 3D Memorial Hall: the building, the live HUD, and travel between floors
+// app/hall/page.tsx — S01 3D Memorial Hall: the sanctuary, the live HUD, and travel between domes
 
 import { Suspense, useCallback, useEffect, useState } from 'react'
 import { FloatingHeader } from '@/components/shrine/FloatingHeader'
@@ -79,6 +79,8 @@ export default function HallPage() {
   const onPeopleHere = useCallback((n: number, st: 'connecting' | 'live' | 'offline') => { setHereNow(n); setLive(st) }, [])
   const activity = useActivity()
   const [floors, setFloors] = useState<Floor[]>([])
+  // Only the domes that have opened are offered (the next one appears when the newest has fewer than 150 shelves left)
+  const shownDomes = Math.max(currentFloor, ...floors.filter(f => f.is_open).map(f => f.id))
   useEffect(() => {
     fetch('/api/floors').then(r => r.json()).then(d => setFloors(d.floors ?? [])).catch(() => {})
   }, [currentFloor])
@@ -106,7 +108,7 @@ export default function HallPage() {
   const [toolsOpen, setToolsOpen] = useState(false)
   useEffect(() => setToolsOpen(window.innerWidth >= 640), [])
 
-  /** Fade out, swap floors, put the avatar in the reception, fade back in. */
+  /** Fade out, swap domes, put the avatar in the reception, fade back in. */
   const goToFloor = (floor: number, at: P, then?: () => void) => {
     setFading(true)
     setTimeout(() => {
@@ -188,8 +190,9 @@ export default function HallPage() {
       {menu === 'pets' && <MyPetsMenu onPick={pet => { setMenu(null); findPet(pet) }} onClose={() => setMenu(null)} />}
       {menu === 'vip' && (
         <FloorGrid
-          title={`✿ ${t('VIP Garden — which floor?')}`}
+          title={`✿ ${t('VIP — which dome?')}`}
           current={currentFloor}
+          count={shownDomes}
           onPick={f => { setMenu(null); goToFloor(f, VIP_ENTRY) }}
           onClose={() => setMenu(null)}
         />
@@ -207,12 +210,12 @@ export default function HallPage() {
               onClick={() => setMenu(m => (m === 'vip' ? null : 'vip'))}
               aria-expanded={menu === 'vip'}
               className="rounded-full border border-[#E8C365]/60 bg-gradient-to-r from-[#F3D99B]/90 to-[#D9B26A]/90 px-4 py-2.5 text-sm font-semibold text-[#3A2612] shadow-md hover:brightness-105"
-              aria-label="VIP Garden: choose a floor"
+              aria-label="VIP pavilion: choose a dome"
             >
               ✿ VIP
             </button>
-            <button onClick={() => setFloorSelectorOpen(true)} className={PILL} aria-label={`Floor ${currentFloor}. Take the elevator to another floor`}>
-              🛗 {t('Floor {n}', { n: currentFloor })}
+            <button onClick={() => setFloorSelectorOpen(true)} className={PILL} aria-label={`Dome ${currentFloor}. Go to another dome`}>
+              🏛️ {t('Dome {n}', { n: currentFloor })}
             </button>
           </div>
         )}
@@ -246,17 +249,17 @@ export default function HallPage() {
         </div>
       )}
 
-      {/* Fade between floors */}
+      {/* Fade between domes */}
       <div className={`pointer-events-none fixed inset-0 z-40 bg-[#17131B] transition-opacity duration-300 ${fading ? 'opacity-100' : 'opacity-0'}`} />
 
       <BoardSheet open={boardOpen} onClose={() => setBoardOpen(false)} />
       <MyPageSheet open={myPageOpen} onClose={() => setMyPageOpen(false)} name={avatarName} />
 
-      {/* Floor Selector Modal */}
+      {/* Dome picker */}
       <FloorSelector
         open={floorSelectorOpen}
         onClose={() => setFloorSelectorOpen(false)}
-        floors={floors}
+        floors={floors.slice(0, shownDomes)}
         currentFloorId={currentFloor}
         onSelectFloor={f => { if (f !== currentFloor) goToFloor(f, ARRIVAL) }}
       />
@@ -288,7 +291,7 @@ function MyPetsMenu({ onPick, onClose }: { onPick: (pet: Pet) => void; onClose: 
                   <span className="min-w-0 flex-1">
                     <span className="block truncate font-semibold text-[#2A1E17]">{p.name}</span>
                     <span className="block text-xs text-[#8E8278]">
-                      {t('Floor {n}', { n: p.floor_id })} · {p.vip_position != null ? `✿ ${t('VIP niche {n}', { n: p.vip_position + 1 })}` : t('shelf {n}', { n: p.shrine_position + 1 })}
+                      {t('Dome {n}', { n: p.floor_id })} · {p.vip_position != null ? `✿ ${t('VIP niche {n}', { n: p.vip_position + 1 })}` : t('shelf {n}', { n: p.shrine_position + 1 })}
                     </span>
                   </span>
                   <span className="text-sm text-[#C67129]">{t('Go →')}</span>
@@ -301,12 +304,12 @@ function MyPetsMenu({ onPick, onClose }: { onPick: (pet: Pet) => void; onClose: 
   )
 }
 
-/** Pick a floor (for the VIP Garden shortcut). */
-function FloorGrid({ title, current, onPick, onClose }: { title: string; current: number; onPick: (f: number) => void; onClose: () => void }) {
+/** Pick a dome (for the VIP shortcut). */
+function FloorGrid({ title, current, count, onPick, onClose }: { title: string; current: number; count: number; onPick: (f: number) => void; onClose: () => void }) {
   return (
     <Popover title={title} onClose={onClose}>
       <div className="grid grid-cols-6 gap-1.5">
-        {Array.from({ length: FLOOR_COUNT }, (_, i) => i + 1).map(f => (
+        {Array.from({ length: count }, (_, i) => i + 1).map(f => (
           <button key={f} onClick={() => onPick(f)} aria-current={f === current}
             className={`rounded-lg py-2 text-sm font-semibold ${f === current ? 'bg-gradient-to-r from-[#F3D99B] to-[#D9B26A] text-[#3A2612]' : 'bg-[#FAF3E8] text-[#5C5046] hover:bg-[#F4E6D2]'}`}>
             {f}
