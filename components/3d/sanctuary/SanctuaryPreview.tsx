@@ -659,23 +659,36 @@ function CameraRig({ view }: { view: View }) {
  * a touch more saturation and contrast for the warm golden-hour look, ACES filmic tone mapping, a gentle vignette,
  * then SMAA to smooth the thin glazing bars. (The Canvas runs `flat`, so tone mapping happens only here.)
  */
-function Grade() {
+function Grade({ interior }: { interior: boolean }) {
+  // Indoors: tighter, deeper contact shadows, a little darker and more contrast, a firmer vignette — a lit room, not
+  // a floodlit stage. Outdoors keeps the open golden-hour look.
   return (
     <EffectComposer multisampling={0}>
-      <N8AO aoRadius={2.2} intensity={3} distanceFalloff={1} halfRes quality="medium" />
+      <N8AO aoRadius={interior ? 1.1 : 2.2} intensity={interior ? 4.5 : 3} distanceFalloff={1} halfRes quality="medium" />
       <Bloom mipmapBlur luminanceThreshold={0.92} luminanceSmoothing={0.2} intensity={0.45} radius={0.7} />
-      <HueSaturation saturation={0.16} />
-      <BrightnessContrast brightness={0.01} contrast={0.1} />
+      <HueSaturation saturation={interior ? 0.1 : 0.16} />
+      <BrightnessContrast brightness={interior ? -0.07 : 0.01} contrast={interior ? 0.2 : 0.1} />
       <ToneMapping mode={ToneMappingMode.ACES_FILMIC} />
-      <Vignette offset={0.32} darkness={0.42} />
+      <Vignette offset={0.3} darkness={interior ? 0.6 : 0.42} />
       <SMAA />
     </EffectComposer>
   )
 }
 
+/** Indoor views: the rooms take their light from the sun through the glass and their own lamps, not the open sky. */
+const INTERIOR_VIEWS: View[] = ['lobby', 'gallery', 'shelf', 'vip']
+
+/** How strongly the sky reflections light the scene (lower indoors). */
+function EnvStrength({ value }: { value: number }) {
+  const scene = useThree(s => s.scene)
+  useEffect(() => { scene.environmentIntensity = value }, [scene, value])
+  return null
+}
+
 // ── Scene ──
 
 function Scene({ view, low, onReady }: { view: View; low: boolean; onReady?: () => void }) {
+  const interior = INTERIOR_VIEWS.includes(view)
   const m = useMaterials(low)
   const told = useRef(false)
   useFrame(() => { if (!told.current) { told.current = true; requestAnimationFrame(() => onReady?.()) } })
@@ -686,7 +699,8 @@ function Scene({ view, low, onReady }: { view: View; low: boolean; onReady?: () 
           and every reflection in the glass are warmed by the same sun */}
       <Sky sunPosition={SUN} turbidity={8} rayleigh={2.2} mieCoefficient={0.006} mieDirectionalG={0.88} />
       <fog attach="fog" args={['#E9DCC2', 120, 430]} />
-      <hemisphereLight args={['#BCD3EE', '#4F5F2C', 0.55]} />
+      <hemisphereLight args={['#BCD3EE', '#4F5F2C', interior ? 0.14 : 0.55]} />
+      <EnvStrength value={interior ? 0.32 : 1} />
       <directionalLight
         position={SUN} intensity={4.2} color="#FFBF78" castShadow={!low}
         shadow-mapSize={[4096, 4096]} shadow-bias={-0.0004} shadow-normalBias={0.09} shadow-radius={4}
@@ -717,7 +731,7 @@ function Scene({ view, low, onReady }: { view: View; low: boolean; onReady?: () 
 
       <OrbitControls makeDefault enableDamping maxPolarAngle={Math.PI / 2 - 0.03} minDistance={4} maxDistance={220} autoRotate={view === 'aerial'} autoRotateSpeed={0.25} />
       <CameraRig view={view} />
-      {!low && <Grade />}
+      {!low && <Grade interior={interior} />}
     </>
   )
 }

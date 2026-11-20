@@ -19,13 +19,13 @@ export function useDecorMaterials() {
       panelDark: new MeshStandardMaterial({ map: grain, color: '#7A4D2C', roughness: 0.5 }),
       gilt: new MeshStandardMaterial({ color: '#C2A060', roughness: 0.34, metalness: 0.8 }),
       velvet: new MeshStandardMaterial({ color: '#7A2E3E', roughness: 0.95 }),
-      fabric: new MeshStandardMaterial({ color: '#C9AE8C', roughness: 0.95 }),
-      cushion: new MeshStandardMaterial({ color: '#E9DCC6', roughness: 0.95 }),
-      marbleWhite: new MeshStandardMaterial({ color: '#F2EEE7', roughness: 0.2 }),
-      stone: new MeshStandardMaterial({ color: '#CDBFA9', roughness: 0.85 }),
+      fabric: new MeshStandardMaterial({ color: '#B39674', roughness: 0.95 }),
+      cushion: new MeshStandardMaterial({ color: '#D6C6AC', roughness: 0.95 }),
+      marbleWhite: new MeshStandardMaterial({ color: '#DDD5C8', roughness: 0.28 }),
+      stone: new MeshStandardMaterial({ color: '#B5A68E', roughness: 0.85 }),
       soil: new MeshStandardMaterial({ color: '#4A3626', roughness: 1 }),
-      mat: new MeshStandardMaterial({ color: '#F7F1E6', roughness: 0.8 }),
-      glow: new MeshStandardMaterial({ color: '#E9CFA6', emissive: '#FFB45E', emissiveIntensity: 0.55, roughness: 0.9 }),
+      mat: new MeshStandardMaterial({ color: '#E6DCCB', roughness: 0.85 }),
+      glow: new MeshStandardMaterial({ color: '#B8946A', emissive: '#FFA552', emissiveIntensity: 0.28, roughness: 0.9 }),
       waterfall: new MeshStandardMaterial({ color: '#CFEAF2', transparent: true, opacity: 0.22, roughness: 0.05, depthWrite: false }),
       wax: new MeshStandardMaterial({ color: '#F8EEDC', roughness: 0.6, emissive: '#FFB866', emissiveIntensity: 0.4 }),
       flame: new MeshStandardMaterial({ color: '#FFE0A0', emissive: '#FFB040', emissiveIntensity: 9, toneMapped: false }),
@@ -35,7 +35,7 @@ export function useDecorMaterials() {
       roseWhite: new MeshStandardMaterial({ color: '#FBF3EE', roughness: 0.7 }),
       leaf: new MeshStandardMaterial({ color: '#4E7A3A', roughness: 0.9 }),
       water: new MeshStandardMaterial({ color: '#7FC0D2', roughness: 0.05, metalness: 0.1, transparent: true, opacity: 0.85 }),
-      ceramic: new MeshStandardMaterial({ color: '#EFE4D2', roughness: 0.3 }),
+      ceramic: new MeshStandardMaterial({ color: '#DCCFBB', roughness: 0.35 }),
     }
   }, [])
 }

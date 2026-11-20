@@ -51,7 +51,7 @@ function sitePlan(g: CanvasRenderingContext2D, cx: number, cy: number, s: number
 }
 
 const screenTexture = () => tex(512, 288, g => {
-  g.fillStyle = '#E8F1E2'; g.fillRect(0, 0, 512, 288)
+  g.fillStyle = '#DCE6D4'; g.fillRect(0, 0, 512, 288)
   sitePlan(g, 170, 144, 118)
   g.fillStyle = '#2E4A2A'; g.font = '700 26px Georgia, serif'; g.fillText('Mepawry Sanctuary', 310, 60)
   g.font = '18px sans-serif'
@@ -115,12 +115,14 @@ function WoodChandelier({ at, drop, m }: { at: V3; drop: number; m: DMats }) {
 
 /** The curved reception desk, its front facing +z. */
 function ReceptionDesk({ m, welcome }: { m: DMats; welcome: Texture }) {
-  const marble = useMemo(() => new MeshStandardMaterial({ color: '#F1ECE4', roughness: 0.18 }), [])
+  const marble = useMemo(() => new MeshStandardMaterial({ color: '#DCD3C5', roughness: 0.25 }), [])
+  // plain satin oak: the grain texture stretches into thick stripes around the curve
+  const oak = useMemo(() => new MeshStandardMaterial({ color: '#94623A', roughness: 0.42 }), [])
   const span = 2.3 // radians of arc, centred on the front
   return (
     <group>
       {/* body and counter as segments of a cylinder, the open side towards the back */}
-      <mesh position-y={0.5} material={m.panel} castShadow receiveShadow><cylinderGeometry args={[1.6, 1.6, 1.0, 40, 1, false, -span / 2, span]} /></mesh>
+      <mesh position-y={0.5} material={oak} castShadow receiveShadow><cylinderGeometry args={[1.6, 1.6, 1.0, 40, 1, false, -span / 2, span]} /></mesh>
       <mesh position-y={1.03} material={marble} castShadow><cylinderGeometry args={[1.72, 1.72, 0.06, 40, 1, false, -span / 2 - 0.04, span + 0.08]} /></mesh>
       <mesh position-y={0.04} material={m.panelDark}><cylinderGeometry args={[1.55, 1.55, 0.08, 40, 1, false, -span / 2, span]} /></mesh>
       {/* marble panels either side of the sign */}
@@ -193,7 +195,7 @@ export function EntranceHall({ at, r }: { at: [number, number]; r: number }) {
       </mesh>
       <mesh rotation-x={-Math.PI / 2} position={[0, 0.04, -0.6]} receiveShadow>
         <circleGeometry args={[2.4, 48]} />
-        <meshStandardMaterial color="#EDE6DA" roughness={0.2} />
+        <meshStandardMaterial color="#D5CCBE" roughness={0.25} />
       </mesh>
       <mesh rotation-x={-Math.PI / 2} position={[0, 0.042, -0.6]}>
         <ringGeometry args={[2.32, 2.42, 64]} />
@@ -210,7 +212,7 @@ export function EntranceHall({ at, r }: { at: [number, number]; r: number }) {
             <SlatWall w={3.6} h={3.4} m={m} />
             <mesh position={[0, 2.85, 0.05]}><planeGeometry args={[2.4, 0.75]} /><meshStandardMaterial map={letters} transparent alphaTest={0.3} /></mesh>
             <mesh position={[0, 1.65, 0.06]} material={m.panelDark}><boxGeometry args={[1.55, 0.9, 0.05]} /></mesh>
-            <mesh position={[0, 1.65, 0.09]}><planeGeometry args={[1.45, 0.82]} /><meshStandardMaterial map={screen} emissiveMap={screen} emissive="#FFFFFF" emissiveIntensity={0.55} /></mesh>
+            <mesh position={[0, 1.65, 0.09]}><planeGeometry args={[1.45, 0.82]} /><meshStandardMaterial map={screen} emissiveMap={screen} emissive="#FFFFFF" emissiveIntensity={0.3} /></mesh>
           </group>
         )
       })()}
