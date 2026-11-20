@@ -173,30 +173,6 @@ export default function HallPage() {
         />}
       </Suspense>
 
-      {/* Local time and season */}
-      {sky && (
-        // Folded to the time-of-day icon at first; tap to see the time of day, season and place, tap again to fold
-        <button
-          onClick={() => setSkyOpen(o => !o)}
-          aria-expanded={skyOpen}
-          aria-label={skyOpen ? undefined : `${label(PHASE_LABEL[sky.phase])} · ${label(SEASON_LABEL[sky.season])} · ${sky.place}`}
-          className={`fixed bottom-24 left-4 z-20 flex h-11 max-w-[60vw] items-center gap-1.5 glass rounded-full border border-white/20 text-sm text-[#FAF7F2] shadow-md ${skyOpen ? 'pl-3 pr-4' : 'w-11 justify-center'}`}
-        >
-          {/* Folded: just the time-of-day icon (☀️ 🌙 🌅 🌇); open: the rest of the line */}
-          <span aria-hidden className="text-lg leading-none">{PHASE_LABEL[sky.phase].split(' ')[0]}</span>
-          {skyOpen && <span className="truncate">{label(PHASE_LABEL[sky.phase]).split(' ').slice(1).join(' ')} · {label(SEASON_LABEL[sky.season])} · {sky.place}</span>}
-        </button>
-      )}
-
-      {/* Dress your character: the panel sits at the bottom so your avatar stays in view and changes live */}
-      {lookOpen && (
-        <div className="fixed inset-x-0 bottom-0 z-40 mx-auto max-h-[46dvh] max-w-md overflow-y-auto rounded-t-3xl bg-[#FFFBF5] p-4 shadow-2xl sm:bottom-4 sm:left-4 sm:right-auto sm:max-h-[80dvh] sm:rounded-3xl" role="dialog" aria-label="Dress your character">
-          <h2 className="mb-3 font-serif text-lg font-bold text-[#2A1E17]">Dress your character</h2>
-          <LookEditor live onDone={() => setLookOpen(false)} />
-        </div>
-      )}
-
-      {menu === 'pets' && <MyPetsMenu onPick={pet => { setMenu(null); findPet(pet) }} onClose={() => setMenu(null)} />}
       {menu === 'vip' && (
         <FloorGrid
           title={`✿ ${t('VIP — which dome?')}`}
@@ -208,7 +184,7 @@ export default function HallPage() {
       )}
 
       {/* My look, Board, My pet, VIP and Floor in one column that folds away */}
-      <div className="fixed bottom-24 right-4 z-20 flex flex-col items-end gap-2">
+      <div className="fixed bottom-20 right-4 z-20 flex flex-col items-end gap-2">
         {toolsOpen && (
           <div id="hall-tools" className="pop-in flex flex-col items-end gap-2">
             <button onClick={() => setLookOpen(true)} className={PILL}>👕 {t('My look')}</button>
@@ -236,6 +212,30 @@ export default function HallPage() {
         >
           {toolsOpen ? '✕' : <>☰ <span className="ml-1 font-normal">🏛️ {currentFloor}</span></>}
         </button>
+        {/* Local time and season, under the dome button */}
+        {sky && (
+          // Folded to the time-of-day icon at first; tap to see the time of day, season and place, tap again to fold
+          <button
+            onClick={() => setSkyOpen(o => !o)}
+            aria-expanded={skyOpen}
+            aria-label={skyOpen ? undefined : `${label(PHASE_LABEL[sky.phase])} · ${label(SEASON_LABEL[sky.season])} · ${sky.place}`}
+            className={`flex h-11 max-w-[60vw] items-center gap-1.5 glass rounded-full border border-white/20 text-sm text-[#FAF7F2] shadow-md ${skyOpen ? 'pl-3 pr-4' : 'w-11 justify-center'}`}
+          >
+            {/* Folded: just the time-of-day icon (☀️ 🌙 🌅 🌇); open: the rest of the line */}
+            <span aria-hidden className="text-lg leading-none">{PHASE_LABEL[sky.phase].split(' ')[0]}</span>
+            {skyOpen && <span className="truncate">{label(PHASE_LABEL[sky.phase]).split(' ').slice(1).join(' ')} · {label(SEASON_LABEL[sky.season])} · {sky.place}</span>}
+          </button>
+        )}
+
+        {/* Dress your character: the panel sits at the bottom so your avatar stays in view and changes live */}
+        {lookOpen && (
+          <div className="fixed inset-x-0 bottom-0 z-40 mx-auto max-h-[46dvh] max-w-md overflow-y-auto rounded-t-3xl bg-[#FFFBF5] p-4 shadow-2xl sm:bottom-4 sm:left-4 sm:right-auto sm:max-h-[80dvh] sm:rounded-3xl" role="dialog" aria-label="Dress your character">
+            <h2 className="mb-3 font-serif text-lg font-bold text-[#2A1E17]">Dress your character</h2>
+            <LookEditor live onDone={() => setLookOpen(false)} />
+          </div>
+        )}
+
+        {menu === 'pets' && <MyPetsMenu onPick={pet => { setMenu(null); findPet(pet) }} onClose={() => setMenu(null)} />}
       </div>
 
       {/* Nav hint */}

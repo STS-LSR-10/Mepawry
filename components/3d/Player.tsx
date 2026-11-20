@@ -6,7 +6,8 @@ import { useFrame, useThree } from '@react-three/fiber'
 import type * as THREE from 'three'
 import { CuteAvatar } from './CuteAvatar'
 import type { AvatarLook } from '@/lib/look'
-import { heightAt, inGallery, isInside, type P } from './walk'
+import { heightAt, inGallery, isFree, isInside, type P } from './walk'
+import type { Stick } from './Joystick'
 import { DOME, VIP_CENTER } from './sanctuary/plan'
 
 const SPEED = 3.2 // world units per second
@@ -20,9 +21,10 @@ interface PlayerProps {
   pos: React.RefObject<P>          // shared with the scene, which plans routes from it
   route: Route | null
   onInsideChange: (inside: boolean) => void
+  stick?: React.RefObject<Stick>   // the on-screen walking stick
 }
 
-export function Player({ name, gender, look, pos, route, onInsideChange }: PlayerProps) {
+export function Player({ name, gender, look, pos, route, onInsideChange, stick }: PlayerProps) {
   const group = useRef<THREE.Group>(null!)
   const marker = useRef<THREE.Mesh>(null!)
   const queue = useRef<P[]>([])
@@ -60,7 +62,22 @@ export function Player({ name, gender, look, pos, route, onInsideChange }: Playe
   useFrame(({ camera, controls }, dt) => {
     const p = pos.current
     const q = queue.current
-    if (q.length) {
+    // The walking stick: up walks the way the camera looks, sideways steps across; it overrides any tap-to-walk route
+    const st = stick?.current, push = st ? Math.min(1, Math.hypot(st.x, st.y)) : 0
+    const steering = push > 0.12
+    if (steering) {
+      q.length = 0; arrive.current = undefined; face.current = undefined; swing.current = null
+      let fx = p.x - camera.position.x, fz = p.z - camera.position.z
+      const fl = Math.hypot(fx, fz) || 1; fx /= fl; fz /= fl
+      const mx = fx * -st!.y + -fz * st!.x, mz = fz * -st!.y + fx * st!.x, ml = Math.hypot(mx, mz) || 1
+      const step = SPEED * push * Math.min(dt, 0.1)
+      const nx = p.x + (mx / ml) * step, nz = p.z + (mz / ml) * step
+      // Slide along walls rather than stopping dead
+      if (isFree({ x: nx, z: nz })) { p.x = nx; p.z = nz }
+      else if (isFree({ x: nx, z: p.z })) p.x = nx
+      else if (isFree({ x: p.x, z: nz })) p.z = nz
+      turnTo(Math.atan2(mx, mz))
+    } else if (q.length) {
       const n = q[0]
       const dx = n.x - p.x, dz = n.z - p.z
       const d = Math.hypot(dx, dz)
@@ -94,8 +111,8 @@ export function Player({ name, gender, look, pos, route, onInsideChange }: Playe
       r.y += (((want - r.y + Math.PI) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2) - Math.PI) * Math.min(1, dt * 12)
     }
     if (!q.length) speed.current = 0
-    walking.current = q.length > 0
-    marker.current.visible = walking.current
+    walking.current = q.length > 0 || steering
+    marker.current.visible = q.length > 0
     const y = heightAt(p)
     group.current.position.set(p.x, y, p.z)
 
@@ -113,8 +130,8 @@ export function Player({ name, gender, look, pos, route, onInsideChange }: Playe
         let ux = 0, uz = 1
         if (isInside(p) && hall && d > 0.5) { ux = (hall.x - p.x) / d; uz = (hall.z - p.z) / d }
         else if (isInside(p) && !hall) { ux = -p.z / r; uz = p.x / r }
-        const back = isInside(p) ? 6.5 : 8.5
-        camera.position.set(p.x + ux * back, y + (isInside(p) ? 3.2 : 4), p.z + uz * back)
+        const back = isInside(p) ? 5.5 : 8.5
+        camera.position.set(p.x + ux * back, y + (isInside(p) ? 4.6 : 4), p.z + uz * back)
         follow.current = { ...p }
       }
       else {
@@ -136,6 +153,8 @@ export function Player({ name, gender, look, pos, route, onInsideChange }: Playe
         const turn = ((swing.current - a + Math.PI) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2) - Math.PI
         const b = a + turn * (1 - Math.exp(-Math.min(dt, 0.25) * 4))
         c.x = t.x + Math.sin(b) * d; c.z = t.z + Math.cos(b) * d
+        // …and rise to look down at about 45°, over the cabinets across the aisle
+        c.y += (t.y + Math.max(d, 3) - c.y) * (1 - Math.exp(-Math.min(dt, 0.25) * 4))
         if (Math.abs(turn) < 0.02) swing.current = null
       }
       const dx = c.x - t.x, dy = c.y - t.y, dz = c.z - t.z, len = Math.hypot(dx, dy, dz), flat = Math.hypot(dx, dz)
@@ -143,11 +162,16 @@ export function Player({ name, gender, look, pos, route, onInsideChange }: Playe
       if (armSet.current == null || Math.abs(len - armSet.current) > 0.01) want.current = len
       let next = want.current
       if (inGallery(t) && flat > 0.01) {
-        // Only the gallery's own walls and cabinets count (the camera looks over benches), kept 0.6 m off them
-        const reach = (want.current * flat) / len
+        // Only the gallery's own walls and cabinets count (the camera looks over benches), kept 0.6 m off them; a view
+        // that clears the 3 m cabinets (looking down from higher up) may pass over them
+        const reach = (want.current * flat) / len, rise = dy / flat
         let clear = 0
-        while (clear < reach + 0.6 && inGallery({ x: t.x + (dx / flat) * (clear + 0.2), z: t.z + (dz / flat) * (clear + 0.2) })) clear += 0.2
-        next = Math.min(want.current, Math.max(2.2, ((clear - 0.6) * len) / flat))
+        while (clear < reach + 0.6) {
+          const s = clear + 0.2
+          if (!inGallery({ x: t.x + (dx / flat) * s, z: t.z + (dz / flat) * s }) && t.y + rise * s < heightAt(t) + 3.6) break
+          clear = s
+        }
+        next = Math.min(want.current, Math.max(2.6, ((clear - 0.6) * len) / flat))
       }
       if (next > len) next = len + (next - len) * (1 - Math.exp(-Math.min(dt, 0.25) * 3))
       if (Math.abs(next - len) > 0.001) c.set(t.x + (dx / len) * next, t.y + (dy / len) * next, t.z + (dz / len) * next)

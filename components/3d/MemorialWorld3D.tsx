@@ -20,6 +20,7 @@ import { defaultLook, type AvatarLook } from '@/lib/look'
 import { useAccount } from '@/lib/account'
 import { useContextLossRecovery, useQuality } from './quality'
 import { Player, type Route } from './Player'
+import { Joystick, type Stick } from './Joystick'
 import { isFree, planRoute, type P } from './walk'
 import { DOME, SPAWN, VIP_CAPACITY, VIP_CENTER, VIP_ENTRY, VIP_SLOTS } from './sanctuary/plan'
 import { SanctuaryWorld, type TimeOfDay } from './sanctuary/SanctuaryPreview'
@@ -102,6 +103,20 @@ export default function MemorialWorld3D({ floorId, avatarName, avatarGender, ava
   const crowd = useCrowd(floorId, me, pos, crowdLimit(crowdPref, low))
   useEffect(() => { onPeopleHere?.(crowd.count + 1, crowd.status) }, [crowd.count, crowd.status, onPeopleHere])
 
+  // The on-screen walking stick; while it's in use, tell the others where you're heading every 0.4 s
+  const stick = useRef<Stick>({ x: 0, y: 0 })
+  useEffect(() => {
+    let last = { ...pos.current }
+    const id = setInterval(() => {
+      const p = pos.current
+      if (Math.hypot(stick.current.x, stick.current.y) > 0.12 && Math.hypot(p.x - last.x, p.z - last.z) > 0.05) {
+        crowd.announce([{ ...p }]); setNear(null)
+      }
+      last = { ...p }
+    }, 400)
+    return () => clearInterval(id)
+  }, [crowd.announce]) // eslint-disable-line react-hooks/exhaustive-deps
+
   const walkTo = useCallback((to: P, onArrive?: () => void, face?: P) => {
     setNear(null)
     const points = planRoute(pos.current, to)
@@ -157,12 +172,14 @@ export default function MemorialWorld3D({ floorId, avatarName, avatarGender, ava
           <SanctuaryWorld time={time} interior={inside} low={low} vip={vip} onFloor={p => walkTo(p)}>
             <GalleryShrines pets={pets} playerPos={pos} onOpen={(pet, slot) => walkTo(slot.standAt, () => setNear(pet), slot)} />
             {WEATHER[sky.season] && <Weather {...WEATHER[sky.season]!} count={Math.round(WEATHER[sky.season]!.count / (low ? 3 : 1))} />}
-            <Player name={avatarName} gender={avatarGender} look={avatarLook} pos={pos} route={route} onInsideChange={setInside} />
+            <Player name={avatarName} gender={avatarGender} look={avatarLook} pos={pos} route={route} onInsideChange={setInside} stick={stick} />
             <CrowdAvatars list={crowd.list} myPos={pos} radius={low ? 16 : 24} />
             <OrbitControls makeDefault enablePan={false} enableZoom minDistance={inside ? 2 : 3} maxDistance={inside ? 9 : 30} minPolarAngle={0.35} maxPolarAngle={Math.PI / 2.1} />
           </SanctuaryWorld>
         </Suspense>
       </Canvas>
+
+      <Joystick stick={stick} />
 
       {recovery.lost && (
         <div className="fixed inset-0 z-30 grid place-items-center bg-[#17131B]/80 text-sm text-[#FAF7F2]/80">Reloading the hall…</div>
