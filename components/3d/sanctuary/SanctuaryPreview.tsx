@@ -9,7 +9,7 @@ import { Suspense, useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { Environment, Lightformer, OrbitControls, Sky, Stars } from '@react-three/drei'
 import {
-  BufferAttribute, CanvasTexture, Color, SRGBColorSpace, CylinderGeometry, DoubleSide, IcosahedronGeometry, InstancedMesh, LatheGeometry,
+  AdditiveBlending, BufferAttribute, CanvasTexture, Color, SRGBColorSpace, CylinderGeometry, DoubleSide, IcosahedronGeometry, InstancedMesh, LatheGeometry,
   MeshPhysicalMaterial, MeshStandardMaterial, Object3D, RepeatWrapping, Vector2, type BufferGeometry, type Texture,
 } from 'three'
 import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
@@ -19,12 +19,12 @@ import { microMap } from '../look'
 import { Bloom, BrightnessContrast, EffectComposer, HueSaturation, N8AO, SMAA, ToneMapping, Vignette } from '@react-three/postprocessing'
 import { ToneMappingMode } from 'postprocessing'
 import { useQuality } from '../quality'
-import { H, LampContext, leafCardTexture, polar, Roof, RoofContext, seeded, useInstances, W, type V3 } from './shared'
+import { H, LampContext, leafCardTexture, lightPoolTexture, polar, Roof, RoofContext, seeded, useInstances, useLamp, W, type V3 } from './shared'
 import { GalleryInterior } from './GalleryInterior'
 import { VipInterior, type VipPets } from './VipInterior'
 import { EntranceHall } from './EntranceHall'
 
-import { DOME, FRONT, PLINTH, RINGS, SIDE_DOORS, SILL, VIP, VIP_BACK, VIP_DOME, VIP_WING } from './plan'
+import { DOME, FOUNTAIN, FRONT, PLINTH, RINGS, SIDE_DOORS, SILL, STAIRS, VIP, VIP_BACK, VIP_DOME, VIP_WING } from './plan'
 
 /** Glass lets taps through to whatever is behind it. */
 const noRay = () => null
@@ -286,6 +286,7 @@ function Ground({ low }: { low: boolean }) {
   }
   const rings = useMemo(() => [path(37.2, 39.6, 120), path(26.6, 27.6, 80)], []) // eslint-disable-line react-hooks/exhaustive-deps
   const straight = useMemo(() => { const t = paving.clone(); t.wrapS = t.wrapT = RepeatWrapping; t.repeat.set(2, 30); t.needsUpdate = true; return t }, [paving])
+  const round = useMemo(() => { const t = paving.clone(); t.wrapS = t.wrapT = RepeatWrapping; t.repeat.set(6, 6); t.needsUpdate = true; return t }, [paving])
   return (
     <group>
       <mesh rotation-x={-Math.PI / 2} receiveShadow>
@@ -307,6 +308,11 @@ function Ground({ low }: { low: boolean }) {
       <mesh rotation-x={-Math.PI / 2} position={[0, 0.017, 15]} receiveShadow>
         <planeGeometry args={[3.4, 30]} />
         <meshStandardMaterial map={straight} color="#EBD2AE" roughness={0.9} />
+      </mesh>
+      {/* a paved walkway right round the fountain */}
+      <mesh rotation-x={-Math.PI / 2} position={[FOUNTAIN.x, 0.018, FOUNTAIN.z]} receiveShadow>
+        <ringGeometry args={[FOUNTAIN.r + 0.05, FOUNTAIN.r + 1.7, 64]} />
+        <meshStandardMaterial map={round} color="#EBD2AE" roughness={0.9} />
       </mesh>
       {!low && <Hills />}
     </group>
@@ -343,7 +349,7 @@ function Hills() {
   )
 }
 
-function Fountain({ m }: { m: Mats }) {
+function Fountain({ m, low }: { m: Mats; low: boolean }) {
   const basin = useMemo(() => new LatheGeometry([new Vector2(0, 0), new Vector2(3.2, 0), new Vector2(3.3, 0.55), new Vector2(3.0, 0.6), new Vector2(2.9, 0.25), new Vector2(0, 0.25)], 48), [])
   const bowl = useMemo(() => new LatheGeometry([new Vector2(0.25, 0), new Vector2(0.3, 1.2), new Vector2(1.3, 1.5), new Vector2(1.4, 1.75), new Vector2(1.25, 1.75), new Vector2(0.2, 1.6)], 40), [])
   const water = useRef<import('three').Mesh>(null)
@@ -358,8 +364,131 @@ function Fountain({ m }: { m: Mats }) {
       <mesh geometry={bowl} material={m.white} castShadow />
       <mesh position-y={1.72} rotation-x={-Math.PI / 2}><circleGeometry args={[1.25, 32]} /><meshPhysicalMaterial color="#7FC0D2" roughness={0.05} transparent opacity={0.85} /></mesh>
       <mesh position-y={2.1} material={m.white}><sphereGeometry args={[0.25, 16, 12]} /></mesh>
-      {/* the jet */}
-      <mesh position-y={2.6}><cylinderGeometry args={[0.03, 0.08, 1, 8, 1, true]} /><meshBasicMaterial color="#E8F7FF" transparent opacity={0.5} /></mesh>
+      <FountainWater low={low} />
+    </group>
+  )
+}
+
+/**
+ * The moving water: a jet shooting up from the top and falling back into the upper bowl, a curtain of drops
+ * spilling over the bowl's rim, eight little arcs leaping in from the basin's edge, and rings spreading on the water.
+ * Plain ballistic droplets (one Points draw call), restarted as they land.
+ */
+function FountainWater({ low }: { low: boolean }) {
+  const n = low ? 360 : 900
+  const sim = useMemo(() => {
+    const pos = new Float32Array(n * 3), vel = new Float32Array(n * 3), kind = new Uint8Array(n)
+    const spawn = (i: number) => {
+      const k = kind[i], a = Math.random() * Math.PI * 2
+      if (k === 0) { // the jet
+        pos.set([0, 2.35, 0], i * 3)
+        const s = 0.18 + Math.random() * 0.12
+        vel.set([Math.cos(a) * s, 4.2 + Math.random() * 0.6, Math.sin(a) * s], i * 3)
+      } else if (k === 1) { // over the rim of the upper bowl
+        pos.set([Math.cos(a) * 1.38, 1.74, Math.sin(a) * 1.38], i * 3)
+        vel.set([Math.cos(a) * 0.35, -0.2 - Math.random() * 0.3, Math.sin(a) * 0.35], i * 3)
+      } else { // arcs from the basin edge, eight of them
+        const j = Math.floor(Math.random() * 8), b = (j / 8) * Math.PI * 2 + (Math.random() - 0.5) * 0.05
+        pos.set([Math.cos(b) * 2.75, 0.55, Math.sin(b) * 2.75], i * 3)
+        vel.set([-Math.cos(b) * 1.55, 2.6 + Math.random() * 0.25, -Math.sin(b) * 1.55], i * 3)
+      }
+    }
+    for (let i = 0; i < n; i++) {
+      kind[i] = i < n * 0.4 ? 0 : i < n * 0.75 ? 1 : 2
+      spawn(i)
+      // spread them out in time so the streams are full from the start
+      const t = Math.random() * 1.2
+      for (let c = 0; c < 3; c++) pos[i * 3 + c] += vel[i * 3 + c] * t
+      pos[i * 3 + 1] -= 4.9 * t * t
+      vel[i * 3 + 1] -= 9.8 * t
+    }
+    return { pos, vel, kind, spawn }
+  }, [n])
+  const geo = useRef<import('three').BufferGeometry>(null)
+  const ripples = useRef<(import('three').Mesh | null)[]>([])
+  useFrame(({ clock }, dt) => {
+    const h = Math.min(dt, 0.05), { pos, vel, kind, spawn } = sim
+    for (let i = 0; i < n; i++) {
+      const o = i * 3
+      vel[o + 1] -= 9.8 * h
+      pos[o] += vel[o] * h; pos[o + 1] += vel[o + 1] * h; pos[o + 2] += vel[o + 2] * h
+      const floor = kind[i] === 0 && Math.hypot(pos[o], pos[o + 2]) < 1.3 ? 1.72 : 0.5
+      if (pos[o + 1] < floor && vel[o + 1] < 0) spawn(i)
+    }
+    const attr = geo.current?.getAttribute('position')
+    if (attr) attr.needsUpdate = true
+    // rings spreading where the water lands, one after another
+    ripples.current.forEach((m, k) => {
+      if (!m) return
+      const f = (clock.elapsedTime * 0.45 + k / 3) % 1
+      m.scale.setScalar(0.4 + f * 2.4)
+      ;(m.material as import('three').MeshBasicMaterial).opacity = 0.35 * (1 - f)
+    })
+  })
+  return (
+    <group raycast={() => null}>
+      <points raycast={() => null}>
+        <bufferGeometry ref={geo}>
+          <bufferAttribute attach="attributes-position" args={[sim.pos, 3]} />
+        </bufferGeometry>
+        <pointsMaterial color="#EAF8FF" size={0.07} transparent opacity={0.8} depthWrite={false} />
+      </points>
+      {[0, 1, 2].map(k => (
+        <mesh key={k} ref={el => { ripples.current[k] = el }} rotation-x={-Math.PI / 2} position-y={0.5} raycast={() => null}>
+          <ringGeometry args={[0.95, 1, 48]} />
+          <meshBasicMaterial color="#FFFFFF" transparent opacity={0.3} depthWrite={false} />
+        </mesh>
+      ))}
+    </group>
+  )
+}
+
+/**
+ * Lamp posts along the garden paths: down both sides of the central path, round the fountain walkway and along
+ * the two ring walks. They light up (glowing heads, warm pools on the ground) as the evening comes on.
+ */
+function GardenLamps({ low }: { low: boolean }) {
+  const lamp = useLamp()
+  const spots = useMemo(() => {
+    const out: V3[] = []
+    // the central path, entrance to terrace stairs, either side (clear of the fountain walkway)
+    for (const z of [11, 15, 19, 23]) for (const s of [-1, 1]) out.push([s * 2.15, 0, z]) // the reception dome starts at z ≈ 27
+    for (const s of [-1, 1]) out.push([s * 2.15, 0, STAIRS.z1 + 0.7])                  // at the foot of the terrace stairs
+    // round the fountain walkway, leaving the path ends open
+    for (let i = 0; i < 8; i++) { const a = (i / 8) * Math.PI * 2 + Math.PI / 8; out.push([FOUNTAIN.x + Math.cos(a) * (FOUNTAIN.r + 2.05), 0, FOUNTAIN.z + Math.sin(a) * (FOUNTAIN.r + 2.05)]) }
+    // the walk between the galleries and the one round the outside
+    for (let i = 0; i < 20; i++) { const a = (i / 20) * Math.PI * 2 + 0.08; if (Math.abs(Math.atan2(Math.sin(a - FRONT), Math.cos(a - FRONT))) < 0.18) continue; out.push(polar(a, 28.0)) }
+    for (let i = 0; i < 28; i++) { const a = (i / 28) * Math.PI * 2 + 0.05; if (Math.abs(Math.atan2(Math.sin(a - FRONT), Math.cos(a - FRONT))) < 0.1) continue; out.push(polar(a, 40.1)) }
+    return out
+  }, [])
+  const posts = useMemo(() => spots.map(p => ({ p: [p[0], 1.1, p[2]] as V3 })), [spots])
+  const heads = useMemo(() => spots.map(p => ({ p: [p[0], 2.3, p[2]] as V3 })), [spots])
+  const caps = useMemo(() => spots.map(p => ({ p: [p[0], 2.58, p[2]] as V3 })), [spots])
+  const pools = useMemo(() => spots.map(p => ({ p: [p[0], 0.03, p[2]] as V3, rx: -Math.PI / 2, s: [4.2, 4.2, 1] as V3 })), [spots])
+  const refs = { posts: useRef<InstancedMesh>(null), heads: useRef<InstancedMesh>(null), caps: useRef<InstancedMesh>(null), pools: useRef<InstancedMesh>(null) }
+  useInstances(refs.posts, posts); useInstances(refs.heads, heads); useInstances(refs.caps, caps); useInstances(refs.pools, pools)
+  const glass = useMemo(() => new MeshStandardMaterial({ color: '#FFE7B8', emissive: '#FFB45A', roughness: 0.4 }), [])
+  useEffect(() => { glass.emissiveIntensity = 0.15 + 4 * lamp }, [glass, lamp])
+  const pool = useMemo(lightPoolTexture, [])
+  const noRay = () => null
+  return (
+    <group>
+      <instancedMesh ref={refs.posts} args={[undefined, undefined, posts.length]} castShadow={!low} raycast={noRay}>
+        <cylinderGeometry args={[0.045, 0.07, 2.2, 8]} />
+        <meshStandardMaterial color="#2E2A26" roughness={0.5} metalness={0.6} />
+      </instancedMesh>
+      <instancedMesh ref={refs.heads} args={[undefined, undefined, heads.length]} material={glass} raycast={noRay}>
+        <cylinderGeometry args={[0.13, 0.1, 0.36, 6]} />
+      </instancedMesh>
+      <instancedMesh ref={refs.caps} args={[undefined, undefined, caps.length]} raycast={noRay}>
+        <coneGeometry args={[0.2, 0.2, 6]} />
+        <meshStandardMaterial color="#2E2A26" roughness={0.5} metalness={0.6} />
+      </instancedMesh>
+      {/* always mounted (so it's placed from the start), shown once the lamps are on */}
+      <instancedMesh ref={refs.pools} args={[undefined, undefined, pools.length]} raycast={noRay} visible={lamp > 0}>
+        <planeGeometry />
+        <meshBasicMaterial map={pool} transparent opacity={0.9 * lamp} blending={AdditiveBlending} depthWrite={false} toneMapped={false} />
+      </instancedMesh>
     </group>
   )
 }
@@ -461,7 +590,7 @@ function Flowers({ low }: { low: boolean }) {
     // round beds around the fountain path, beds in the inner garden, and a border along the outside walkway (none
     // inside the galleries)
     // around the fountain, either side of the path, and in front of the terrace
-    for (let i = 0; i < 8; i++) { const a = (i / 8) * Math.PI * 2 + 0.2; if (Math.sin(a) > 0.7 || Math.sin(a) < -0.7) continue; bed(Math.cos(a) * 5.2, 5 + Math.sin(a) * 4.6, 1.6, 1.1, 90 * k) }
+    for (let i = 0; i < 8; i++) { const a = (i / 8) * Math.PI * 2 + 0.2; if (Math.sin(a) > 0.7 || Math.sin(a) < -0.7) continue; bed(Math.cos(a) * 7.2, 5 + Math.sin(a) * 6.6, 1.5, 1.0, 90 * k) }
     ;[-1, 1].forEach(sd => { bed(sd * 7.5, 11, 3.2, 2, 200 * k); bed(sd * 6.5, -2.4, 3.6, 1.2, 160 * k); bed(sd * 13, 5.5, 2.2, 2.8, 150 * k) })
     for (let i = 0; i < 26; i++) { const a = (i / 26) * Math.PI * 2; if (Math.sin(a) > 0.97) continue; bed(Math.cos(a) * 40.8, Math.sin(a) * 40.8, 2.2, 0.9, 60 * k) }
     return { out, leaves }
@@ -487,7 +616,7 @@ function Hedges() {
   const items = useMemo(() => {
     const out: { p: V3; s: V3; c: string }[] = []
     // a ring of clipped shrubs round the fountain, leaving the path open front and back
-    for (let i = 0; i < 12; i++) { const a = (i / 12) * Math.PI * 2 + Math.PI / 12; if (Math.abs(Math.cos(a)) < 0.3) continue; const [x, , z] = polar(a, 4.6); out.push({ p: [x, 0.5, 5 + z], s: [0.55, 0.85, 0.55], c: '#3F6B34' }) }
+    for (let i = 0; i < 12; i++) { const a = (i / 12) * Math.PI * 2 + Math.PI / 12; if (Math.abs(Math.cos(a)) < 0.3) continue; const [x, , z] = polar(a, 6.1); out.push({ p: [x, 0.5, 5 + z], s: [0.55, 0.85, 0.55], c: '#3F6B34' }) }
     ;[-1, 1].forEach(s => [44, 50, 56, 62].forEach(z => out.push({ p: [s * 3, 0.7, z], s: [0.55, 1.3, 0.55], c: '#3A6630' })))
     return out
   }, [])
@@ -779,7 +908,8 @@ export function SanctuaryWorld({ time, interior: inRoom, cutaway = false, low, d
         <EntranceHall at={[DOME.x, DOME.z]} r={DOME.r} />
         {SIDE_DOORS.map(a => <SideDoor key={a} a={a} m={m} />)}
         <VipPavilion m={m} vip={vip} />
-        <group position={[0, 0, 5]}><Fountain m={m} /></group>
+        <group position={[FOUNTAIN.x, 0, FOUNTAIN.z]}><Fountain m={m} low={low} /></group>
+        <GardenLamps low={low} />
         <Willow at={[-11, 1]} />
         <Willow at={[12, -1]} />
         <Trees low={low} />

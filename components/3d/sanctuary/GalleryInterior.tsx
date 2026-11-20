@@ -11,7 +11,7 @@ import {
   AdditiveBlending, CanvasTexture, DoubleSide, InstancedMesh, LatheGeometry, MeshStandardMaterial, RepeatWrapping, SRGBColorSpace,
   Vector2,
 } from 'three'
-import { H, leafCardTexture, polar, seeded, useInstances, useLamp, useLampGlow, VAULT_TOP, W, Roof, type V3 } from './shared'
+import { H, leafCardTexture, polar, seeded, useInstances, useLamp, useLampGlow, VAULT_TOP, W, Roof, lightPoolTexture, type V3 } from './shared'
 
 import { BASE_H, CAB_D, CAB_H, COLS, isDoorBay, ROW_H, ROWS, zoneIndex } from './plan'
 
@@ -81,19 +81,6 @@ function marbleTexture() {
   const t = new CanvasTexture(c)
   t.colorSpace = SRGBColorSpace
   t.wrapS = t.wrapT = RepeatWrapping
-  return t
-}
-
-/** A soft warm glow, bright in the middle and fading out: drawn on the floor as a pool of lamplight. */
-function lightPoolTexture() {
-  const c = document.createElement('canvas')
-  c.width = c.height = 128
-  const g = c.getContext('2d')!
-  const gr = g.createRadialGradient(64, 64, 0, 64, 64, 64)
-  gr.addColorStop(0, 'rgba(255,196,120,0.75)'); gr.addColorStop(0.45, 'rgba(255,170,90,0.32)'); gr.addColorStop(1, 'rgba(255,150,70,0)')
-  g.fillStyle = gr; g.fillRect(0, 0, 128, 128)
-  const t = new CanvasTexture(c)
-  t.colorSpace = SRGBColorSpace
   return t
 }
 
