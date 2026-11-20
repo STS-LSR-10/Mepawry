@@ -458,11 +458,11 @@ function Flowers({ low }: { low: boolean }) {
       }
     }
     const k = low ? 0.8 : 1.8
-    // round beds around the fountain path, beds in the inner garden, and a border along the outside walkway
+    // round beds around the fountain path, beds in the inner garden, and a border along the outside walkway (none
+    // inside the galleries)
     // around the fountain, either side of the path, and in front of the terrace
     for (let i = 0; i < 8; i++) { const a = (i / 8) * Math.PI * 2 + 0.2; if (Math.sin(a) > 0.7 || Math.sin(a) < -0.7) continue; bed(Math.cos(a) * 5.2, 5 + Math.sin(a) * 4.6, 1.6, 1.1, 90 * k) }
-    ;[-1, 1].forEach(sd => { bed(sd * 7.5, 11, 3.2, 2, 200 * k); bed(sd * 6.5, -2.4, 3.6, 1.2, 160 * k); bed(sd * 14, 6, 2.4, 3.2, 160 * k) })
-    for (let i = 0; i < 10; i++) { const a = (i / 10) * Math.PI * 2; if (Math.abs(Math.sin(a) - 1) < 0.05) continue; bed(Math.cos(a) * 30.3, Math.sin(a) * 30.3, 2, 1.2, 90 * k) }
+    ;[-1, 1].forEach(sd => { bed(sd * 7.5, 11, 3.2, 2, 200 * k); bed(sd * 6.5, -2.4, 3.6, 1.2, 160 * k); bed(sd * 13, 5.5, 2.2, 2.8, 150 * k) })
     for (let i = 0; i < 26; i++) { const a = (i / 26) * Math.PI * 2; if (Math.sin(a) > 0.97) continue; bed(Math.cos(a) * 40.8, Math.sin(a) * 40.8, 2.2, 0.9, 60 * k) }
     return { out, leaves }
   }, [low])
