@@ -2,7 +2,7 @@
 // components/3d/Player.tsx — Walks the avatar along a route and keeps the camera following it
 
 import { useEffect, useRef } from 'react'
-import { useFrame } from '@react-three/fiber'
+import { useFrame, useThree } from '@react-three/fiber'
 import type * as THREE from 'three'
 import { CuteAvatar } from './CuteAvatar'
 import type { AvatarLook } from '@/lib/look'
@@ -32,11 +32,18 @@ export function Player({ name, gender, look, pos, route, onInsideChange }: Playe
   const inside = useRef(false)
   const last = useRef<P | null>(null)
   const speed = useRef(0)                  // eased walking speed (springs toward SPEED, eases to a stop)
-  const want = useRef(8)                   // the camera distance you chose (indoors it may be pulled in)
-  const clamped = useRef(false)
-  const wantSin = useRef(0.45)             // …and its elevation
+  const want = useRef(6)                   // the camera distance you chose (indoors it may be pulled in)
+  const armSet = useRef<number | null>(null) // the distance the arm last put the camera at
   const swing = useRef<number | null>(null) // camera heading to swing round to (after arriving at a shrine)
   const follow = useRef<P | null>(null)    // where the camera is looking, trailing the avatar a little
+
+  // Your own drag wins over an automatic camera swing
+  const canvas = useThree(st => st.gl.domElement)
+  useEffect(() => {
+    const stop = () => { swing.current = null }
+    canvas.addEventListener('pointerdown', stop)
+    return () => canvas.removeEventListener('pointerdown', stop)
+  }, [canvas])
 
   useEffect(() => {
     if (!route) return
@@ -120,8 +127,8 @@ export function Player({ name, gender, look, pos, route, onInsideChange }: Playe
         camera.position.x += mx; camera.position.y += my; camera.position.z += mz
         orbit.target.x += mx; orbit.target.y += my; orbit.target.z += mz
       }
-      // Indoors, keep the camera inside the walls: where the room is too tight for the view you chose, slide in and
-      // rise to look down over your shoulder; ease back to your view once there's room
+      // Indoors the camera is on a spring arm: it only ever comes closer along the line you're looking, never
+      // changes your angle, so dragging to look around stays free. It eases back out to your distance when there's room.
       const t = orbit.target, c = camera.position
       if (swing.current != null) {
         const a = Math.atan2(c.x - t.x, c.z - t.z), d = Math.hypot(c.x - t.x, c.z - t.z)
@@ -131,21 +138,19 @@ export function Player({ name, gender, look, pos, route, onInsideChange }: Playe
         if (Math.abs(turn) < 0.02) swing.current = null
       }
       const dx = c.x - t.x, dy = c.y - t.y, dz = c.z - t.z, len = Math.hypot(dx, dy, dz), flat = Math.hypot(dx, dz)
+      // A distance we didn't set means you zoomed: that's the distance you want now
+      if (armSet.current == null || Math.abs(len - armSet.current) > 0.01) want.current = len
+      let next = want.current
       if (inside.current && flat > 0.01) {
-        if (!clamped.current) { want.current = len; wantSin.current = dy / len }
-        const wantUp = want.current * wantSin.current, wantFlat = Math.sqrt(Math.max(0, want.current ** 2 - wantUp ** 2))
-        // Only the building's own walls count (the camera looks over benches, planters and sofas), kept 0.7 m off the glass
+        // Only the building's own walls count (the camera looks over benches and planters), kept 0.6 m off the glass
+        const reach = (want.current * flat) / len
         let clear = 0
-        while (clear < wantFlat + 0.7 && isInside({ x: t.x + (dx / flat) * (clear + 0.2), z: t.z + (dz / flat) * (clear + 0.2) })) clear += 0.2
-        const flatTo = Math.min(wantFlat, Math.max(0.3, clear - 0.7))
-        clamped.current = flatTo < wantFlat - 0.05
-        const upTo = clamped.current ? Math.max(wantUp, Math.min(3.2, Math.sqrt(want.current ** 2 - flatTo ** 2))) : wantUp
-        const k = 1 - Math.exp(-Math.min(dt, 0.25) * 4)
-        const nf = flatTo < flat ? flatTo : flat + (flatTo - flat) * k
-        const nu = dy + (upTo - dy) * k
-        c.set(t.x + (dx / flat) * nf, t.y + nu, t.z + (dz / flat) * nf)
+        while (clear < reach + 0.6 && isInside({ x: t.x + (dx / flat) * (clear + 0.2), z: t.z + (dz / flat) * (clear + 0.2) })) clear += 0.2
+        next = Math.min(want.current, Math.max(1.4, ((clear - 0.6) * len) / flat))
       }
-      else clamped.current = false
+      if (next > len) next = len + (next - len) * (1 - Math.exp(-Math.min(dt, 0.25) * 3))
+      if (Math.abs(next - len) > 0.001) c.set(t.x + (dx / len) * next, t.y + (dy / len) * next, t.z + (dz / len) * next)
+      armSet.current = next
       last.current = { ...p }
     }
 

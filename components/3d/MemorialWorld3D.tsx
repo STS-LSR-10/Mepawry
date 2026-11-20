@@ -130,10 +130,11 @@ export default function MemorialWorld3D({ floorId, avatarName, avatarGender, ava
   // Rim and fill light on the avatars follow the time of day and whether you're indoors
   useEffect(() => {
     RIM.color.value.set(time === 'night' ? '#7F94C8' : time === 'evening' ? '#FFC890' : '#CFE0FF')
-    RIM.strength.value = time === 'night' ? 0.2 : 0.26
+    // The sanctuary is properly lit (sun, sky and lamps reach the avatars), so only a faint extra fill after dark
+    RIM.strength.value = time === 'night' ? 0.12 : 0.1
     const dark = time === 'night' ? 1 : time === 'evening' ? 0.5 : 0
-    if (inside) AVATAR_FILL.value.set('#FFC08A').multiplyScalar(0.2 + 0.25 * dark)
-    else AVATAR_FILL.value.set('#AFC2E8').multiplyScalar(0.03 + 0.12 * dark)
+    if (inside) AVATAR_FILL.value.set('#FFC08A').multiplyScalar(0.08 * dark)
+    else AVATAR_FILL.value.set('#AFC2E8').multiplyScalar(0.05 * dark)
   }, [time, inside])
 
   return (
@@ -158,7 +159,7 @@ export default function MemorialWorld3D({ floorId, avatarName, avatarGender, ava
             {WEATHER[sky.season] && <Weather {...WEATHER[sky.season]!} count={Math.round(WEATHER[sky.season]!.count / (low ? 3 : 1))} />}
             <Player name={avatarName} gender={avatarGender} look={avatarLook} pos={pos} route={route} onInsideChange={setInside} />
             <CrowdAvatars list={crowd.list} myPos={pos} radius={low ? 16 : 24} />
-            <OrbitControls makeDefault enablePan={false} enableZoom minDistance={3} maxDistance={inside ? 6 : 30} maxPolarAngle={Math.PI / 2.1} />
+            <OrbitControls makeDefault enablePan={false} enableZoom minDistance={inside ? 1.3 : 3} maxDistance={inside ? 6 : 30} minPolarAngle={0.35} maxPolarAngle={Math.PI / 2.1} />
           </SanctuaryWorld>
         </Suspense>
       </Canvas>

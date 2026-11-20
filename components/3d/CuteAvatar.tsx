@@ -32,7 +32,7 @@ function Clay({ color, rough = 0.78, bump = 0.5 }: { color: string; rough?: numb
 
 /** Knitted fabric: the knit pattern doubles as the bump map, with velvety sheen at grazing angles. */
 function Knit({ map, sheen }: { map: THREE_Texture; sheen: string }) {
-  return <meshPhysicalMaterial map={map} bumpMap={map} bumpScale={1.4} roughness={0.95} sheen={1} sheenColor={sheen} sheenRoughness={0.75} onBeforeCompile={avatarShade} />
+  return <meshPhysicalMaterial map={map} bumpMap={map} bumpScale={1.4} roughness={0.95} sheen={0.45} sheenColor={sheen} sheenRoughness={0.75} onBeforeCompile={avatarShade} />
 }
 
 export function CuteAvatar({ name, walking, gender = 'male', look }: { name: string; walking?: React.RefObject<boolean>; gender?: 'male' | 'female'; look?: AvatarLook }) {
