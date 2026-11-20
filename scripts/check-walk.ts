@@ -28,5 +28,11 @@ assert(!isFree(polar(FRONT + 1, 30)), 'outer gallery inner wall')
 assert(!isFree(polar(FRONT + 1, 35.6)), 'outer gallery cabinets')
 assert(!isFree(polar(FRONT + 1.2, 18)), 'inner gallery wall')
 // heights: ground, the terrace, halfway up the stairs
+// Both side doorways of the reception lead straight into the outer gallery (no detour round the furniture)
+const pathLen = (r: P[], from: P) => r.reduce((n, q, i) => n + Math.hypot(q.x - (i ? r[i - 1] : from).x, q.z - (i ? r[i - 1] : from).z), 0)
+for (const s of [-1, 1]) {
+  const to = { x: s * 7.6, z: 33 }, r = planRoute(ARRIVAL, to)
+  assert(r.length > 0 && pathLen(r, ARRIVAL) < 11, `reception ${s < 0 ? 'left' : 'right'} doorway is open (${pathLen(r, ARRIVAL).toFixed(1)} m)`)
+}
 assert(heightAt({ x: 0, z: 20 }) === 0 && heightAt(VIP_ENTRY) > 1.2 && heightAt({ x: 0, z: -2.7 }) > 0.3)
 console.log('walk ok:', SLOTS.length, 'cubbies,', VIP_SLOTS.length, 'VIP niches')

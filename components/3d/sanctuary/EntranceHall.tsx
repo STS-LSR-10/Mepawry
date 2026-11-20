@@ -244,20 +244,20 @@ export function EntranceHall({ at, r }: { at: [number, number]; r: number }) {
       </group>
 
       {/* lounge, front left: armchairs round a coffee table on a rug */}
-      <group position={[-3.0, 0, 1.6]} rotation-y={0.4}>
+      <group position={[-3.3, 0, 3.0]} rotation-y={0.75} scale={0.85}>
         <Rug at={[0, 0.045, 0]} size={[2.4, 2.0]} tex={rugA} />
         <Armchair at={[-0.7, 0, -0.35]} ry={1.2} m={m} />
         <Armchair at={[0.0, 0, -0.85]} ry={0.2} m={m} fabric={sage} />
         <Armchair at={[0.75, 0, -0.3]} ry={-1.0} m={m} />
         <SideTable at={[0, 0, 0.1]} m={m} />
       </group>
-      {/* lounge, back left by the gallery opening: a sofa and a chair */}
-      <group position={[-3.6, 0, -1.6]} rotation-y={1.2}>
+      {/* lounge, back left by the gallery opening (kept clear of the doorway): a sofa and a side table */}
+      <group position={[-3.3, 0, -2.4]} rotation-y={0.9}>
         <mesh position={[0, 0.25, 0]} material={sage} castShadow><boxGeometry args={[1.8, 0.4, 0.75]} /></mesh>
         <mesh position={[0, 0.65, -0.3]} material={sage} castShadow><boxGeometry args={[1.8, 0.55, 0.16]} /></mesh>
         {[-1, 1].map(s => <mesh key={s} position={[s * 0.85, 0.52, 0]} material={sage}><boxGeometry args={[0.14, 0.3, 0.75]} /></mesh>)}
         {[-0.45, 0.45].map(x => <mesh key={x} position={[x, 0.5, 0.02]} material={m.cushion}><boxGeometry args={[0.75, 0.1, 0.6]} /></mesh>)}
-        <SideTable at={[0, 0, 0.9]} m={m} withFlowers={false} />
+        <SideTable at={[0, 0, 0.75]} m={m} withFlowers={false} />
       </group>
 
       {/* plants */}

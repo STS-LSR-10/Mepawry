@@ -6,7 +6,7 @@ import { useFrame, useThree } from '@react-three/fiber'
 import type * as THREE from 'three'
 import { CuteAvatar } from './CuteAvatar'
 import type { AvatarLook } from '@/lib/look'
-import { heightAt, isInside, type P } from './walk'
+import { heightAt, inGallery, isInside, type P } from './walk'
 import { DOME, VIP_CENTER } from './sanctuary/plan'
 
 const SPEED = 3.2 // world units per second
@@ -113,8 +113,8 @@ export function Player({ name, gender, look, pos, route, onInsideChange }: Playe
         let ux = 0, uz = 1
         if (isInside(p) && hall && d > 0.5) { ux = (hall.x - p.x) / d; uz = (hall.z - p.z) / d }
         else if (isInside(p) && !hall) { ux = -p.z / r; uz = p.x / r }
-        const back = isInside(p) ? 5 : 8.5
-        camera.position.set(p.x + ux * back, y + (isInside(p) ? 2.6 : 4), p.z + uz * back)
+        const back = isInside(p) ? 6.5 : 8.5
+        camera.position.set(p.x + ux * back, y + (isInside(p) ? 3.2 : 4), p.z + uz * back)
         follow.current = { ...p }
       }
       else {
@@ -127,8 +127,9 @@ export function Player({ name, gender, look, pos, route, onInsideChange }: Playe
         camera.position.x += mx; camera.position.y += my; camera.position.z += mz
         orbit.target.x += mx; orbit.target.y += my; orbit.target.z += mz
       }
-      // Indoors the camera is on a spring arm: it only ever comes closer along the line you're looking, never
-      // changes your angle, so dragging to look around stays free. It eases back out to your distance when there's room.
+      // In the ring galleries the camera is on a spring arm (behind the cabinets it would see only their backs): it only
+      // ever comes closer along the line you're looking, never changes your angle, so dragging to look around stays free,
+      // and eases back out to your distance when there's room. The domed halls have glass walls, so there it's left free.
       const t = orbit.target, c = camera.position
       if (swing.current != null) {
         const a = Math.atan2(c.x - t.x, c.z - t.z), d = Math.hypot(c.x - t.x, c.z - t.z)
@@ -141,12 +142,12 @@ export function Player({ name, gender, look, pos, route, onInsideChange }: Playe
       // A distance we didn't set means you zoomed: that's the distance you want now
       if (armSet.current == null || Math.abs(len - armSet.current) > 0.01) want.current = len
       let next = want.current
-      if (inside.current && flat > 0.01) {
-        // Only the building's own walls count (the camera looks over benches and planters), kept 0.6 m off the glass
+      if (inGallery(t) && flat > 0.01) {
+        // Only the gallery's own walls and cabinets count (the camera looks over benches), kept 0.6 m off them
         const reach = (want.current * flat) / len
         let clear = 0
-        while (clear < reach + 0.6 && isInside({ x: t.x + (dx / flat) * (clear + 0.2), z: t.z + (dz / flat) * (clear + 0.2) })) clear += 0.2
-        next = Math.min(want.current, Math.max(1.4, ((clear - 0.6) * len) / flat))
+        while (clear < reach + 0.6 && inGallery({ x: t.x + (dx / flat) * (clear + 0.2), z: t.z + (dz / flat) * (clear + 0.2) })) clear += 0.2
+        next = Math.min(want.current, Math.max(2.2, ((clear - 0.6) * len) / flat))
       }
       if (next > len) next = len + (next - len) * (1 - Math.exp(-Math.min(dt, 0.25) * 3))
       if (Math.abs(next - len) > 0.001) c.set(t.x + (dx / len) * next, t.y + (dy / len) * next, t.z + (dz / len) * next)

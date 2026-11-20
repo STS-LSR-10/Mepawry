@@ -38,7 +38,7 @@ function ringBlocked(p: P): boolean {
 }
 
 /** True inside a gallery corridor (between its two cabinet walls). */
-function inGallery(p: P): boolean {
+export function inGallery(p: P): boolean {
   const rad = Math.hypot(p.x, p.z), a = Math.atan2(p.z, p.x)
   return RINGS.some(g => inArc(a, g.from, g.to) && Math.abs(rad - g.r) < W / 2 - 0.12 - CAB_D)
 }
@@ -57,8 +57,8 @@ const Q = Math.PI / 2
 const receptionBlocked = (p: P) =>
   domeBlocked(p, DOME.x, DOME.z, DOME.r, [0, Q, Math.PI, -Q].map(at => ({ at, half: 1.05 }))) ||
   near(p, DOME.x, DOME.z - 0.6, 1.75) ||               // the curved desk
-  near(p, -3.0, DOME.z + 1.6, 1.25) ||                 // lounge: armchairs round a coffee table
-  near(p, -3.6, DOME.z - 1.6, 1.0) ||                  // the sofa
+  near(p, -3.3, DOME.z + 3.0, 1.0) ||                  // lounge: armchairs round a coffee table (in the front-left corner, clear of the doorway and the desk)
+  near(p, -3.3, DOME.z - 2.4, 0.95) ||                 // the sofa
   near(p, 3.2, DOME.z + 2.2, 0.55)                     // the directory board
 
 const inRect = (p: P, r: { x0: number; x1: number; z0: number; z1: number }, m = 0) =>

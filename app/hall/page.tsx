@@ -234,7 +234,7 @@ export default function HallPage() {
           aria-label={t(toolsOpen ? 'Hide buttons' : 'Show buttons')}
           className={`${PILL} min-w-11 font-semibold`}
         >
-          {toolsOpen ? '✕' : <>☰ <span className="ml-1 font-normal">F{currentFloor}</span></>}
+          {toolsOpen ? '✕' : <>☰ <span className="ml-1 font-normal">🏛️ {currentFloor}</span></>}
         </button>
       </div>
 
