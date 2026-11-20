@@ -12,7 +12,7 @@ import type * as THREE from 'three'
 import type { LocalSky, Season } from '@/lib/sky'
 import { AVATAR_FILL, RIM } from './look'
 import { CrowdAvatars, useCrowd, type Me } from './Crowd'
-import { crowdLimit, usePref, type CrowdPref } from '@/lib/settings'
+import { crowdLimit, turnFactor, usePref, walkFactor, type CrowdPref, type SpeedPref } from '@/lib/settings'
 import { useT } from '@/lib/i18n'
 import { getVisitor } from '@/lib/visitor'
 import { saveSpot } from '@/lib/spot'
@@ -100,6 +100,7 @@ export default function MemorialWorld3D({ floorId, avatarName, avatarGender, ava
     setMe({ id: user?.id ?? v.id, name: avatarName, look: avatarLook ?? defaultLook(avatarGender) })
   }, [user?.id, avatarName, avatarGender, avatarLook])
   const crowdPref = usePref<CrowdPref>('pm-crowd')
+  const walkSpeed = walkFactor(usePref<SpeedPref>('pm-walk')), turnSpeed = turnFactor(usePref<SpeedPref>('pm-turn'))
   const crowd = useCrowd(floorId, me, pos, crowdLimit(crowdPref, low))
   useEffect(() => { onPeopleHere?.(crowd.count + 1, crowd.status) }, [crowd.count, crowd.status, onPeopleHere])
 
@@ -172,9 +173,9 @@ export default function MemorialWorld3D({ floorId, avatarName, avatarGender, ava
           <SanctuaryWorld time={time} interior={inside} low={low} vip={vip} onFloor={p => walkTo(p)}>
             <GalleryShrines pets={pets} playerPos={pos} onOpen={(pet, slot) => walkTo(slot.standAt, () => setNear(pet), slot)} />
             {WEATHER[sky.season] && <Weather {...WEATHER[sky.season]!} count={Math.round(WEATHER[sky.season]!.count / (low ? 3 : 1))} />}
-            <Player name={avatarName} gender={avatarGender} look={avatarLook} pos={pos} route={route} onInsideChange={setInside} stick={stick} />
+            <Player name={avatarName} gender={avatarGender} look={avatarLook} pos={pos} route={route} onInsideChange={setInside} stick={stick} walkSpeed={walkSpeed} turnSpeed={turnSpeed} />
             <CrowdAvatars list={crowd.list} myPos={pos} radius={low ? 16 : 24} />
-            <OrbitControls makeDefault enablePan={false} enableZoom minDistance={inside ? 2 : 3} maxDistance={inside ? 9 : 30} minPolarAngle={0.35} maxPolarAngle={Math.PI / 2.1} />
+            <OrbitControls makeDefault enablePan={false} enableZoom rotateSpeed={turnSpeed} minDistance={inside ? 2 : 3} maxDistance={inside ? 9 : 30} minPolarAngle={0.35} maxPolarAngle={Math.PI / 2.1} />
           </SanctuaryWorld>
         </Suspense>
       </Canvas>

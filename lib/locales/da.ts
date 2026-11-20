@@ -102,5 +102,12 @@ const t: string[] = [
   "Tilbage til {name}",
   "Det gik ikke igennem. Prøv igen.",
   "VIP",
+  "Ganghastighed",
+  "Drejehastighed",
+  "Langsommere er mere skånsomt, hvis du bliver svimmel af bevægelse.",
+  "Hvor hurtigt udsigten drejer, når du trækker, og når den drejer af sig selv.",
+  "Langsom",
+  "Normal",
+  "Hurtig",
 ]
 export default t

@@ -102,5 +102,12 @@ const t: string[] = [
   "Terug naar {name}",
   "Dat is niet gelukt. Probeer het opnieuw.",
   "VIP",
+  "Loopsnelheid",
+  "Draaisnelheid",
+  "Langzamer is prettiger als je duizelig wordt van bewegen.",
+  "Hoe snel het beeld draait als je sleept, en als het vanzelf draait.",
+  "Langzaam",
+  "Normaal",
+  "Snel",
 ]
 export default t

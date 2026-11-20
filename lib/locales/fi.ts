@@ -102,5 +102,12 @@ const t: string[] = [
   "Takaisin: {name}",
   "Se ei onnistunut. Yritä uudelleen.",
   "VIP",
+  "Kävelynopeus",
+  "Kääntymisnopeus",
+  "Hitaampi on lempeämpi, jos liikkuminen huimaa.",
+  "Kuinka nopeasti näkymä kääntyy vetäessä ja kun se kääntyy itsestään.",
+  "Hidas",
+  "Normaali",
+  "Nopea",
 ]
 export default t

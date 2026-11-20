@@ -102,5 +102,12 @@ const t: string[] = [
   "Kembali ke {name}",
   "Tidak berjaya. Sila cuba lagi.",
   "VIP",
+  "Kelajuan berjalan",
+  "Kelajuan pusingan",
+  "Lebih perlahan lebih selesa jika pergerakan membuat anda pening.",
+  "Seberapa pantas pandangan berpusing apabila diseret, dan apabila ia berpusing sendiri.",
+  "Perlahan",
+  "Biasa",
+  "Pantas",
 ]
 export default t

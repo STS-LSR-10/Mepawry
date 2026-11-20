@@ -102,5 +102,12 @@ const t: string[] = [
   "Rudi kwa {name}",
   "Haikufaulu. Tafadhali jaribu tena.",
   "VIP",
+  "Kasi ya kutembea",
+  "Kasi ya kugeuka",
+  "Polepole ni bora ikiwa kusogea kunakuletea kizunguzungu.",
+  "Jinsi mwonekano unavyogeuka haraka unapovuta, na unapojigeuza wenyewe.",
+  "Polepole",
+  "Kawaida",
+  "Haraka",
 ]
 export default t

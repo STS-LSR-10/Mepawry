@@ -102,5 +102,12 @@ const t: string[] = [
   "{name} sayfasına dön",
   "Olmadı. Lütfen tekrar dene.",
   "VIP",
+  "Yürüme hızı",
+  "Dönüş hızı",
+  "Hareket başını döndürüyorsa yavaş olan daha rahattır.",
+  "Sürüklediğinde ve kendiliğinden döndüğünde görüntünün ne kadar hızlı döndüğü.",
+  "Yavaş",
+  "Normal",
+  "Hızlı",
 ]
 export default t

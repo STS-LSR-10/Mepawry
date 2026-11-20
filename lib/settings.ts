@@ -1,13 +1,15 @@
 'use client'
-// lib/settings.ts — Display preferences saved in this browser (graphics quality, how many visitors to show).
+// lib/settings.ts — Display preferences saved in this browser (graphics quality, how many visitors to show,
+// how fast you walk and the view turns).
 // Changing one tells open pages at once, so the hall updates without a reload.
 
 import { useEffect, useState } from 'react'
 
 export type GraphicsPref = 'auto' | 'high' | 'low'
 export type CrowdPref = 'auto' | 'few' | 'many'
+export type SpeedPref = 'slow' | 'normal' | 'fast'
 
-const DEFAULTS = { 'pm-graphics': 'auto', 'pm-crowd': 'auto' } as const
+const DEFAULTS = { 'pm-graphics': 'auto', 'pm-crowd': 'auto', 'pm-walk': 'normal', 'pm-turn': 'normal' } as const
 type Key = keyof typeof DEFAULTS
 const EVENT = 'mepawry:prefs'
 
@@ -35,3 +37,8 @@ export function usePref<T extends string>(key: Key): T {
 export function crowdLimit(pref: CrowdPref, low: boolean) {
   return pref === 'few' ? 8 : pref === 'many' ? (low ? 40 : 60) : low ? 20 : 40
 }
+
+/** Walking speed: slower is gentler for people who get dizzy. */
+export const walkFactor = (p: SpeedPref) => (p === 'slow' ? 0.55 : p === 'fast' ? 1.5 : 1)
+/** How fast dragging turns the view (and how quickly the camera swings round by itself). */
+export const turnFactor = (p: SpeedPref) => (p === 'slow' ? 0.45 : p === 'fast' ? 1.6 : 1)

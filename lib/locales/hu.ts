@@ -102,5 +102,12 @@ const t: string[] = [
   "Vissza: {name}",
   "Nem sikerült. Kérjük, próbáld újra.",
   "VIP",
+  "Járási sebesség",
+  "Forgási sebesség",
+  "A lassabb kíméletesebb, ha a mozgástól szédülsz.",
+  "Milyen gyorsan fordul a nézet húzáskor és amikor magától fordul.",
+  "Lassú",
+  "Normál",
+  "Gyors",
 ]
 export default t

@@ -22,9 +22,11 @@ interface PlayerProps {
   route: Route | null
   onInsideChange: (inside: boolean) => void
   stick?: React.RefObject<Stick>   // the on-screen walking stick
+  walkSpeed?: number               // × normal walking speed (Settings → Walking speed)
+  turnSpeed?: number               // × how fast the camera swings round by itself (Settings → Turning speed)
 }
 
-export function Player({ name, gender, look, pos, route, onInsideChange, stick }: PlayerProps) {
+export function Player({ name, gender, look, pos, route, onInsideChange, stick, walkSpeed = 1, turnSpeed = 1 }: PlayerProps) {
   const group = useRef<THREE.Group>(null!)
   const marker = useRef<THREE.Mesh>(null!)
   const queue = useRef<P[]>([])
@@ -70,7 +72,7 @@ export function Player({ name, gender, look, pos, route, onInsideChange, stick }
       let fx = p.x - camera.position.x, fz = p.z - camera.position.z
       const fl = Math.hypot(fx, fz) || 1; fx /= fl; fz /= fl
       const mx = fx * -st!.y + -fz * st!.x, mz = fz * -st!.y + fx * st!.x, ml = Math.hypot(mx, mz) || 1
-      const step = SPEED * push * Math.min(dt, 0.1)
+      const step = SPEED * walkSpeed * push * Math.min(dt, 0.1)
       const nx = p.x + (mx / ml) * step, nz = p.z + (mz / ml) * step
       // Slide along walls rather than stopping dead
       if (isFree({ x: nx, z: nz })) { p.x = nx; p.z = nz }
@@ -85,7 +87,7 @@ export function Player({ name, gender, look, pos, route, onInsideChange, stick }
       // Ease in at the start and ease out over the last metre (critically damped spring on the speed)
       let left = d
       for (let i = 1; i < q.length; i++) left += Math.hypot(q[i].x - q[i - 1].x, q[i].z - q[i - 1].z)
-      const want = SPEED * Math.min(1, 0.25 + left / 1.2)
+      const want = SPEED * walkSpeed * Math.min(1, 0.25 + left / 1.2)
       speed.current += (want - speed.current) * (1 - Math.exp(-h * 7))
       const step = Math.max(0.2 * h, speed.current * h) // waypoints cap each step, so big frames can't skip through walls
       if (d <= step) {
@@ -151,10 +153,10 @@ export function Player({ name, gender, look, pos, route, onInsideChange, stick }
       if (swing.current != null) {
         const a = Math.atan2(c.x - t.x, c.z - t.z), d = Math.hypot(c.x - t.x, c.z - t.z)
         const turn = ((swing.current - a + Math.PI) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2) - Math.PI
-        const b = a + turn * (1 - Math.exp(-Math.min(dt, 0.25) * 4))
+        const b = a + turn * (1 - Math.exp(-Math.min(dt, 0.25) * 4 * turnSpeed))
         c.x = t.x + Math.sin(b) * d; c.z = t.z + Math.cos(b) * d
         // …and rise to look down at about 45°, over the cabinets across the aisle
-        c.y += (t.y + Math.max(d, 3) - c.y) * (1 - Math.exp(-Math.min(dt, 0.25) * 4))
+        c.y += (t.y + Math.max(d, 3) - c.y) * (1 - Math.exp(-Math.min(dt, 0.25) * 4 * turnSpeed))
         if (Math.abs(turn) < 0.02) swing.current = null
       }
       const dx = c.x - t.x, dy = c.y - t.y, dz = c.z - t.z, len = Math.hypot(dx, dy, dz), flat = Math.hypot(dx, dz)

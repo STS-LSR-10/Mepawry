@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react'
 import { Modal } from '@/components/ui/Modal'
 import { cn } from '@/lib/utils'
 import { LANGS, useLang, useT } from '@/lib/i18n'
-import { setPref, usePref, type CrowdPref, type GraphicsPref } from '@/lib/settings'
+import { setPref, usePref, type CrowdPref, type GraphicsPref, type SpeedPref } from '@/lib/settings'
 
 type Tab = 'language' | 'display'
 
@@ -81,6 +81,9 @@ function DisplayPanel() {
   const t = useT()
   const graphics = usePref<GraphicsPref>('pm-graphics')
   const crowd = usePref<CrowdPref>('pm-crowd')
+  const walk = usePref<SpeedPref>('pm-walk')
+  const turn = usePref<SpeedPref>('pm-turn')
+  const speeds = [['slow', '🐢', t('Slow')], ['normal', '🚶', t('Normal')], ['fast', '🐇', t('Fast')]] as [SpeedPref, string, string][]
   return (
     <div className="space-y-5">
       <Choice
@@ -92,6 +95,14 @@ function DisplayPanel() {
         title={t('Visitors shown in the hall')} hint={t('Fewer people means a lighter load on slower phones.')}
         value={crowd} onPick={v => setPref('pm-crowd', v)}
         options={[['auto', '🪄', t('Auto')], ['few', '🧍', t('Few')], ['many', '👨‍👩‍👧‍👦', t('Many')]]}
+      />
+      <Choice
+        title={t('Walking speed')} hint={t('Slower is gentler if moving around makes you dizzy.')}
+        value={walk} onPick={v => setPref('pm-walk', v)} options={speeds}
+      />
+      <Choice
+        title={t('Turning speed')} hint={t('How fast the view turns when you drag, and when it swings round by itself.')}
+        value={turn} onPick={v => setPref('pm-turn', v)} options={speeds}
       />
     </div>
   )

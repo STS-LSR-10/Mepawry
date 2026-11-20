@@ -102,5 +102,12 @@ const t: string[] = [
   "Zpět k {name}",
   "Nepodařilo se. Zkuste to prosím znovu.",
   "VIP",
+  "Rychlost chůze",
+  "Rychlost otáčení",
+  "Pomalejší je šetrnější, pokud se vám z pohybu točí hlava.",
+  "Jak rychle se pohled otáčí, když táhnete, a když se natočí sám.",
+  "Pomalu",
+  "Normálně",
+  "Rychle",
 ]
 export default t

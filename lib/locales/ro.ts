@@ -102,5 +102,12 @@ const t: string[] = [
   "Înapoi la {name}",
   "Nu a mers. Te rugăm să încerci din nou.",
   "VIP",
+  "Viteza de mers",
+  "Viteza de rotire",
+  "Mai încet e mai blând dacă mișcarea îți dă amețeli.",
+  "Cât de repede se rotește imaginea când tragi și când se rotește singură.",
+  "Lent",
+  "Normal",
+  "Rapid",
 ]
 export default t

@@ -102,5 +102,12 @@ const t: string[] = [
   "Wróć do: {name}",
   "Nie udało się. Spróbuj ponownie.",
   "VIP",
+  "Prędkość chodzenia",
+  "Prędkość obracania",
+  "Wolniej jest łagodniej, jeśli ruch przyprawia cię o zawroty głowy.",
+  "Jak szybko obraca się widok, gdy przeciągasz, i gdy obraca się sam.",
+  "Wolno",
+  "Normalnie",
+  "Szybko",
 ]
 export default t

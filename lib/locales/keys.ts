@@ -104,4 +104,11 @@ export const KEYS = [
   "Back to {name}",
   "That didn’t go through. Please try again.",
   "VIP",
+  "Walking speed",
+  "Turning speed",
+  "Slower is gentler if moving around makes you dizzy.",
+  "How fast the view turns when you drag, and when it swings round by itself.",
+  "Slow",
+  "Normal",
+  "Fast",
 ] as const

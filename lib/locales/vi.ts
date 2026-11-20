@@ -102,5 +102,12 @@ const t: string[] = [
   "Quay lại với {name}",
   "Chưa thành công. Vui lòng thử lại.",
   "VIP",
+  "Tốc độ đi bộ",
+  "Tốc độ xoay",
+  "Chậm hơn sẽ dễ chịu hơn nếu di chuyển làm bạn chóng mặt.",
+  "Góc nhìn xoay nhanh thế nào khi bạn kéo và khi nó tự xoay.",
+  "Chậm",
+  "Bình thường",
+  "Nhanh",
 ]
 export default t

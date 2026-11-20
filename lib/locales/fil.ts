@@ -102,5 +102,12 @@ const t: string[] = [
   "Bumalik kay {name}",
   "Hindi natuloy. Pakisubukan ulit.",
   "VIP",
+  "Bilis ng paglakad",
+  "Bilis ng pag-ikot",
+  "Mas magaan ang mabagal kung nahihilo ka sa paggalaw.",
+  "Gaano kabilis umiikot ang tanaw kapag hinila mo, at kapag kusa itong umiikot.",
+  "Mabagal",
+  "Karaniwan",
+  "Mabilis",
 ]
 export default t
