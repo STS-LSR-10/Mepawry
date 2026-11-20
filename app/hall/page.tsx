@@ -104,9 +104,8 @@ export default function HallPage() {
     const id = setInterval(load, 30_000)
     return () => { clearInterval(id); clearTimeout(hide) }
   }, [])
-  // The right-hand buttons fold away into one; open on wide screens, folded on phones
+  // The right-hand buttons fold away into one, folded to start with on every screen; tap to open
   const [toolsOpen, setToolsOpen] = useState(false)
-  useEffect(() => setToolsOpen(window.innerWidth >= 640), [])
 
   /** Fade out, swap domes, put the avatar in the reception, fade back in. */
   const goToFloor = (floor: number, at: P, then?: () => void) => {

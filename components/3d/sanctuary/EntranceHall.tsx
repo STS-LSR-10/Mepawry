@@ -6,8 +6,8 @@
 // lettering and a screen showing the site; to the left, a mirror and a plant shelf. A directory map stands near the
 // door. Lounge corners with armchairs, a sofa and coffee tables, hanging ferns, potted palms, a wooden chandelier.
 
-import { useMemo } from 'react'
-import { CanvasTexture, MeshStandardMaterial, SRGBColorSpace, type Texture } from 'three'
+import { useEffect, useMemo } from 'react'
+import { CanvasTexture, ExtrudeGeometry, MeshStandardMaterial, Shape, SRGBColorSpace, Vector2, type Texture } from 'three'
 import {
   Armchair, FernPot, Ferns, herringboneTexture, Roses, Rug, rugTexture, SideTable, useDecorLamps, useDecorMaterials, type DMats,
 } from './decor'
@@ -114,6 +114,18 @@ function WoodChandelier({ at, drop, m }: { at: V3; drop: number; m: DMats }) {
   )
 }
 
+/** A curved slab: the ring between radii r0 and r1 over `span` radians centred on +z, `h` tall, standing on y = 0. */
+function arcSlab(r0: number, r1: number, span: number, h: number) {
+  // the shape is drawn in x/y and stood up (x stays, shape y becomes -z), so a point at angle a sits at (r·sin a, r·cos a)
+  const at = (r: number, a: number) => new Vector2(r * Math.sin(a), -r * Math.cos(a))
+  const n = 40, shape = new Shape()
+  for (let i = 0; i <= n; i++) { const p = at(r1, -span / 2 + (span * i) / n); if (i) shape.lineTo(p.x, p.y); else shape.moveTo(p.x, p.y) }
+  for (let i = n; i >= 0; i--) { const p = at(r0, -span / 2 + (span * i) / n); shape.lineTo(p.x, p.y) }
+  const g = new ExtrudeGeometry(shape, { depth: h, bevelEnabled: false })
+  g.rotateX(-Math.PI / 2)
+  return g
+}
+
 /** The curved reception desk, its front facing +z. */
 function ReceptionDesk({ m, welcome }: { m: DMats; welcome: Texture }) {
   const lamp = useLamp()
@@ -121,12 +133,16 @@ function ReceptionDesk({ m, welcome }: { m: DMats; welcome: Texture }) {
   // plain satin oak: the grain texture stretches into thick stripes around the curve
   const oak = useMemo(() => new MeshStandardMaterial({ color: '#94623A', roughness: 0.42 }), [])
   const span = 2.3 // radians of arc, centred on the front
+  const [body, counter, plinth] = useMemo(() => [
+    arcSlab(1.15, 1.6, span, 1.0), arcSlab(1.05, 1.72, span + 0.08, 0.06), arcSlab(1.2, 1.55, span, 0.08),
+  ], [])
+  useEffect(() => () => { body.dispose(); counter.dispose(); plinth.dispose() }, [body, counter, plinth])
   return (
     <group>
-      {/* body and counter as segments of a cylinder, the open side towards the back */}
-      <mesh position-y={0.5} material={oak} castShadow receiveShadow><cylinderGeometry args={[1.6, 1.6, 1.0, 40, 1, false, -span / 2, span]} /></mesh>
-      <mesh position-y={1.03} material={marble} castShadow><cylinderGeometry args={[1.72, 1.72, 0.06, 40, 1, false, -span / 2 - 0.04, span + 0.08]} /></mesh>
-      <mesh position-y={0.04} material={m.panelDark}><cylinderGeometry args={[1.55, 1.55, 0.08, 40, 1, false, -span / 2, span]} /></mesh>
+      {/* body, counter and plinth as solid curved slabs (inner wall, top and ends included), so it's whole from behind too */}
+      <mesh geometry={body} material={oak} castShadow receiveShadow />
+      <mesh geometry={counter} position-y={1.0} material={marble} castShadow receiveShadow />
+      <mesh geometry={plinth} material={m.panelDark} />
       {/* marble panels either side of the sign */}
       {[-1, 1].map(s => {
         const a = s * 0.68
