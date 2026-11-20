@@ -17,6 +17,7 @@ const VIEWS: { id: View; label: string }[] = [
   { id: 'gallery', label: '📚 Gallery' },
   { id: 'shelf', label: '🖼️ Close-up' },
   { id: 'garden', label: '✿ VIP terrace' },
+  { id: 'vip', label: '👑 Inside VIP' },
 ]
 
 export default function SanctuaryPreviewPage() {

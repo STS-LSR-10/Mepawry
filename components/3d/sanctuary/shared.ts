@@ -12,6 +12,8 @@ export type V3 = [number, number, number]
 export const polar = (a: number, r: number, y = 0): V3 => [Math.cos(a) * r, y, Math.sin(a) * r]
 
 export function seeded(seed: number) {
+  // the generator needs a positive whole seed: 0 or a negative one would give NaN or a constant forever
+  seed = (Math.abs(Math.floor(seed)) % 2147483646) || 1
   return () => { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646 }
 }
 

@@ -21,6 +21,7 @@ import { ToneMappingMode } from 'postprocessing'
 import { useQuality } from '../quality'
 import { H, leafCardTexture, polar, seeded, useInstances, W, type V3 } from './shared'
 import { GalleryInterior } from './GalleryInterior'
+import { VipInterior } from './VipInterior'
 
 // ── Plan (metres). Angles go round from +x towards +z; the front of the site (the entrance path) is +z. ──
 const FRONT = Math.PI / 2
@@ -562,6 +563,7 @@ function VipPavilion({ m }: { m: Mats }) {
       ))}
       {/* main domed pavilion and its two wings */}
       <DomePavilion m={m} at={[0, z - 0.5]} r={4.2} wall={4.2} y={y} doors={[2]} />
+      <VipInterior y={y} z={z - 0.5} domeR={4.2} />
       {[-1, 1].map(s => (
         <group key={s} position={[s * 7.2, y, z - 0.5]}>
           <Wing m={m} />
@@ -626,12 +628,13 @@ function Willow({ at }: { at: [number, number] }) {
 
 // ── Camera views ──
 
-export type View = 'aerial' | 'entrance' | 'gallery' | 'shelf' | 'garden'
+export type View = 'aerial' | 'entrance' | 'gallery' | 'shelf' | 'garden' | 'vip'
 const VIEWS: Record<View, { pos: V3; target: V3 }> = {
   aerial: { pos: [0, 48, 92], target: [0, 0, 2] },
   entrance: { pos: [0, 3.4, 58], target: [0, 4, DOME.z] },
   gallery: { pos: [...polar(FRONT + 0.28, 33, 1.65)] as V3, target: [...polar(FRONT + 0.5, 33, 1.75)] as V3 },
   garden: { pos: [0, 5, 22], target: [0, 2.5, VIP.z] },
+  vip: { pos: [0.4, VIP.y + 2.3, VIP.z - 0.5 + 3.75], target: [0, VIP.y + 1.25, VIP.z - 0.5 - 3] },
   shelf: { pos: [...polar(FRONT + 0.4, 33.4, 1.75)] as V3, target: [...polar(FRONT + 0.4, 36, 1.55)] as V3 },
 }
 

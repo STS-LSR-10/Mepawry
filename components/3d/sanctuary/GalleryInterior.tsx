@@ -24,7 +24,7 @@ const PETS = ['🐶', '🐱', '🐕', '🐈', '🐰', '🐹', '🦜', '🐾']
 type Item = { p: V3; ry?: number; rx?: number; s?: V3; c?: string }
 
 /** A pet portrait: soft studio background, the pet, a pale mat. Eight of them, shared across thousands of frames. */
-function portraitTexture(i: number) {
+export function portraitTexture(i: number) {
   const c = document.createElement('canvas')
   c.width = 128; c.height = 160
   const g = c.getContext('2d')!
