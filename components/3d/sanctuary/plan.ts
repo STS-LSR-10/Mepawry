@@ -74,8 +74,15 @@ export const cabinetWidth = (rr: number, step: number) => 2 * rr * Math.sin(step
 
 export interface Slot { x: number; y: number; z: number; rot: number; room: string; standAt: P }
 
-const ZONE = 'ABCDEFGH'
-const zoneOf = (a: number) => ZONE[Math.floor((((a % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2)) / (Math.PI / 4))]
+/**
+ * A gallery's eight zones, counted from the reception: A is the first stretch on the left of the reception's left
+ * doorway, going round past the back (A–D on the left, E–H on the right) to H beside its right doorway.
+ */
+export function zoneIndex(a: number, from: number, to: number) {
+  const along = (((a - from) % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2)
+  return Math.min(7, Math.max(0, Math.floor(along / ((to - from) / 8))))
+}
+const zoneOf = (a: number, ring: { from: number; to: number }) => 'ABCDEFGH'[zoneIndex(a, ring.from, ring.to)]
 const ROW_ORDER = [2, 1, 3, 0, 4] // eye level first
 
 /**
@@ -94,7 +101,7 @@ export const SLOTS: Slot[] = RINGS.flatMap((ring, ri) => {
     const stand = at(0, 0, CAB_D / 2 + 1.1)
     for (const row of ROW_ORDER) for (let col = 0; col < COLS; col++) {
       const p = at(-w / 2 + (col + 0.5) * cw, BASE_H + row * ROW_H + ROW_H / 2, -0.04)
-      out.push({ x: p.x, y: p.y, z: p.z, rot: ry, room: `${ri === 0 ? 'Outer' : 'Inner'} gallery · Zone ${zoneOf(a)}`, standAt: { x: stand.x, z: stand.z } })
+      out.push({ x: p.x, y: p.y, z: p.z, rot: ry, room: `${ri === 0 ? 'Outer' : 'Inner'} gallery · Zone ${zoneOf(a, ring)}`, standAt: { x: stand.x, z: stand.z } })
     }
   }
   return out

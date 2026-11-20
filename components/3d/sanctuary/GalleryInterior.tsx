@@ -13,7 +13,7 @@ import {
 } from 'three'
 import { H, leafCardTexture, polar, seeded, useInstances, useLamp, useLampGlow, VAULT_TOP, W, Roof, type V3 } from './shared'
 
-import { BASE_H, CAB_D, CAB_H, COLS, isDoorBay, ROW_H, ROWS } from './plan'
+import { BASE_H, CAB_D, CAB_H, COLS, isDoorBay, ROW_H, ROWS, zoneIndex } from './plan'
 
 const PETS = ['🐶', '🐱', '🐕', '🐈', '🐰', '🐹', '🦜', '🐾']
 
@@ -220,7 +220,7 @@ export function GalleryInterior({ r, angles, step, twoSided, m, demo = false }: 
         L.pilasters.push({ p: at(0, CAB_H / 2, 0.04), ry, s: [0.32, CAB_H, CAB_D + 0.1] })
         L.capitals.push({ p: at(0, CAB_H - 0.32, 0.08), ry, s: [0.42, 0.14, CAB_D + 0.2] })
         if (i % 3 === 1) {
-          const zone = Math.floor((((a % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2)) / (Math.PI / 4)) // eight zones round the ring
+          const zone = zoneIndex(a, angles[0], angles[angles.length - 1]) // eight zones, A beside the reception
           L.signs[zone].push({ p: at(0, 2.45, CAB_D / 2 + 0.12), ry, s: [0.44, 0.22, 1] })
           L.sconces.push({ p: at(0, 2.05, CAB_D / 2 + 0.16), ry, s: [0.12, 0.2, 0.12] })
           L.sconceGlass.push({ p: at(0, 2.05, CAB_D / 2 + 0.16), ry, s: [0.09, 0.15, 0.09] })
