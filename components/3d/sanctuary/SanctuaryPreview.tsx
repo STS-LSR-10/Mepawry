@@ -15,7 +15,9 @@ import {
 import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import type { OrbitControls as OrbitImpl } from 'three-stdlib'
 import { lawnTexture, pavingTexture, signTexture, woodTexture } from '../textures'
-import { microMap, Polish } from '../look'
+import { microMap } from '../look'
+import { Bloom, BrightnessContrast, EffectComposer, HueSaturation, N8AO, SMAA, ToneMapping, Vignette } from '@react-three/postprocessing'
+import { ToneMappingMode } from 'postprocessing'
 import { useQuality } from '../quality'
 
 // ── Plan (metres). Angles go round from +x towards +z; the front of the site (the entrance path) is +z. ──
@@ -33,6 +35,7 @@ const SIDE_DOORS = [FRONT + 0.5, FRONT - 0.5]                       // smaller d
 const VIP = { z: -9, y: 1.3 }                                       // the raised terrace with the VIP pavilion
 
 type V3 = [number, number, number]
+const SUN: V3 = [-86, 27, 58] // golden hour: low and warm, from the front-left
 const polar = (a: number, r: number, y = 0): V3 => [Math.cos(a) * r, y, Math.sin(a) * r]
 
 function seeded(seed: number) {
@@ -67,26 +70,26 @@ function useMaterials(low: boolean) {
     // Real glass: nearly clear when you look straight through it, bright and mirror-like at grazing angles
     // (Fresnel), reflecting the sky. That is what makes a glasshouse read as glass rather than an empty frame.
     const glass = new MeshPhysicalMaterial({
-      color: '#C8DDE4', transparent: true, opacity: 0.18, roughness: 0.04, metalness: 0.05,
+      color: '#8FAAB6', transparent: true, opacity: 0.22, roughness: 0.04, metalness: 0.05,
       clearcoat: low ? 0 : 1, clearcoatRoughness: 0.02, envMapIntensity: 1.6, side: DoubleSide, depthWrite: false,
     })
     glass.onBeforeCompile = sh => {
       sh.fragmentShader = sh.fragmentShader.replace('#include <opaque_fragment>', `
         float facing = abs(dot(normalize(normal), normalize(vViewPosition)));
         float fres = pow(1.0 - facing, 2.6);
-        diffuseColor.a = clamp(diffuseColor.a + fres * 0.55, 0.0, 0.85);
-        outgoingLight += vec3(0.78, 0.88, 0.94) * fres * 0.18;
+        diffuseColor.a = clamp(diffuseColor.a + fres * 0.5, 0.0, 0.8);
+        outgoingLight += vec3(0.62, 0.72, 0.8) * fres * 0.1;
         #include <opaque_fragment>`)
     }
     return {
       // honey-toned oak: a warm base with a fine grain in the bump, not the dark walnut texture
-      frame: new MeshStandardMaterial({ color: '#A9662E', roughness: 0.42, bumpMap: microMap('grain'), bumpScale: 0.8 }),
+      frame: new MeshStandardMaterial({ color: '#B06A2C', roughness: 0.36, bumpMap: microMap('grain'), bumpScale: 0.25 }),
       shelf: new MeshStandardMaterial({ color: '#A8703E', roughness: 0.6, bumpMap: microMap('grain'), bumpScale: 0.6 }),
       photoFrame: new MeshStandardMaterial({ color: '#E8D2A6', roughness: 0.4, metalness: 0.3 }),
       glass,
-      stone: new MeshStandardMaterial({ color: '#9E8A72', roughness: 0.85, bumpMap: microMap('stone'), bumpScale: 1 }),
+      stone: new MeshStandardMaterial({ color: '#B39876', roughness: 0.85, bumpMap: microMap('stone'), bumpScale: 1 }),
       white: new MeshStandardMaterial({ color: '#F1ECE2', roughness: 0.5 }),
-      plinth: new MeshStandardMaterial({ color: '#B8A487', roughness: 0.9, bumpMap: microMap('stone'), bumpScale: 1.4 }),
+      plinth: new MeshStandardMaterial({ color: '#C4A57E', roughness: 0.9, bumpMap: microMap('stone'), bumpScale: 1.4 }),
       frameCard: new MeshStandardMaterial({ color: '#ffffff', roughness: 0.55 }),
     }
   }, [low])
@@ -355,23 +358,23 @@ function Ground({ low }: { low: boolean }) {
     <group>
       <mesh rotation-x={-Math.PI / 2} receiveShadow>
         <circleGeometry args={[260, 64]} />
-        <meshStandardMaterial map={lawn} color="#6C8E4C" roughness={0.95} />
+        <meshStandardMaterial map={lawn} color="#668F3C" roughness={0.95} />
       </mesh>
       {rings.map(({ inner, outer, t }) => (
         <mesh key={inner} rotation-x={-Math.PI / 2} position-y={0.015} receiveShadow>
           <ringGeometry args={[inner, outer, 160]} />
-          <meshStandardMaterial map={t} roughness={0.9} />
+          <meshStandardMaterial map={t} color="#EBD2AE" roughness={0.9} />
         </mesh>
       ))}
       {/* the entrance path from the front, through both openings to the fountain */}
       <mesh rotation-x={-Math.PI / 2} position={[0, 0.016, 58]} receiveShadow>
         <planeGeometry args={[4, 40]} />
-        <meshStandardMaterial map={straight} roughness={0.9} />
+        <meshStandardMaterial map={straight} color="#EBD2AE" roughness={0.9} />
       </mesh>
       {/* path from the entrance through the inner opening to the terrace stairs */}
       <mesh rotation-x={-Math.PI / 2} position={[0, 0.017, 15]} receiveShadow>
         <planeGeometry args={[3.4, 30]} />
-        <meshStandardMaterial map={straight} roughness={0.9} />
+        <meshStandardMaterial map={straight} color="#EBD2AE" roughness={0.9} />
       </mesh>
       {!low && <Hills />}
     </group>
@@ -487,7 +490,7 @@ function Trees({ low }: { low: boolean }) {
     const trunks: { p: V3; s: V3; ry: number }[] = [], clumps: { p: V3; s: V3; ry: number; c: string }[] = []
     const cards: { p: V3; s: V3; rx: number; ry: number; rz: number; c: string }[] = []
     const tints = ['#FFFFFF', '#EEF5DF', '#DCE9C6', '#F4F0D8', '#D2E2B8']
-    const greens = ['#3E6B2C', '#4A7A34', '#567F3A', '#33602A', '#62893F', '#2E5626']
+    const greens = ['#3A6A24', '#4A7C2C', '#5A8A32', '#2F5E20', '#6A9438', '#2A521C']
     const place = (x: number, z: number, size: number) => {
       trunks.push({ p: [x, size * 1.1, z], s: [size * 0.5, size * 2.2, size * 0.5], ry: 0 })
       const n = 7 + Math.floor(rnd() * 4)
@@ -747,26 +750,50 @@ function CameraRig({ view }: { view: View }) {
   return null
 }
 
+/**
+ * The finishing pass, in this order: ambient occlusion where things meet, a soft bloom on the glints in the glass,
+ * a touch more saturation and contrast for the warm golden-hour look, ACES filmic tone mapping, a gentle vignette,
+ * then SMAA to smooth the thin glazing bars. (The Canvas runs `flat`, so tone mapping happens only here.)
+ */
+function Grade() {
+  return (
+    <EffectComposer multisampling={0}>
+      <N8AO aoRadius={2.2} intensity={3} distanceFalloff={1} halfRes quality="medium" />
+      <Bloom mipmapBlur luminanceThreshold={0.92} luminanceSmoothing={0.2} intensity={0.45} radius={0.7} />
+      <HueSaturation saturation={0.16} />
+      <BrightnessContrast brightness={0.01} contrast={0.1} />
+      <ToneMapping mode={ToneMappingMode.ACES_FILMIC} />
+      <Vignette offset={0.32} darkness={0.42} />
+      <SMAA />
+    </EffectComposer>
+  )
+}
+
 // ── Scene ──
 
-function Scene({ view, low }: { view: View; low: boolean }) {
+function Scene({ view, low, onReady }: { view: View; low: boolean; onReady?: () => void }) {
   const m = useMaterials(low)
+  const told = useRef(false)
+  useFrame(() => { if (!told.current) { told.current = true; requestAnimationFrame(() => onReady?.()) } })
   const sign = useMemo(() => signTexture('🐾 Mepawry Sanctuary 🐾', { w: 900, h: 160, bg: '#F6EFE2', fg: '#3E2A1A', font: 'italic 700 70px Georgia, serif' }), [])
   return (
     <>
-      <Sky sunPosition={[90, 38, 70]} turbidity={6} rayleigh={1.2} mieCoefficient={0.004} mieDirectionalG={0.85} />
-      <fog attach="fog" args={['#DCE6E2', 150, 460]} />
-      <hemisphereLight args={['#CFE3FF', '#5C6E3E', 0.35]} />
+      {/* Golden hour: a low warm sun from the front-left throws long soft shadows across the lawn; the sky, the haze
+          and every reflection in the glass are warmed by the same sun */}
+      <Sky sunPosition={SUN} turbidity={8} rayleigh={2.2} mieCoefficient={0.006} mieDirectionalG={0.88} />
+      <fog attach="fog" args={['#E9DCC2', 120, 430]} />
+      <hemisphereLight args={['#BCD3EE', '#4F5F2C', 0.55]} />
       <directionalLight
-        position={[60, 55, 70]} intensity={2.7} color="#FFD9A8" castShadow={!low}
-        shadow-mapSize={[4096, 4096]} shadow-bias={-0.0003} shadow-normalBias={0.04}
-        shadow-camera-left={-60} shadow-camera-right={60} shadow-camera-top={60} shadow-camera-bottom={-60} shadow-camera-far={220}
+        position={SUN} intensity={4.2} color="#FFBF78" castShadow={!low}
+        shadow-mapSize={[4096, 4096]} shadow-bias={-0.0004} shadow-normalBias={0.09} shadow-radius={4}
+        shadow-camera-left={-58} shadow-camera-right={58} shadow-camera-top={58} shadow-camera-bottom={-58} shadow-camera-near={1} shadow-camera-far={260}
       />
-      {/* reflections come from the same sky you see, plus the sun and the green of the lawn */}
+      {/* a cool bounce from the opposite side so shadowed faces stay readable, not black */}
+      <directionalLight position={[60, 25, -50]} intensity={0.35} color="#9DB7E0" />
       <Environment resolution={256} frames={1}>
-        <Sky sunPosition={[90, 38, 70]} turbidity={6} rayleigh={1.2} mieCoefficient={0.004} mieDirectionalG={0.85} />
-        <Lightformer intensity={6} color="#FFE2BC" position={[60, 28, 46]} scale={[14, 10, 1]} />
-        <Lightformer intensity={0.9} color="#7FA05C" position={[0, -4, 0]} rotation-x={-Math.PI / 2} scale={[200, 200, 1]} />
+        <Sky sunPosition={SUN} turbidity={8} rayleigh={2.2} mieCoefficient={0.006} mieDirectionalG={0.88} />
+        <Lightformer intensity={8} color="#FFC888" position={SUN} scale={[18, 12, 1]} />
+        <Lightformer intensity={0.8} color="#5E8A36" position={[0, -4, 0]} rotation-x={-Math.PI / 2} scale={[200, 200, 1]} />
       </Environment>
 
       <Ground low={low} />
@@ -785,12 +812,12 @@ function Scene({ view, low }: { view: View; low: boolean }) {
 
       <OrbitControls makeDefault enableDamping maxPolarAngle={Math.PI / 2 - 0.03} minDistance={4} maxDistance={220} autoRotate={view === 'aerial'} autoRotateSpeed={0.25} />
       <CameraRig view={view} />
-      {!low && <Polish bloom={0.35} />}
+      {!low && <Grade />}
     </>
   )
 }
 
-export default function SanctuaryPreview({ view }: { view: View }) {
+export default function SanctuaryPreview({ view, onReady }: { view: View; onReady?: () => void }) {
   const low = useQuality() === 'low'
   return (
     <Canvas
@@ -801,7 +828,7 @@ export default function SanctuaryPreview({ view }: { view: View }) {
       gl={{ antialias: true, powerPreference: 'high-performance' }}
     >
       <Suspense fallback={null}>
-        <Scene view={view} low={low} />
+        <Scene view={view} low={low} onReady={onReady} />
       </Suspense>
     </Canvas>
   )
