@@ -158,7 +158,7 @@ function Gallery({ r, from, to, m }: { r: number; from: number; to: number; m: M
       <instancedMesh ref={refs.transoms} args={[undefined, undefined, transoms.length]} material={m.frame}>
         <boxGeometry />
       </instancedMesh>
-      <GalleryInterior r={r} angles={angles} step={step} twoSided={r > 30} m={m} />
+      <GalleryInterior r={r} angles={angles} step={step} twoSided m={m} />
       <instancedMesh ref={refs.panes} args={[undefined, undefined, panes.length]} material={m.glass} renderOrder={2}>
         <planeGeometry />
       </instancedMesh>
