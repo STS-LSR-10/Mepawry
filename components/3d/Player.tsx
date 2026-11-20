@@ -40,12 +40,13 @@ export function Player({ name, gender, look, pos, route, onInsideChange, stick, 
   const want = useRef(6)                   // the camera distance you chose (indoors it may be pulled in)
   const armSet = useRef<number | null>(null) // the distance the arm last put the camera at
   const swing = useRef<number | null>(null) // camera heading to swing round to (after arriving at a shrine)
+  const tiltUp = useRef(false)              // easing the camera up to look down into a room you just entered
   const follow = useRef<P | null>(null)    // where the camera is looking, trailing the avatar a little
 
   // Your own drag wins over an automatic camera swing
   const canvas = useThree(st => st.gl.domElement)
   useEffect(() => {
-    const stop = () => { swing.current = null }
+    const stop = () => { swing.current = null; tiltUp.current = false }
     canvas.addEventListener('pointerdown', stop)
     return () => canvas.removeEventListener('pointerdown', stop)
   }, [canvas])
@@ -164,13 +165,13 @@ export function Player({ name, gender, look, pos, route, onInsideChange, stick, 
       // A distance we didn't set means you zoomed: that's the distance you want now
       if (armSet.current == null || Math.abs(len - armSet.current) > 0.01) want.current = len
       let next = want.current
-      // Indoors the roofs are off (a dollhouse cutaway), so the camera looks down into the room from above: at least
-      // ~50° up, enough to see over the cubby cabinets. It eases up to that rather than jumping; you can still turn,
-      // zoom and tilt higher.
+      // Indoors the roofs are off (a dollhouse cutaway). On walking in, the camera eases up to look down into the room
+      // (~50°, over the cabinets); after that it stays wherever you put it, and touching the screen stops the easing.
       let ux = dx / len, uy = dy / len, uz = dz / len
-      if (inside.current && flat > 0.01) {
+      if (tiltUp.current && flat > 0.01) {
         const e = Math.atan2(dy, flat)
-        if (e < MIN_INDOOR_TILT) {
+        if (e >= MIN_INDOOR_TILT - 0.01) tiltUp.current = false
+        else {
           const ne = e + (MIN_INDOOR_TILT - e) * (1 - Math.exp(-Math.min(dt, 0.25) * 3 * turnSpeed)), h = Math.cos(ne)
           ux = (dx / flat) * h; uy = Math.sin(ne); uz = (dz / flat) * h
         }
@@ -183,7 +184,7 @@ export function Player({ name, gender, look, pos, route, onInsideChange, stick, 
     }
 
     const now = isInside(p)
-    if (now !== inside.current) { inside.current = now; onInsideChange(now) }
+    if (now !== inside.current) { inside.current = now; tiltUp.current = now; onInsideChange(now) }
   })
 
   return (
