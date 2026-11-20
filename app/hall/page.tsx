@@ -175,15 +175,16 @@ export default function HallPage() {
 
       {/* Local time and season */}
       {sky && (
-        // Folded to the logo at first; tap to see the time of day, season and place, tap again to fold
+        // Folded to the time-of-day icon at first; tap to see the time of day, season and place, tap again to fold
         <button
           onClick={() => setSkyOpen(o => !o)}
           aria-expanded={skyOpen}
           aria-label={skyOpen ? undefined : `${label(PHASE_LABEL[sky.phase])} · ${label(SEASON_LABEL[sky.season])} · ${sky.place}`}
-          className={`fixed bottom-24 left-4 z-20 flex max-w-[60vw] items-center gap-2 glass rounded-full border border-white/20 text-sm text-[#FAF7F2] shadow-md transition-all ${skyOpen ? 'py-1.5 pl-1.5 pr-4' : 'p-1.5'}`}
+          className={`fixed bottom-24 left-4 z-20 flex h-11 max-w-[60vw] items-center gap-1.5 glass rounded-full border border-white/20 text-sm text-[#FAF7F2] shadow-md ${skyOpen ? 'pl-3 pr-4' : 'w-11 justify-center'}`}
         >
-          <span aria-hidden className="h-9 w-9 shrink-0 rounded-full bg-[#F5EDDF] bg-[url('/brand/logo.webp')] bg-[length:175%] bg-[position:50%_34%] ring-1 ring-white/40" />
-          {skyOpen && <span className="truncate">{label(PHASE_LABEL[sky.phase])} · {label(SEASON_LABEL[sky.season])} · {sky.place}</span>}
+          {/* Folded: just the time-of-day icon (☀️ 🌙 🌅 🌇); open: the rest of the line */}
+          <span aria-hidden className="text-lg leading-none">{PHASE_LABEL[sky.phase].split(' ')[0]}</span>
+          {skyOpen && <span className="truncate">{label(PHASE_LABEL[sky.phase]).split(' ').slice(1).join(' ')} · {label(SEASON_LABEL[sky.season])} · {sky.place}</span>}
         </button>
       )}
 
