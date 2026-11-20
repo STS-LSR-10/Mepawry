@@ -132,6 +132,7 @@ export default function HallPage() {
 
   // Visitor's own time and season; ?hour=14&season=winter previews others
   const [sky, setSky] = useState<LocalSky>()
+  const [skyOpen, setSkyOpen] = useState(false)
   useEffect(() => {
     const q = new URLSearchParams(window.location.search)
     const h = Number(q.get('hour') ?? NaN)
@@ -174,9 +175,16 @@ export default function HallPage() {
 
       {/* Local time and season */}
       {sky && (
-        <div className="fixed bottom-24 left-4 z-20 max-w-[55vw] truncate glass rounded-full border border-white/20 px-4 py-2.5 text-sm text-[#FAF7F2] shadow-md">
-          {label(PHASE_LABEL[sky.phase])} · {label(SEASON_LABEL[sky.season])} · {sky.place}
-        </div>
+        // Folded to the logo at first; tap to see the time of day, season and place, tap again to fold
+        <button
+          onClick={() => setSkyOpen(o => !o)}
+          aria-expanded={skyOpen}
+          aria-label={skyOpen ? undefined : `${label(PHASE_LABEL[sky.phase])} · ${label(SEASON_LABEL[sky.season])} · ${sky.place}`}
+          className={`fixed bottom-24 left-4 z-20 flex max-w-[60vw] items-center gap-2 glass rounded-full border border-white/20 text-sm text-[#FAF7F2] shadow-md transition-all ${skyOpen ? 'py-1.5 pl-1.5 pr-4' : 'p-1.5'}`}
+        >
+          <span aria-hidden className="h-9 w-9 shrink-0 rounded-full bg-[#F5EDDF] bg-[url('/brand/logo.webp')] bg-[length:175%] bg-[position:50%_34%] ring-1 ring-white/40" />
+          {skyOpen && <span className="truncate">{label(PHASE_LABEL[sky.phase])} · {label(SEASON_LABEL[sky.season])} · {sky.place}</span>}
+        </button>
       )}
 
       {/* Dress your character: the panel sits at the bottom so your avatar stays in view and changes live */}
