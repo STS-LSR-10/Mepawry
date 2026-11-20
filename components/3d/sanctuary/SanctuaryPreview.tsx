@@ -19,11 +19,11 @@ import { microMap } from '../look'
 import { Bloom, BrightnessContrast, EffectComposer, HueSaturation, N8AO, SMAA, ToneMapping, Vignette } from '@react-three/postprocessing'
 import { ToneMappingMode } from 'postprocessing'
 import { useQuality } from '../quality'
+import { H, leafCardTexture, polar, seeded, useInstances, W, type V3 } from './shared'
+import { GalleryInterior } from './GalleryInterior'
 
 // ── Plan (metres). Angles go round from +x towards +z; the front of the site (the entrance path) is +z. ──
 const FRONT = Math.PI / 2
-const W = 6           // gallery width
-const H = 3.2         // wall height (the glass vault sits on top)
 const SILL = 0.62     // top of the stone base wall + wooden sill; the glass starts here
 const PLINTH = 0.5   // stone base wall under every window
 const RINGS = [
@@ -34,34 +34,8 @@ const DOME = { x: 0, z: 33, r: 5.6, wall: 4.4 }                    // the entran
 const SIDE_DOORS = [FRONT + 0.5, FRONT - 0.5]                       // smaller doors with steps either side of the dome
 const VIP = { z: -9, y: 1.3 }                                       // the raised terrace with the VIP pavilion
 
-type V3 = [number, number, number]
 const SUN: V3 = [-86, 27, 58] // golden hour: low and warm, from the front-left
-const polar = (a: number, r: number, y = 0): V3 => [Math.cos(a) * r, y, Math.sin(a) * r]
 
-function seeded(seed: number) {
-  return () => { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646 }
-}
-
-/** Sets every instance of a mesh from a list of (position, y-rotation, scale) and optional colours. */
-function useInstances(ref: React.RefObject<InstancedMesh | null>, items: { p: V3; ry?: number; rx?: number; rz?: number; s?: V3; c?: string }[]) {
-  useLayoutEffect(() => {
-    const m = ref.current
-    if (!m) return
-    const o = new Object3D(), col = new Color()
-    items.forEach((it, i) => {
-      o.position.set(...it.p)
-      o.rotation.set(it.rx ?? 0, it.ry ?? 0, it.rz ?? 0, 'YXZ')
-      o.scale.set(...(it.s ?? [1, 1, 1]))
-      o.updateMatrix()
-      m.setMatrixAt(i, o.matrix)
-      if (it.c) m.setColorAt(i, col.set(it.c))
-    })
-    m.count = items.length
-    m.instanceMatrix.needsUpdate = true
-    if (m.instanceColor) m.instanceColor.needsUpdate = true
-    m.computeBoundingSphere()
-  }, [ref, items])
-}
 
 function useMaterials(low: boolean) {
   return useMemo(() => {
@@ -135,32 +109,6 @@ function Gallery({ r, from, to, m }: { r: number; from: number; to: number; m: M
     return g
   }, [r, step])
 
-  // Memorial shelves: a tall bookcase in every bay of the outer wall, facing in, each holding a grid of portraits
-  const cases = useMemo(() => angles.slice(0, -1).map(a0 => {
-    const a = a0 + step / 2, w = 2 * (ro - 0.35) * Math.sin(step / 2) * 0.9
-    return { p: polar(a, ro - 0.35, 1.45), ry: -a - Math.PI / 2, s: [w, 2.6, 0.38] as V3 }
-  }), [angles, ro, step])
-  // Inside each bookcase: shelf boards, and a framed portrait in most cubbies (some still waiting for a pet)
-  const { portraits, frames, boards } = useMemo(() => {
-    const rnd = seeded(Math.round(r * 100))
-    const portraits: { p: V3; ry: number; s: V3; c: string }[] = [], frames: { p: V3; ry: number; s: V3 }[] = [], boards: { p: V3; ry: number; s: V3 }[] = []
-    const pal = ['#F6C9A8', '#F2B8C6', '#CDBDEB', '#B8D9F0', '#C4E3BB', '#FBE3A3', '#F4EDE2', '#E7B48F', '#D9A27A']
-    angles.slice(0, -1).forEach(a0 => {
-      const a = a0 + step / 2, w = 2 * (ro - 0.55) * Math.sin(step / 2) * 0.82
-      const tx = -Math.sin(a), tz = Math.cos(a), ry = -a - Math.PI / 2
-      const at = (rr: number, off: number, y: number): V3 => { const [px, , pz] = polar(a, rr, 0); return [px + tx * off, y, pz + tz * off] }
-      const cols = 6, rows = 6
-      for (let k = 0; k <= rows; k++) boards.push({ p: at(ro - 0.5, 0, 0.24 + k * 0.4), ry, s: [w * 1.08, 0.04, 0.34] })
-      for (let ci = 0; ci < cols; ci++) for (let rw = 0; rw < rows; rw++) {
-        if (rnd() < 0.18) continue
-        const off = (ci - (cols - 1) / 2) * (w / cols), y = 0.44 + rw * 0.4, fw = (w / cols) * 0.66
-        frames.push({ p: at(ro - 0.56, off, y), ry, s: [fw, 0.3, 0.035] })
-        portraits.push({ p: at(ro - 0.58, off, y), ry, s: [fw * 0.78, 0.23, 1], c: pal[Math.floor(rnd() * pal.length)] })
-      }
-    })
-    return { portraits, frames, boards }
-  }, [angles, ro, r, step])
-
   // Purlins: thin wooden rails running round the vault
   const purlins = useMemo(() => [0.07, 0.17, 0.28, 0.39, 0.5, 0.61, 0.72, 0.83, 0.93].map(f => {
     const b = Math.PI * f
@@ -169,19 +117,15 @@ function Gallery({ r, from, to, m }: { r: number; from: number; to: number; m: M
 
   const refs = {
     posts: useRef<InstancedMesh>(null), ribs: useRef<InstancedMesh>(null), panes: useRef<InstancedMesh>(null),
-    sills: useRef<InstancedMesh>(null), vaults: useRef<InstancedMesh>(null), cases: useRef<InstancedMesh>(null),
+    sills: useRef<InstancedMesh>(null), vaults: useRef<InstancedMesh>(null),
     plinths: useRef<InstancedMesh>(null), beams: useRef<InstancedMesh>(null), arches: useRef<InstancedMesh>(null),
-    portraits: useRef<InstancedMesh>(null), frames: useRef<InstancedMesh>(null), boards: useRef<InstancedMesh>(null), mullions: useRef<InstancedMesh>(null), transoms: useRef<InstancedMesh>(null),
+    mullions: useRef<InstancedMesh>(null), transoms: useRef<InstancedMesh>(null),
   }
   useInstances(refs.posts, posts)
   useInstances(refs.ribs, ribs)
   useInstances(refs.panes, panes)
   useInstances(refs.sills, sills)
   useInstances(refs.vaults, vaults)
-  useInstances(refs.cases, cases)
-  useInstances(refs.portraits, portraits)
-  useInstances(refs.frames, frames)
-  useInstances(refs.boards, boards)
   useInstances(refs.mullions, mullions)
   useInstances(refs.transoms, transoms)
   useInstances(refs.plinths, plinths)
@@ -190,10 +134,6 @@ function Gallery({ r, from, to, m }: { r: number; from: number; to: number; m: M
 
   return (
     <group>
-      {/* Floor of the gallery: pale stone */}
-      <mesh rotation-x={-Math.PI / 2} position-y={0.02} receiveShadow material={m.stone}>
-        <ringGeometry args={[ri, ro, 160, 1, -to, len]} />
-      </mesh>
       <instancedMesh ref={refs.posts} args={[undefined, undefined, posts.length]} material={m.frame} castShadow receiveShadow>
         <boxGeometry args={[0.24, H, 0.24]} />
       </instancedMesh>
@@ -218,18 +158,7 @@ function Gallery({ r, from, to, m }: { r: number; from: number; to: number; m: M
       <instancedMesh ref={refs.transoms} args={[undefined, undefined, transoms.length]} material={m.frame}>
         <boxGeometry />
       </instancedMesh>
-      <instancedMesh ref={refs.cases} args={[undefined, undefined, cases.length]} material={m.shelf} castShadow receiveShadow>
-        <boxGeometry />
-      </instancedMesh>
-      <instancedMesh ref={refs.boards} args={[undefined, undefined, boards.length]} material={m.frame} castShadow receiveShadow>
-        <boxGeometry />
-      </instancedMesh>
-      <instancedMesh ref={refs.frames} args={[undefined, undefined, frames.length]} material={m.photoFrame}>
-        <boxGeometry />
-      </instancedMesh>
-      <instancedMesh ref={refs.portraits} args={[undefined, undefined, portraits.length]} material={m.frameCard}>
-        <planeGeometry />
-      </instancedMesh>
+      <GalleryInterior r={r} angles={angles} step={step} twoSided={r > 30} m={m} />
       <instancedMesh ref={refs.panes} args={[undefined, undefined, panes.length]} material={m.glass} renderOrder={2}>
         <planeGeometry />
       </instancedMesh>
@@ -446,40 +375,6 @@ function leafGeo() {
   g.setAttribute('color', new BufferAttribute(c, 3))
   g.computeVertexNormals()
   return g
-}
-
-/** A cluster of small leaves on a transparent card. Many crossed cards make a canopy that reads as foliage. */
-function leafCardTexture(kind: 'tree' | 'willow') {
-  const c = document.createElement('canvas')
-  c.width = c.height = 256
-  const g = c.getContext('2d')!
-  const rnd = seeded(kind === 'tree' ? 5 : 9)
-  const greens = kind === 'tree' ? ['#2F5A22', '#3D6E2B', '#4E8235', '#5E9440', '#76A84E', '#8DBA5C'] : ['#7FA548', '#94B85A', '#A9C86E', '#6E9640', '#BCD685']
-  if (kind === 'tree') {
-    for (let i = 0; i < 260; i++) {
-      const a = rnd() * Math.PI * 2, d = Math.sqrt(rnd()) * 112
-      const x = 128 + Math.cos(a) * d, y = 128 + Math.sin(a) * d
-      g.save(); g.translate(x, y); g.rotate(rnd() * Math.PI * 2)
-      g.fillStyle = greens[Math.floor((1 - d / 112) * 3 + rnd() * 3)]
-      g.beginPath(); g.ellipse(0, 0, 5 + rnd() * 5, 2.5 + rnd() * 2.5, 0, 0, Math.PI * 2); g.fill()
-      g.restore()
-    }
-  } else {
-    // long hanging strands of narrow leaves
-    for (let sx = 6; sx < 256; sx += 9 + rnd() * 6) {
-      const len = 140 + rnd() * 116
-      for (let y = 0; y < len; y += 5) {
-        g.save(); g.translate(sx + Math.sin(y * 0.03) * 3, y); g.rotate((rnd() - 0.5) * 0.9)
-        g.fillStyle = greens[Math.floor(rnd() * greens.length)]
-        g.beginPath(); g.ellipse(0, 0, 1.6, 4.5, 0, 0, Math.PI * 2); g.fill()
-        g.restore()
-      }
-    }
-  }
-  const t = new CanvasTexture(c)
-  t.colorSpace = SRGBColorSpace
-  t.anisotropy = 4
-  return t
 }
 
 function Trees({ low }: { low: boolean }) {
@@ -735,7 +630,7 @@ export type View = 'aerial' | 'entrance' | 'gallery' | 'garden'
 const VIEWS: Record<View, { pos: V3; target: V3 }> = {
   aerial: { pos: [0, 48, 92], target: [0, 0, 2] },
   entrance: { pos: [0, 3.4, 58], target: [0, 4, DOME.z] },
-  gallery: { pos: [...polar(FRONT + 0.3, 33.6, 1.7)] as V3, target: [...polar(FRONT + 0.62, 33.6, 1.9)] as V3 },
+  gallery: { pos: [...polar(FRONT + 0.28, 33, 1.65)] as V3, target: [...polar(FRONT + 0.5, 33, 1.75)] as V3 },
   garden: { pos: [0, 5, 22], target: [0, 2.5, VIP.z] },
 }
 
