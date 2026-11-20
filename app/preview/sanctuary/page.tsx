@@ -14,6 +14,7 @@ const SanctuaryPreview = dynamic(() => import('@/components/3d/sanctuary/Sanctua
 const VIEWS: { id: View; label: string }[] = [
   { id: 'aerial', label: '🕊️ Aerial' },
   { id: 'entrance', label: '🚪 Entrance' },
+  { id: 'lobby', label: '🛎️ Reception' },
   { id: 'gallery', label: '📚 Gallery' },
   { id: 'shelf', label: '🖼️ Close-up' },
   { id: 'garden', label: '✿ VIP terrace' },

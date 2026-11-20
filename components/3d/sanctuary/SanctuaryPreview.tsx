@@ -21,7 +21,8 @@ import { ToneMappingMode } from 'postprocessing'
 import { useQuality } from '../quality'
 import { H, leafCardTexture, polar, seeded, useInstances, W, type V3 } from './shared'
 import { GalleryInterior } from './GalleryInterior'
-import { VipInterior } from './VipInterior'
+import { VIP_DOME, VIP_WING, VipInterior } from './VipInterior'
+import { EntranceHall } from './EntranceHall'
 
 // ── Plan (metres). Angles go round from +x towards +z; the front of the site (the entrance path) is +z. ──
 const FRONT = Math.PI / 2
@@ -33,7 +34,8 @@ const RINGS = [
 ]
 const DOME = { x: 0, z: 33, r: 5.6, wall: 4.4 }                    // the entrance pavilion, facing the front
 const SIDE_DOORS = [FRONT + 0.5, FRONT - 0.5]                       // smaller doors with steps either side of the dome
-const VIP = { z: -9, y: 1.3 }                                       // the raised terrace with the VIP pavilion
+const VIP = { z: -9, y: 1.3 }
+const VIP_BACK = 0.8 // the VIP hall sits this far behind the terrace centre                                       // the raised terrace with the VIP pavilion
 
 const SUN: V3 = [-86, 27, 58] // golden hour: low and warm, from the front-left
 
@@ -172,9 +174,11 @@ function Gallery({ r, from, to, m }: { r: number; from: number; to: number; m: M
       {/* Gable ends where the ring opens: a wooden arch with glass */}
       {[from, to].map(a => (
         <group key={a} position={polar(a, r, 0)} rotation-y={-a}>
-          <mesh position-y={H + 0.28} rotation-y={Math.PI / 2} material={m.glass} renderOrder={2}>
-            <circleGeometry args={[W / 2, 28, 0, Math.PI]} />
-          </mesh>
+          {r < 30 && ( // the outer gallery's ends open straight into the reception dome
+            <mesh position-y={H + 0.28} rotation-y={Math.PI / 2} material={m.glass} renderOrder={2}>
+              <circleGeometry args={[W / 2, 28, 0, Math.PI]} />
+            </mesh>
+          )}
           <mesh position-y={H + 0.28} rotation-y={Math.PI / 2} material={m.frame} castShadow>
             <torusGeometry args={[W / 2, 0.11, 6, 28, Math.PI]} />
           </mesh>
@@ -532,7 +536,7 @@ function VipPavilion({ m }: { m: Mats }) {
     }
     // front edge of the terrace, leaving the stairs open, and the sides
     run(-11, z + 5, -1.8, z + 5); run(1.8, z + 5, 11, z + 5)
-    run(-11, z + 5, -11, z - 5); run(11, z + 5, 11, z - 5)
+    run(-11, z + 5, -11, z - 6.6); run(11, z + 5, 11, z - 6.6)
     return out
   }, [z, y])
   const ref = useRef<InstancedMesh>(null)
@@ -540,13 +544,13 @@ function VipPavilion({ m }: { m: Mats }) {
   return (
     <group>
       {/* terrace */}
-      <mesh position={[0, y / 2, z]} material={m.white} castShadow receiveShadow><boxGeometry args={[22.4, y, 10.4]} /></mesh>
-      <mesh position={[0, y + 0.02, z]} rotation-x={-Math.PI / 2} material={m.stone} receiveShadow><planeGeometry args={[22, 10]} /></mesh>
+      <mesh position={[0, y / 2, z - 0.8]} material={m.white} castShadow receiveShadow><boxGeometry args={[22.4, y, 12]} /></mesh>
+      <mesh position={[0, y + 0.02, z - 0.8]} rotation-x={-Math.PI / 2} material={m.stone} receiveShadow><planeGeometry args={[22, 11.6]} /></mesh>
       {/* balustrade: little turned balusters and a handrail */}
       <instancedMesh ref={ref} args={[undefined, undefined, rails.length]} material={m.white} castShadow>
         <cylinderGeometry args={[0.07, 0.09, 0.62, 8]} />
       </instancedMesh>
-      {[[-6.4, z + 5, 9.2, 0], [6.4, z + 5, 9.2, 0], [-11, z, 10, Math.PI / 2], [11, z, 10, Math.PI / 2]].map(([x, zz, len, ry], i) => (
+      {[[-6.4, z + 5, 9.2, 0], [6.4, z + 5, 9.2, 0], [-11, z - 0.8, 11.6, Math.PI / 2], [11, z - 0.8, 11.6, Math.PI / 2]].map(([x, zz, len, ry], i) => (
         <mesh key={i} position={[x, y + 0.7, zz]} rotation-y={ry} material={m.white} castShadow><boxGeometry args={[len, 0.1, 0.22]} /></mesh>
       ))}
       {/* stairs down to the garden, with urns of flowers at the top */}
@@ -562,10 +566,10 @@ function VipPavilion({ m }: { m: Mats }) {
         </group>
       ))}
       {/* main domed pavilion and its two wings */}
-      <DomePavilion m={m} at={[0, z - 0.5]} r={4.2} wall={4.2} y={y} doors={[2]} />
-      <VipInterior y={y} z={z - 0.5} domeR={4.2} />
+      <DomePavilion m={m} at={[0, z - VIP_BACK]} r={VIP_DOME.r} wall={VIP_DOME.wall} y={y} doors={[2]} />
+      <VipInterior y={y} z={z - VIP_BACK} />
       {[-1, 1].map(s => (
-        <group key={s} position={[s * 7.2, y, z - 0.5]}>
+        <group key={s} position={[s * VIP_WING.x, y, z - VIP_BACK]}>
           <Wing m={m} />
           <group position-y={3.4}>
             <mesh material={m.glass} renderOrder={2}><sphereGeometry args={[1.9, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2]} /></mesh>
@@ -628,13 +632,14 @@ function Willow({ at }: { at: [number, number] }) {
 
 // ── Camera views ──
 
-export type View = 'aerial' | 'entrance' | 'gallery' | 'shelf' | 'garden' | 'vip'
+export type View = 'aerial' | 'entrance' | 'lobby' | 'gallery' | 'shelf' | 'garden' | 'vip'
 const VIEWS: Record<View, { pos: V3; target: V3 }> = {
   aerial: { pos: [0, 48, 92], target: [0, 0, 2] },
   entrance: { pos: [0, 3.4, 58], target: [0, 4, DOME.z] },
   gallery: { pos: [...polar(FRONT + 0.28, 33, 1.65)] as V3, target: [...polar(FRONT + 0.5, 33, 1.75)] as V3 },
   garden: { pos: [0, 5, 22], target: [0, 2.5, VIP.z] },
-  vip: { pos: [0.4, VIP.y + 2.3, VIP.z - 0.5 + 3.75], target: [0, VIP.y + 1.25, VIP.z - 0.5 - 3] },
+  vip: { pos: [2.2, VIP.y + 3.0, VIP.z - VIP_BACK + 4.7], target: [-0.6, VIP.y + 0.9, VIP.z - VIP_BACK - 2.2] },
+  lobby: { pos: [1.2, 2.4, DOME.z + 4.9], target: [-0.3, 1.1, DOME.z - 2.5] },
   shelf: { pos: [...polar(FRONT + 0.4, 33.4, 1.75)] as V3, target: [...polar(FRONT + 0.4, 36, 1.55)] as V3 },
 }
 
@@ -699,7 +704,8 @@ function Scene({ view, low, onReady }: { view: View; low: boolean; onReady?: () 
       <FlattenTori>
         {RINGS.map(g => <Gallery key={g.r} {...g} m={m} />)}
       </FlattenTori>
-      <DomePavilion m={m} sign={sign} at={[DOME.x, DOME.z]} r={DOME.r} wall={DOME.wall} doors={[2, 6]} />
+      <DomePavilion m={m} sign={sign} at={[DOME.x, DOME.z]} r={DOME.r} wall={DOME.wall} doors={[0, 2, 4, 6]} />
+      <EntranceHall at={[DOME.x, DOME.z]} r={DOME.r} />
       {SIDE_DOORS.map(a => <SideDoor key={a} a={a} m={m} />)}
       <VipPavilion m={m} />
       <group position={[0, 0, 5]}><Fountain m={m} /></group>

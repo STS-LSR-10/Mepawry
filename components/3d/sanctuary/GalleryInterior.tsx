@@ -43,7 +43,7 @@ export function portraitTexture(i: number) {
 }
 
 /** Light oak grain: long, gently waving lines; tinted per material by its colour. */
-function oakTexture() {
+export function oakTexture() {
   const c = document.createElement('canvas')
   c.width = c.height = 256
   const g = c.getContext('2d')!
