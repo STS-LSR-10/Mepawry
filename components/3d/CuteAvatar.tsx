@@ -5,7 +5,7 @@
 
 import { useEffect, useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
-import { CatmullRomCurve3, Color, Vector3, type Group, type Texture as THREE_Texture } from 'three'
+import { CatmullRomCurve3, Color, Vector3, type Group, type Sprite, type Texture as THREE_Texture } from 'three'
 import { hoodieTexture, nameTagTexture } from './textures'
 import { avatarShade, contactShadowMap, microMap } from './look'
 import { defaultLook, type AvatarLook } from '@/lib/look'
@@ -323,9 +323,27 @@ export function CuteAvatar({ name, walking, gender = 'male', look }: { name: str
       </group>
 
       {/* Name tag */}
-      <sprite position={[0, 1.82, 0]} scale={[1.32, 0.29, 1]}>
-        <spriteMaterial map={tag} transparent alphaTest={0.1} depthWrite={false} />
-      </sprite>
+      <NameTag map={tag} />
     </group>
+  )
+}
+
+const TAG_ASPECT = 0.29 / 1.32
+const tagAt = new Vector3()
+/**
+ * The name above a character. It keeps roughly the same small size on screen however near the camera is (a fixed
+ * world size filled the view up close), within limits so far-off names don't grow huge in the world.
+ */
+export function NameTag({ map }: { map: THREE_Texture }) {
+  const ref = useRef<Sprite>(null!)
+  useFrame(({ camera }) => {
+    const d = camera.position.distanceTo(ref.current.getWorldPosition(tagAt))
+    const w = Math.min(1.4, Math.max(0.36, d * 0.14))
+    ref.current.scale.set(w, w * TAG_ASPECT, 1)
+  })
+  return (
+    <sprite ref={ref} position={[0, 1.8, 0]} scale={[1, TAG_ASPECT, 1]}>
+      <spriteMaterial map={map} transparent alphaTest={0.1} depthWrite={false} />
+    </sprite>
   )
 }

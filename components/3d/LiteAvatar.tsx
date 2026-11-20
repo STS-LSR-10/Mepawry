@@ -14,7 +14,7 @@ import { nameTagTexture } from './textures'
 import { avatarShade, contactShadowMap, microMap } from './look'
 
 import { lookKey, type AvatarLook } from '@/lib/look'
-import { lighter } from './CuteAvatar'
+import { lighter, NameTag } from './CuteAvatar'
 
 const SHOE = '#B88A68'
 
@@ -136,9 +136,7 @@ export function LiteAvatar({ name, look: lk, walking }: { name: string; look: Av
         <group ref={armR} position={[0.24, 0.8, 0]} rotation={[0, 0, 0.22]}><mesh geometry={look.arm} material={mat} /></group>
         <group ref={head} position={[0, 1.18, 0]}><mesh geometry={look.head} material={mat} /></group>
       </group>
-      <sprite position={[0, 1.82, 0]} scale={[1.32, 0.29, 1]}>
-        <spriteMaterial map={tag} transparent alphaTest={0.1} depthWrite={false} />
-      </sprite>
+      <NameTag map={tag} />
     </group>
   )
 }
