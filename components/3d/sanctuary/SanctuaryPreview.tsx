@@ -564,11 +564,12 @@ function VipPavilion({ m, vip }: { m: Mats; vip?: VipPets }) {
         </group>
       ))}
       {/* main domed pavilion and its two wings */}
-      <DomePavilion m={m} at={[0, z - VIP_BACK]} r={VIP_DOME.r} wall={VIP_DOME.wall} y={y} doors={[2]} />
+      {/* doors: the front, and arched doorways left and right into the wings */}
+      <DomePavilion m={m} at={[0, z - VIP_BACK]} r={VIP_DOME.r} wall={VIP_DOME.wall} y={y} doors={[0, 2, 4]} />
       <VipInterior y={y} z={z - VIP_BACK} vip={vip} />
       {[-1, 1].map(s => (
         <group key={s} position={[s * VIP_WING.x, y, z - VIP_BACK]}>
-          <Wing m={m} />
+          <Wing m={m} open={-s as 1 | -1} />
           <Roof><group position-y={3.4}>
             <mesh material={m.glass} raycast={noRay} renderOrder={2}><sphereGeometry args={[1.9, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2]} /></mesh>
             {Array.from({ length: 8 }, (_, i) => (
@@ -582,21 +583,30 @@ function VipPavilion({ m, vip }: { m: Mats; vip?: VipPets }) {
   )
 }
 
-/** A wing of the VIP pavilion: a small glass hall with wooden posts and arched windows. */
-function Wing({ m }: { m: Mats }) {
+/** A wing of the VIP pavilion: a small glass hall with wooden posts and arched windows; the end facing the domed
+ *  hall (`open`: which way along x that is) has an arched doorway. */
+function Wing({ m, open }: { m: Mats; open: 1 | -1 }) {
   const w = 5.2, d = 4.4, h = 3.4
   return (
     <group>
       {[[-w / 2, -d / 2], [w / 2, -d / 2], [-w / 2, d / 2], [w / 2, d / 2], [0, d / 2], [0, -d / 2]].map(([x, z], i) => (
         <mesh key={i} position={[x, h / 2, z]} material={m.frame} castShadow><boxGeometry args={[0.18, h, 0.18]} /></mesh>
       ))}
-      {[[0, d / 2, w, 0], [0, -d / 2, w, 0], [-w / 2, 0, d, Math.PI / 2], [w / 2, 0, d, Math.PI / 2]].map(([x, z, len, ry], i) => (
+      {[[0, d / 2, w, 0], [0, -d / 2, w, 0], [-w / 2, 0, d, Math.PI / 2], [w / 2, 0, d, Math.PI / 2]].filter(([x]) => x !== (open * w) / 2).map(([x, z, len, ry], i) => (
         <group key={i} position={[x, 0, z]} rotation-y={ry}>
           <mesh position-y={SILL / 2} material={m.frame} castShadow><boxGeometry args={[len, SILL, 0.2]} /></mesh>
           <mesh position-y={(SILL + h) / 2} material={m.glass} raycast={noRay} renderOrder={2}><planeGeometry args={[len, h - SILL]} /></mesh>
           {[-len / 4, len / 4].map(ax => <mesh key={ax} position={[ax, h - 0.9, 0.02]} material={m.frame}><torusGeometry args={[len / 4 - 0.12, 0.05, 5, 16, Math.PI]} /></mesh>)}
         </group>
       ))}
+      {/* the end towards the hall: an arched doorway with glass above it */}
+      <group position={[(open * w) / 2, 0, 0]} rotation-y={Math.PI / 2}>
+        {[-1, 1].map(k => <mesh key={k} position={[k * (d / 4 + 0.53), SILL / 2, 0]} material={m.frame} castShadow><boxGeometry args={[d / 2 - 1.06, SILL, 0.2]} /></mesh>)}
+        {[-1, 1].map(k => <mesh key={k} position={[k * (d / 4 + 0.53), (SILL + h) / 2, 0]} material={m.glass} raycast={noRay} renderOrder={2}><planeGeometry args={[d / 2 - 1.06, h - SILL]} /></mesh>)}
+        <mesh position-y={(2.3 + h) / 2} material={m.glass} raycast={noRay} renderOrder={2}><planeGeometry args={[2.1, h - 2.3]} /></mesh>
+        <mesh position-y={2.3} material={m.frame} castShadow><torusGeometry args={[1.05, 0.1, 8, 24, Math.PI]} /></mesh>
+        {[-1, 1].map(k => <mesh key={k} position={[k * 1.05, 1.15, 0]} material={m.frame} castShadow><boxGeometry args={[0.2, 2.3, 0.2]} /></mesh>)}
+      </group>
       <mesh position-y={h} material={m.frame} castShadow><boxGeometry args={[w + 0.3, 0.22, d + 0.3]} /></mesh>
       <Roof><mesh position-y={h + 0.1} rotation-x={-Math.PI / 2} material={m.glass} raycast={noRay}><planeGeometry args={[w, d]} /></mesh></Roof>
     </group>

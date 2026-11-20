@@ -77,8 +77,8 @@ const stairSides = (p: P) => p.z > STAIRS.z0 && p.z < STAIRS.z1 && Math.abs(p.x)
 /** The VIP hall (domed) and its two wings. */
 function vipBlocked(p: P): boolean {
   const { x: cx, z: cz } = VIP_CENTER
-  // hall walls: the door at the front, wide openings into the wings left and right
-  if (domeBlocked(p, cx, cz, VIP_DOME.r, [{ at: Q, half: 1.05 }, { at: 0, half: 1.25 }, { at: Math.PI, half: 1.25 }])) return true
+  // hall walls: the door at the front, arched doorways into the wings left and right
+  if (domeBlocked(p, cx, cz, VIP_DOME.r, [{ at: Q, half: 1.05 }, { at: 0, half: 1.05 }, { at: Math.PI, half: 1.05 }])) return true
   if (near(p, cx, cz, VIP_PLANTER_R + 0.45)) return true                  // fountain in its ring of planters
   if ([-1, 1].some(s => near(p, s * 1.25, cz + VIP_DOME.r * 0.86, 0.3))) return true // urns by the door
   for (const s of [-1, 1]) {
@@ -86,8 +86,9 @@ function vipBlocked(p: P): boolean {
     const local = { x: (p.x - wx) * s, z: p.z - cz } // x grows away from the hall
     const inWing = local.x > -hw - RADIUS && local.x < hw + RADIUS && local.z > -hd - RADIUS && local.z < hd + RADIUS
     if (!inWing) continue
-    // the wing's own walls: back, front (glass) and the far end; its near end opens into the hall
+    // the wing's own walls: back, front (glass) and the far end; its near end has a doorway into the hall
     if (local.z < -hd + 0.25 + RADIUS || local.z > hd - 0.1 - RADIUS || local.x > hw - 0.25 - RADIUS) return true
+    if (Math.abs(local.x + hw) < 0.1 + RADIUS && Math.abs(local.z) > 1.05 - RADIUS) return true
     if (near(p, wx, cz + 1.5, 0.95)) return true                          // armchairs and side table by the front glass
   }
   return false
