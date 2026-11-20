@@ -11,7 +11,7 @@ import {
   CanvasTexture, DoubleSide, InstancedMesh, LatheGeometry, MeshStandardMaterial, RepeatWrapping, SRGBColorSpace,
   Vector2,
 } from 'three'
-import { H, leafCardTexture, polar, seeded, useInstances, VAULT_TOP, W, type V3 } from './shared'
+import { H, leafCardTexture, polar, seeded, useInstances, useLamp, useLampGlow, VAULT_TOP, W, type V3 } from './shared'
 
 const CAB_H = 3.0        // cabinet height (the crown sits just under the timber beam)
 const CAB_D = 0.55       // cabinet depth
@@ -111,8 +111,9 @@ export function GalleryInterior({ r, angles, step, twoSided, m }: {
   const grain = useMemo(oakTexture, [])
   const mats = useMemo(() => ({
     // warm honey oak with a visible grain (the grain map is shared and repeats)
-    oak: new MeshStandardMaterial({ map: grain, color: '#C88B55', roughness: 0.48 }),
-    oakDark: new MeshStandardMaterial({ map: grain, color: '#6A4024', roughness: 0.6 }),
+    oak: new MeshStandardMaterial({ map: grain, color: '#C88B55', roughness: 0.48, emissive: '#B8743A', emissiveMap: grain }),
+    oakDark: new MeshStandardMaterial({ map: grain, color: '#7E5434', roughness: 0.6, emissive: '#D98A48', emissiveMap: grain }), // cubby backs: warm wash from the LEDs
+    led: new MeshStandardMaterial({ color: '#4A3826', emissive: '#FFC27A', toneMapped: false }),
     oakLight: new MeshStandardMaterial({ map: grain, color: '#D79A5E', roughness: 0.42 }),
     photoFrame: new MeshStandardMaterial({ color: '#5E3A1E', roughness: 0.4, metalness: 0.1 }),
     gilt: new MeshStandardMaterial({ color: '#C9A15A', roughness: 0.35, metalness: 0.7 }),
@@ -125,6 +126,13 @@ export function GalleryInterior({ r, angles, step, twoSided, m }: {
     dried: new MeshStandardMaterial({ color: '#B98A7A', roughness: 0.9 }),
   }), [grain])
   const portraits = useMemo(() => PETS.map((_, i) => portraitTexture(i)), [])
+  const lamp = useLamp()
+  // electric lamps go dark by day; candles always burn, brighter after dark
+  const glows = useMemo((): [MeshStandardMaterial, number, number?][] => [
+    // the oak picks up a warm wash from the cubby LEDs at night (lit faces of the shelves, backs and sides)
+    [mats.lantern, 5], [mats.led, 5], [mats.oakDark, 1.1], [mats.oak, 0.35], [mats.flame, 9, 0.45], [mats.wax, 0.35, 0.3],
+  ], [mats])
+  useLampGlow(glows, lamp)
   const marble = useMemo(() => { const t = marbleTexture(); t.repeat.set((ro * 2) / 1.6, (ro * 2) / 1.6); return t }, [ro])
   const ivyTex = useMemo(() => leafCardTexture('tree'), [])
   const signs = useMemo(() => 'ABCDEFGH'.split('').map(l => signTexture(`${l}`)), [])
@@ -135,7 +143,7 @@ export function GalleryInterior({ r, angles, step, twoSided, m }: {
     const L = {
       backs: [] as Item[], sides: [] as Item[], bases: [] as Item[], doors: [] as Item[], shelves: [] as Item[], dividers: [] as Item[],
       crowns: [] as Item[], cornices: [] as Item[], pilasters: [] as Item[], capitals: [] as Item[],
-      frames: [] as Item[], mats: [] as Item[], plaques: [] as Item[], photos: PETS.map(() => [] as Item[]), candles: [] as Item[], flames: [] as Item[], urns: [] as Item[], dried: [] as Item[],
+      frames: [] as Item[], mats: [] as Item[], plaques: [] as Item[], leds: [] as Item[], photos: PETS.map(() => [] as Item[]), candles: [] as Item[], flames: [] as Item[], urns: [] as Item[], dried: [] as Item[],
       ivy: [] as Item[], signs: signsInit(), sconces: [] as Item[], sconceGlass: [] as Item[],
       rods: [] as Item[], lanterns: [] as Item[], caps: [] as Item[], benchSeats: [] as Item[], benchBacks: [] as Item[], benchLegs: [] as Item[],
       strips: [] as Item[],
@@ -180,6 +188,8 @@ export function GalleryInterior({ r, angles, step, twoSided, m }: {
           const y = BASE_H + row * ROW_H + 0.025
           for (let col = 0; col < COLS; col++) {
             const x = -w / 2 + (col + 0.5) * cw
+            // a warm LED strip under the top of every cubby, lighting the portrait from above
+            L.leds.push({ p: at(x, y + ROW_H - 0.06, 0.2), ry, s: [cw - 0.08, 0.014, 0.03] })
             const roll = rnd()
             if (roll < 0.1) continue // waiting for a pet
             if (roll < 0.17) { L.urns.push({ p: at(x, y, -0.02), ry, s: [1.1, 1.1, 1.1] }); continue }
@@ -278,8 +288,9 @@ export function GalleryInterior({ r, angles, step, twoSided, m }: {
       <Inst items={built.frames} mat={mats.photoFrame} shadow><boxGeometry /></Inst>
       <Inst items={built.mats} mat={null}><planeGeometry /><meshStandardMaterial color="#F6F1E7" roughness={0.8} /></Inst>
       <Inst items={built.plaques} mat={mats.gilt}><boxGeometry /></Inst>
+      <Inst items={built.leds} mat={mats.led}><boxGeometry /></Inst>
       {built.photos.map((list, i) => (
-        <Inst key={i} items={list} mat={null}><planeGeometry /><meshStandardMaterial map={portraits[i]} roughness={0.5} /></Inst>
+        <Inst key={i} items={list} mat={null}><planeGeometry /><meshStandardMaterial map={portraits[i]} roughness={0.5} emissive="#FFFFFF" emissiveMap={portraits[i]} emissiveIntensity={0.55 * lamp} /></Inst>
       ))}
       <Inst items={built.candles} mat={mats.wax}><cylinderGeometry args={[0.03, 0.03, 0.1, 10]} /></Inst>
       <Inst items={built.flames} mat={mats.flame}><sphereGeometry args={[0.014, 8, 6]} /></Inst>

@@ -2,9 +2,9 @@
 // app/preview/sanctuary/page.tsx — Concept preview of the redesigned building ("Mepawry Sanctuary"), to look at
 // before it replaces the walkable hall. Orbit with mouse/finger; buttons jump between viewpoints.
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import dynamic from 'next/dynamic'
-import type { View } from '@/components/3d/sanctuary/SanctuaryPreview'
+import type { TimeOfDay, View } from '@/components/3d/sanctuary/SanctuaryPreview'
 
 const SanctuaryPreview = dynamic(() => import('@/components/3d/sanctuary/SanctuaryPreview'), {
   ssr: false,
@@ -24,9 +24,20 @@ const VIEWS: { id: View; label: string }[] = [
 export default function SanctuaryPreviewPage() {
   const [view, setView] = useState<View>('aerial')
   const [ready, setReady] = useState(false)
+  // start at the visitor's own time of day; the buttons switch it
+  const [time, setTime] = useState<TimeOfDay>('evening')
+  useEffect(() => { const h = new Date().getHours(); setTime(h >= 7 && h < 16 ? 'day' : h >= 16 && h < 19 ? 'evening' : 'night') }, [])
   return (
     <main className="fixed inset-0 bg-[#C9D9E0]">
-      <SanctuaryPreview view={view} onReady={() => setReady(true)} />
+      <SanctuaryPreview view={view} time={time} onReady={() => setReady(true)} />
+      <div className="absolute right-3 top-20 flex flex-col gap-1.5 sm:top-4">
+        {([['day', '☀️ Day'], ['evening', '🌇 Evening'], ['night', '🌙 Night']] as const).map(([id, label]) => (
+          <button key={id} onClick={() => setTime(id)} aria-pressed={time === id}
+            className={`rounded-full px-3 py-1.5 text-xs font-semibold shadow-md backdrop-blur ${time === id ? 'bg-[#D9823B] text-white' : 'bg-black/45 text-white hover:bg-black/60'}`}>
+            {label}
+          </button>
+        ))}
+      </div>
       {/* building thousands of glazing bars and leaves takes a moment: say so instead of showing an empty sky */}
       <div className={`pointer-events-none absolute inset-0 grid place-items-center bg-[#E9DCC2] transition-opacity duration-700 ${ready ? 'opacity-0' : 'opacity-100'}`}>
         <div className="text-center">

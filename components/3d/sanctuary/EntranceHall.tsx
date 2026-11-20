@@ -9,9 +9,9 @@
 import { useMemo } from 'react'
 import { CanvasTexture, MeshStandardMaterial, SRGBColorSpace, type Texture } from 'three'
 import {
-  Armchair, FernPot, Ferns, herringboneTexture, Roses, Rug, rugTexture, SideTable, useDecorMaterials, type DMats,
+  Armchair, FernPot, Ferns, herringboneTexture, Roses, Rug, rugTexture, SideTable, useDecorLamps, useDecorMaterials, type DMats,
 } from './decor'
-import { polar, type V3 } from './shared'
+import { polar, useLamp, type V3 } from './shared'
 
 function tex(w: number, h: number, draw: (g: CanvasRenderingContext2D) => void) {
   const c = document.createElement('canvas')
@@ -89,6 +89,7 @@ function SlatWall({ w, h, m }: { w: number; h: number; m: DMats }) {
 
 /** Rustic chandelier: two wooden rings on iron chains, candle bulbs glowing. */
 function WoodChandelier({ at, drop, m }: { at: V3; drop: number; m: DMats }) {
+  const lamp = useLamp()
   const iron = useMemo(() => new MeshStandardMaterial({ color: '#3A2E24', roughness: 0.5, metalness: 0.6 }), [])
   return (
     <group position={at}>
@@ -108,13 +109,14 @@ function WoodChandelier({ at, drop, m }: { at: V3; drop: number; m: DMats }) {
           {[0, 1, 2, 3].map(i => { const [x, , z] = polar((i / 4) * Math.PI * 2 + 0.4, r); return <mesh key={i} position={[x / 2, 0.45, z / 2]} rotation={[z * 0.5, 0, -x * 0.5]} material={iron}><cylinderGeometry args={[0.008, 0.008, 1.0, 4]} /></mesh> })}
         </group>
       ))}
-      <pointLight position-y={-0.3} intensity={30} distance={12} decay={2} color="#FFD3A0" />
+      <pointLight position-y={-0.3} intensity={30 * lamp} distance={12} decay={2} color="#FFD3A0" />
     </group>
   )
 }
 
 /** The curved reception desk, its front facing +z. */
 function ReceptionDesk({ m, welcome }: { m: DMats; welcome: Texture }) {
+  const lamp = useLamp()
   const marble = useMemo(() => new MeshStandardMaterial({ color: '#DCD3C5', roughness: 0.25 }), [])
   // plain satin oak: the grain texture stretches into thick stripes around the curve
   const oak = useMemo(() => new MeshStandardMaterial({ color: '#94623A', roughness: 0.42 }), [])
@@ -135,7 +137,7 @@ function ReceptionDesk({ m, welcome }: { m: DMats; welcome: Texture }) {
       <group position={[-0.95, 1.06, 0.95]}>
         <mesh position-y={0.18} material={m.gilt}><cylinderGeometry args={[0.02, 0.06, 0.36, 10]} /></mesh>
         <mesh position-y={0.42} material={m.glow}><cylinderGeometry args={[0.1, 0.16, 0.2, 16, 1, true]} /></mesh>
-        <pointLight position-y={0.38} intensity={2.5} distance={3} decay={2} color="#FFD3A0" />
+        <pointLight position-y={0.38} intensity={2.5 * lamp} distance={3} decay={2} color="#FFD3A0" />
       </group>
       <group position={[-0.25, 1.06, 1.05]} rotation-y={0.15}>
         <mesh position={[0, 0.03, 0]} material={m.marbleWhite}><boxGeometry args={[0.18, 0.02, 0.14]} /></mesh>
@@ -152,6 +154,7 @@ function ReceptionDesk({ m, welcome }: { m: DMats; welcome: Texture }) {
 /** Everything inside the reception dome; `at` is the dome's centre on the ground, the front door faces +z. */
 export function EntranceHall({ at, r }: { at: [number, number]; r: number }) {
   const m = useDecorMaterials()
+  useDecorLamps(m)
   const floor = useMemo(() => { const t = herringboneTexture(); t.repeat.set(4, 4); return t }, [])
   const welcome = useMemo(welcomeTexture, [])
   const letters = useMemo(lettersTexture, [])

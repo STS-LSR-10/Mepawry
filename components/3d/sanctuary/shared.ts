@@ -1,8 +1,8 @@
 'use client'
 // components/3d/sanctuary/shared.ts — Small helpers shared by the Sanctuary preview's parts.
 
-import { useLayoutEffect } from 'react'
-import { CanvasTexture, Color, Object3D, SRGBColorSpace, type InstancedMesh } from 'three'
+import { createContext, useContext, useEffect, useLayoutEffect } from 'react'
+import { CanvasTexture, Color, Object3D, SRGBColorSpace, type InstancedMesh, type MeshStandardMaterial } from 'three'
 
 export const W = 6     // gallery width (metres)
 export const H = 3.2   // gallery wall height; the glass vault sits on top
@@ -72,3 +72,19 @@ export function leafCardTexture(kind: 'tree' | 'willow') {
   return t
 }
 
+
+// ── Lamps ──
+
+/** How brightly the lamps burn: 0 by day (sunlight only), up to 1 at night. Provided by the scene. */
+export const LampContext = createContext(1)
+export const useLamp = () => useContext(LampContext)
+
+/**
+ * Keeps glowing materials in step with the lamps: each gets `full * (min + (1 - min) * lamp)`.
+ * Pass [material, full strength, minimum share] — candles keep a minimum, electric lamps go fully dark by day.
+ */
+export function useLampGlow(list: [MeshStandardMaterial, number, number?][], lamp: number) {
+  useEffect(() => {
+    for (const [mat, full, min = 0] of list) mat.emissiveIntensity = full * (min + (1 - min) * lamp)
+  }, [list, lamp])
+}

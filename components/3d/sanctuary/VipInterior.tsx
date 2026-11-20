@@ -10,7 +10,7 @@ import { useMemo } from 'react'
 import { LatheGeometry, Vector2 } from 'three'
 import {
   Armchair, Chandelier, FernPot, Ferns, FlowerUrn, herringboneTexture, medallionTexture, PortraitAlcove, portraitTexture,
-  Roses, Rug, rugTexture, SideTable, useDecorMaterials, Vitrine, Wainscot, type DMats,
+  Roses, Rug, rugTexture, SideTable, useDecorLamps, useDecorMaterials, Vitrine, Wainscot, type DMats,
 } from './decor'
 import { polar, type V3 } from './shared'
 
@@ -69,6 +69,7 @@ const openToDoor = (a: number) => Math.abs(Math.atan2(Math.sin(a - Math.PI / 2),
 /** Everything inside the VIP pavilion. `y` is the terrace height, `z` the centre of the domed hall. */
 export function VipInterior({ y, z }: { y: number; z: number }) {
   const m = useDecorMaterials()
+  useDecorLamps(m)
   const floor = useMemo(() => { const t = herringboneTexture(); t.repeat.set(4, 4); return t }, [])
   const wingFloor = useMemo(() => { const t = herringboneTexture(); t.repeat.set(2, 2); return t }, [])
   const medallion = useMemo(medallionTexture, [])

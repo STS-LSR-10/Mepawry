@@ -7,7 +7,7 @@
 
 import { Suspense, useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
-import { Environment, Lightformer, OrbitControls, Sky } from '@react-three/drei'
+import { Environment, Lightformer, OrbitControls, Sky, Stars } from '@react-three/drei'
 import {
   BufferAttribute, CanvasTexture, Color, SRGBColorSpace, CylinderGeometry, DoubleSide, IcosahedronGeometry, InstancedMesh, LatheGeometry,
   MeshPhysicalMaterial, MeshStandardMaterial, Object3D, RepeatWrapping, Vector2, type BufferGeometry, type Texture,
@@ -19,7 +19,7 @@ import { microMap } from '../look'
 import { Bloom, BrightnessContrast, EffectComposer, HueSaturation, N8AO, SMAA, ToneMapping, Vignette } from '@react-three/postprocessing'
 import { ToneMappingMode } from 'postprocessing'
 import { useQuality } from '../quality'
-import { H, leafCardTexture, polar, seeded, useInstances, W, type V3 } from './shared'
+import { H, LampContext, leafCardTexture, polar, seeded, useInstances, W, type V3 } from './shared'
 import { GalleryInterior } from './GalleryInterior'
 import { VIP_DOME, VIP_WING, VipInterior } from './VipInterior'
 import { EntranceHall } from './EntranceHall'
@@ -659,20 +659,53 @@ function CameraRig({ view }: { view: View }) {
  * a touch more saturation and contrast for the warm golden-hour look, ACES filmic tone mapping, a gentle vignette,
  * then SMAA to smooth the thin glazing bars. (The Canvas runs `flat`, so tone mapping happens only here.)
  */
-function Grade({ interior }: { interior: boolean }) {
+function Grade({ interior, night, day }: { interior: boolean; night: boolean; day: boolean }) {
   // Indoors: tighter, deeper contact shadows, a little darker and more contrast, a firmer vignette — a lit room, not
   // a floodlit stage. Outdoors keeps the open golden-hour look.
   return (
     <EffectComposer multisampling={0}>
-      <N8AO aoRadius={interior ? 1.1 : 2.2} intensity={interior ? 4.5 : 3} distanceFalloff={1} halfRes quality="medium" />
+      {/* indoors a small radius, so AO darkens corners and joins, not the whole inside of every cubby; gentler at night,
+          when the lamps light those insides */}
+      <N8AO aoRadius={interior ? 0.45 : 2.2} intensity={interior ? (night ? 1.6 : 3.2) : 3} distanceFalloff={1} halfRes quality="medium" />
       <Bloom mipmapBlur luminanceThreshold={0.92} luminanceSmoothing={0.2} intensity={0.45} radius={0.7} />
       <HueSaturation saturation={interior ? 0.1 : 0.16} />
-      <BrightnessContrast brightness={interior ? -0.07 : 0.01} contrast={interior ? 0.2 : 0.1} />
+      {/* indoors by day: a touch darker and punchier; at night no darkening and less contrast, or the lamp-lit
+          shadows crush to black */}
+      <BrightnessContrast brightness={interior ? (night ? 0.03 : day ? 0 : -0.05) : 0.01} contrast={interior ? (night ? 0.04 : 0.14) : 0.1} />
       <ToneMapping mode={ToneMappingMode.ACES_FILMIC} />
       <Vignette offset={0.3} darkness={interior ? 0.6 : 0.42} />
       <SMAA />
     </EffectComposer>
   )
+}
+
+export type TimeOfDay = 'day' | 'evening' | 'night'
+
+/**
+ * Light for each time of day. By day the sun does all the work and the lamps are off; in the evening a low golden
+ * sun and the lamps coming on; at night faint moonlight, stars, and every lamp lit. `inside` is for indoor views.
+ */
+const TIMES: Record<TimeOfDay, {
+  sun: V3; color: string; intensity: number; bounce: number; sky: [number, number, number]; envSun: number
+  fog: [string, number, number]; hemi: [string, string, number]; env: number; lamp: number
+  /** indoors: fill strength and colour (warm at night, as if from the lamps), sky reflections */
+  inside: { hemi: number; env: number; sky?: string; ground?: string }
+  /** where the sky draws its sun (below the horizon at night, so the sky goes dark) */
+  skySun?: V3
+}> = {
+  day: {
+    sun: [-45, 88, 55], color: '#FFF3DE', intensity: 3.3, bounce: 0.4, sky: [5, 1.0, 0.004], envSun: 6,
+    fog: ['#D9E4E6', 170, 520], hemi: ['#C8DCF2', '#55663A', 0.6], env: 1, inside: { hemi: 0.8, env: 0.65, sky: '#F2E6D2', ground: '#7A6650' }, lamp: 0,
+  },
+  evening: {
+    sun: SUN, color: '#FFBF78', intensity: 4.2, bounce: 0.35, sky: [8, 2.2, 0.006], envSun: 8,
+    fog: ['#E9DCC2', 120, 430], hemi: ['#BCD3EE', '#4F5F2C', 0.55], env: 1, inside: { hemi: 0.45, env: 0.32, sky: '#E8C49A', ground: '#4A3624' }, lamp: 0.75,
+  },
+  night: {
+    sun: [50, 60, -40], color: '#9FB4E8', intensity: 0.45, bounce: 0.05, sky: [2, 0.4, 0.002], envSun: 0.6,
+    fog: ['#121826', 80, 380], hemi: ['#34446E', '#151810', 0.16], env: 0.22, inside: { hemi: 1.0, env: 0.14, sky: '#E0A468', ground: '#4A3220' }, lamp: 1,
+    skySun: [0, -25, -100],
+  },
 }
 
 /** Indoor views: the rooms take their light from the sun through the glass and their own lamps, not the open sky. */
@@ -687,33 +720,35 @@ function EnvStrength({ value }: { value: number }) {
 
 // ── Scene ──
 
-function Scene({ view, low, onReady }: { view: View; low: boolean; onReady?: () => void }) {
+function Scene({ view, time, low, onReady }: { view: View; time: TimeOfDay; low: boolean; onReady?: () => void }) {
   const interior = INTERIOR_VIEWS.includes(view)
+  const t = TIMES[time]
   const m = useMaterials(low)
   const told = useRef(false)
   useFrame(() => { if (!told.current) { told.current = true; requestAnimationFrame(() => onReady?.()) } })
   const sign = useMemo(() => signTexture('🐾 Mepawry Sanctuary 🐾', { w: 900, h: 160, bg: '#F6EFE2', fg: '#3E2A1A', font: 'italic 700 70px Georgia, serif' }), [])
   return (
     <>
-      {/* Golden hour: a low warm sun from the front-left throws long soft shadows across the lawn; the sky, the haze
-          and every reflection in the glass are warmed by the same sun */}
-      <Sky sunPosition={SUN} turbidity={8} rayleigh={2.2} mieCoefficient={0.006} mieDirectionalG={0.88} />
-      <fog attach="fog" args={['#E9DCC2', 120, 430]} />
-      <hemisphereLight args={['#BCD3EE', '#4F5F2C', interior ? 0.14 : 0.55]} />
-      <EnvStrength value={interior ? 0.32 : 1} />
+      {/* The sun (or moon), the sky, the haze and every reflection in the glass all follow the time of day */}
+      <Sky sunPosition={t.skySun ?? t.sun} turbidity={t.sky[0]} rayleigh={t.sky[1]} mieCoefficient={t.sky[2]} mieDirectionalG={0.88} />
+      {time === 'night' && <Stars radius={260} depth={60} count={2500} factor={5} fade speed={0.3} />}
+      <fog attach="fog" args={t.fog} />
+      <hemisphereLight key={`${time}${interior}`} args={interior ? [t.inside.sky ?? t.hemi[0], t.inside.ground ?? t.hemi[1], t.inside.hemi] : t.hemi} />
+      <EnvStrength value={interior ? t.inside.env : t.env} />
       <directionalLight
-        position={SUN} intensity={4.2} color="#FFBF78" castShadow={!low}
+        position={t.sun} intensity={t.intensity} color={t.color} castShadow={!low}
         shadow-mapSize={[4096, 4096]} shadow-bias={-0.0004} shadow-normalBias={0.09} shadow-radius={4}
         shadow-camera-left={-58} shadow-camera-right={58} shadow-camera-top={58} shadow-camera-bottom={-58} shadow-camera-near={1} shadow-camera-far={260}
       />
       {/* a cool bounce from the opposite side so shadowed faces stay readable, not black */}
-      <directionalLight position={[60, 25, -50]} intensity={0.35} color="#9DB7E0" />
-      <Environment resolution={256} frames={1}>
-        <Sky sunPosition={SUN} turbidity={8} rayleigh={2.2} mieCoefficient={0.006} mieDirectionalG={0.88} />
-        <Lightformer intensity={8} color="#FFC888" position={SUN} scale={[18, 12, 1]} />
-        <Lightformer intensity={0.8} color="#5E8A36" position={[0, -4, 0]} rotation-x={-Math.PI / 2} scale={[200, 200, 1]} />
+      <directionalLight position={[60, 25, -50]} intensity={t.bounce} color="#9DB7E0" />
+      <Environment key={time} resolution={256} frames={1}>
+        <Sky sunPosition={t.skySun ?? t.sun} turbidity={t.sky[0]} rayleigh={t.sky[1]} mieCoefficient={t.sky[2]} mieDirectionalG={0.88} />
+        <Lightformer intensity={t.envSun} color={t.color} position={t.sun} scale={[18, 12, 1]} />
+        <Lightformer intensity={time === 'night' ? 0.1 : 0.8} color="#5E8A36" position={[0, -4, 0]} rotation-x={-Math.PI / 2} scale={[200, 200, 1]} />
       </Environment>
 
+      <LampContext.Provider value={t.lamp}>
       <Ground low={low} />
       <FlattenTori>
         {RINGS.map(g => <Gallery key={g.r} {...g} m={m} />)}
@@ -731,12 +766,13 @@ function Scene({ view, low, onReady }: { view: View; low: boolean; onReady?: () 
 
       <OrbitControls makeDefault enableDamping maxPolarAngle={Math.PI / 2 - 0.03} minDistance={4} maxDistance={220} autoRotate={view === 'aerial'} autoRotateSpeed={0.25} />
       <CameraRig view={view} />
-      {!low && <Grade interior={interior} />}
+      </LampContext.Provider>
+      {!low && <Grade interior={interior} night={time === 'night'} day={time === 'day'} />}
     </>
   )
 }
 
-export default function SanctuaryPreview({ view, onReady }: { view: View; onReady?: () => void }) {
+export default function SanctuaryPreview({ view, time = 'evening', onReady }: { view: View; time?: TimeOfDay; onReady?: () => void }) {
   const low = useQuality() === 'low'
   return (
     <Canvas
@@ -747,7 +783,7 @@ export default function SanctuaryPreview({ view, onReady }: { view: View; onRead
       gl={{ antialias: true, powerPreference: 'high-performance' }}
     >
       <Suspense fallback={null}>
-        <Scene view={view} low={low} onReady={onReady} />
+        <Scene view={view} time={time} low={low} onReady={onReady} />
       </Suspense>
     </Canvas>
   )

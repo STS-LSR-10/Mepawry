@@ -7,7 +7,7 @@
 import { useMemo, useRef } from 'react'
 import { CanvasTexture, DoubleSide, InstancedMesh, LatheGeometry, MeshStandardMaterial, RepeatWrapping, SRGBColorSpace, Vector2, type Texture } from 'three'
 import { oakTexture, portraitTexture } from './GalleryInterior'
-import { polar, seeded, useInstances, type V3 } from './shared'
+import { polar, seeded, useInstances, useLamp, useLampGlow, type V3 } from './shared'
 
 // ── Materials ──
 
@@ -40,6 +40,16 @@ export function useDecorMaterials() {
   }, [])
 }
 export type DMats = ReturnType<typeof useDecorMaterials>
+
+/** Ties a room's glowing materials to the lamps (call once per room). */
+export function useDecorLamps(m: DMats) {
+  const lamp = useLamp()
+  const list = useMemo((): [MeshStandardMaterial, number, number?][] => [
+    [m.glow, 0.5, 0.15], [m.crystal, 4], [m.flame, 9, 0.45], [m.wax, 0.4, 0.3],
+  ], [m])
+  useLampGlow(list, lamp)
+  return lamp
+}
 
 // ── Textures ──
 
@@ -162,6 +172,7 @@ export function Candle({ at, m, h = 0.18 }: { at: V3; m: DMats; h?: number }) {
 
 /** A crystal chandelier: two tiers of glowing drops on brass rings, a cascade below, and its warm light. */
 export function Chandelier({ at, r, drop, m, light = 26 }: { at: V3; r: number; drop: number; m: DMats; light?: number }) {
+  const lamp = useLamp()
   return (
     <group position={at}>
       <mesh position-y={drop / 2} material={m.gilt}><cylinderGeometry args={[0.015, 0.015, drop, 6]} /></mesh>
@@ -180,7 +191,7 @@ export function Chandelier({ at, r, drop, m, light = 26 }: { at: V3; r: number; 
         </group>
       ))}
       <mesh position-y={-1.05} material={m.crystal}><octahedronGeometry args={[0.1, 0]} /></mesh>
-      <pointLight position-y={-0.4} intensity={light} distance={12} decay={2} color="#FFD3A0" />
+      <pointLight position-y={-0.4} intensity={light * lamp} distance={12} decay={2} color="#FFD3A0" />
     </group>
   )
 }
