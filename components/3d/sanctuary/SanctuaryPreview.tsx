@@ -733,6 +733,7 @@ export function SanctuaryWorld({ time, interior: inRoom, cutaway = false, low, d
 }) {
   const t = TIMES[time]
   const interior = inRoom && !cutaway
+  const lampFill = inRoom && cutaway && t.lamp > 0
   const m = useMaterials(low)
   const sign = useMemo(() => signTexture('🐾 Mepawry Sanctuary 🐾', { w: 900, h: 160, bg: '#F6EFE2', fg: '#3E2A1A', font: 'italic 700 70px Georgia, serif' }), [])
   return (
@@ -741,7 +742,8 @@ export function SanctuaryWorld({ time, interior: inRoom, cutaway = false, low, d
       <Sky sunPosition={t.skySun ?? t.sun} turbidity={t.sky[0]} rayleigh={t.sky[1]} mieCoefficient={t.sky[2]} mieDirectionalG={0.88} />
       {time === 'night' && <Stars radius={260} depth={60} count={low ? 1200 : 2500} factor={5} fade speed={0.3} />}
       <fog attach="fog" args={t.fog} />
-      <hemisphereLight key={`${time}${interior}`} args={interior ? [t.inside.sky ?? t.hemi[0], t.inside.ground ?? t.hemi[1], t.inside.hemi] : t.hemi} />
+      {/* indoors after dark the rooms are filled by their own lamps, roof or no roof */}
+      <hemisphereLight key={`${time}${interior}${lampFill}`} args={interior || lampFill ? [t.inside.sky ?? t.hemi[0], t.inside.ground ?? t.hemi[1], t.inside.hemi] : t.hemi} />
       <EnvStrength value={interior ? t.inside.env : t.env} />
       <directionalLight
         position={t.sun} intensity={t.intensity} color={t.color} castShadow={!low}

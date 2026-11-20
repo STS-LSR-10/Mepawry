@@ -8,7 +8,7 @@
 
 import { useMemo, useRef } from 'react'
 import {
-  CanvasTexture, DoubleSide, InstancedMesh, LatheGeometry, MeshStandardMaterial, RepeatWrapping, SRGBColorSpace,
+  AdditiveBlending, CanvasTexture, DoubleSide, InstancedMesh, LatheGeometry, MeshStandardMaterial, RepeatWrapping, SRGBColorSpace,
   Vector2,
 } from 'three'
 import { H, leafCardTexture, polar, seeded, useInstances, useLamp, useLampGlow, VAULT_TOP, W, Roof, type V3 } from './shared'
@@ -84,6 +84,19 @@ function marbleTexture() {
   return t
 }
 
+/** A soft warm glow, bright in the middle and fading out: drawn on the floor as a pool of lamplight. */
+function lightPoolTexture() {
+  const c = document.createElement('canvas')
+  c.width = c.height = 128
+  const g = c.getContext('2d')!
+  const gr = g.createRadialGradient(64, 64, 0, 64, 64, 64)
+  gr.addColorStop(0, 'rgba(255,196,120,0.75)'); gr.addColorStop(0.45, 'rgba(255,170,90,0.32)'); gr.addColorStop(1, 'rgba(255,150,70,0)')
+  g.fillStyle = gr; g.fillRect(0, 0, 128, 128)
+  const t = new CanvasTexture(c)
+  t.colorSpace = SRGBColorSpace
+  return t
+}
+
 function signTexture(label: string) {
   const c = document.createElement('canvas')
   c.width = 256; c.height = 128
@@ -131,6 +144,7 @@ export function GalleryInterior({ r, angles, step, twoSided, m, demo = false }: 
     [mats.lantern, 5], [mats.led, 5], [mats.oakDark, 1.1], [mats.oak, 0.35], [mats.flame, 9, 0.45], [mats.wax, 0.35, 0.3],
   ], [mats])
   useLampGlow(glows, lamp)
+  const pool = useMemo(lightPoolTexture, [])
   const marble = useMemo(() => { const t = marbleTexture(); t.repeat.set((ro * 2) / 1.6, (ro * 2) / 1.6); return t }, [ro])
   const ivyTex = useMemo(() => leafCardTexture('tree'), [])
   const signs = useMemo(() => 'ABCDEFGH'.split('').map(l => signTexture(`${l}`)), [])
@@ -144,7 +158,7 @@ export function GalleryInterior({ r, angles, step, twoSided, m, demo = false }: 
       frames: [] as Item[], mats: [] as Item[], plaques: [] as Item[], leds: [] as Item[], photos: PETS.map(() => [] as Item[]), candles: [] as Item[], flames: [] as Item[], urns: [] as Item[], dried: [] as Item[],
       ivy: [] as Item[], signs: signsInit(), sconces: [] as Item[], sconceGlass: [] as Item[],
       rods: [] as Item[], lanterns: [] as Item[], caps: [] as Item[],
-      strips: [] as Item[],
+      strips: [] as Item[], pools: [] as Item[],
     }
     function signsInit() { return Array.from({ length: 8 }, () => [] as Item[]) }
 
@@ -219,11 +233,13 @@ export function GalleryInterior({ r, angles, step, twoSided, m, demo = false }: 
         const { ry, at } = wall(a, rr, facing)
         L.pilasters.push({ p: at(0, CAB_H / 2, 0.04), ry, s: [0.32, CAB_H, CAB_D + 0.1] })
         L.capitals.push({ p: at(0, CAB_H - 0.32, 0.08), ry, s: [0.42, 0.14, CAB_D + 0.2] })
+        // a lamp on every pilaster, with a pool of its light on the floor below; a zone sign on every third
+        L.sconces.push({ p: at(0, 2.05, CAB_D / 2 + 0.16), ry, s: [0.12, 0.2, 0.12] })
+        L.sconceGlass.push({ p: at(0, 2.05, CAB_D / 2 + 0.16), ry, s: [0.09, 0.15, 0.09] })
+        L.pools.push({ p: at(0, 0.035, CAB_D / 2 + 0.75), rx: -Math.PI / 2, s: [1.9, 1.9, 1] })
         if (i % 3 === 1) {
           const zone = zoneIndex(a, angles[0], angles[angles.length - 1]) // eight zones, A beside the reception
           L.signs[zone].push({ p: at(0, 2.45, CAB_D / 2 + 0.12), ry, s: [0.44, 0.22, 1] })
-          L.sconces.push({ p: at(0, 2.05, CAB_D / 2 + 0.16), ry, s: [0.12, 0.2, 0.12] })
-          L.sconceGlass.push({ p: at(0, 2.05, CAB_D / 2 + 0.16), ry, s: [0.09, 0.15, 0.09] })
         }
       }
     })
@@ -239,6 +255,8 @@ export function GalleryInterior({ r, angles, step, twoSided, m, demo = false }: 
 
     // Oak inlay across the marble at every bay (no benches in the aisles: seating is by the windows in the halls)
     angles.forEach(a => L.strips.push({ p: polar(a, r, 0.026), ry: -a, s: [W - 0.4, 0.004, 0.14] }))
+    // and a softer pool of light down the middle of every bay
+    angles.slice(0, -1).forEach(a0 => L.pools.push({ p: polar(a0 + step / 2, r, 0.03), rx: -Math.PI / 2, s: [2.6, 2.6, 1] }))
     return L
   }, [r, angles, step, twoSided, ri, ro, demo])
 
@@ -288,6 +306,13 @@ export function GalleryInterior({ r, angles, step, twoSided, m, demo = false }: 
       ))}
       <Inst items={built.sconces} mat={mats.brass}><cylinderGeometry args={[1, 1, 1, 6, 1, true]} /></Inst>
       <Inst items={built.sconceGlass} mat={mats.lantern}><cylinderGeometry args={[1, 1, 1, 6]} /></Inst>
+      {/* pools of warm lamplight on the marble, only once the lamps are on */}
+      {lamp > 0 && (
+        <Inst items={built.pools} mat={null}>
+          <planeGeometry />
+          <meshBasicMaterial map={pool} transparent opacity={0.85 * lamp} blending={AdditiveBlending} depthWrite={false} toneMapped={false} />
+        </Inst>
+      )}
 
       {/* hanging lanterns */}
       {/* lanterns hang from the vault, so they go with it */}
