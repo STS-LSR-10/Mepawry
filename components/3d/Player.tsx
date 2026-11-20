@@ -8,7 +8,7 @@ import { CuteAvatar } from './CuteAvatar'
 import type { AvatarLook } from '@/lib/look'
 import { heightAt, inGallery, isFree, isInside, type P } from './walk'
 import type { Stick } from './Joystick'
-import { DOME, VIP_CENTER } from './sanctuary/plan'
+import { DOME, H, RINGS, VIP_CENTER, W } from './sanctuary/plan'
 
 const SPEED = 3.2 // world units per second
 
@@ -161,20 +161,29 @@ export function Player({ name, gender, look, pos, route, onInsideChange, stick }
       // A distance we didn't set means you zoomed: that's the distance you want now
       if (armSet.current == null || Math.abs(len - armSet.current) > 0.01) want.current = len
       let next = want.current
+      let nx = t.x + (dx / len) * next, ny = t.y + (dy / len) * next, nz = t.z + (dz / len) * next
       if (inGallery(t) && flat > 0.01) {
-        // Only the gallery's own walls and cabinets count (the camera looks over benches), kept 0.6 m off them; a view
-        // that clears the 3 m cabinets (looking down from higher up) may pass over them
-        const reach = (want.current * flat) / len, rise = dy / flat
+        // In a ring gallery (6 m wide, under a glass vault): back off along your view only as far as the aisle allows,
+        // then make up the rest of your distance by rising towards the vault and looking down, so you never fill the
+        // screen in front of the cubbies. The camera always stays inside, under the glass.
+        const reach = (want.current * flat) / len
         let clear = 0
-        while (clear < reach + 0.6) {
-          const s = clear + 0.2
-          if (!inGallery({ x: t.x + (dx / flat) * s, z: t.z + (dz / flat) * s }) && t.y + rise * s < heightAt(t) + 3.6) break
-          clear = s
+        while (clear < reach + 0.6 && inGallery({ x: t.x + (dx / flat) * (clear + 0.2), z: t.z + (dz / flat) * (clear + 0.2) })) clear += 0.2
+        const f = Math.min(reach, Math.max(0.8, clear - 0.6))
+        if (f < reach - 0.05) {
+          const px = t.x + (dx / flat) * f, pz = t.z + (dz / flat) * f, rad = Math.hypot(px, pz)
+          const ring = RINGS.find(g => Math.abs(rad - g.r) < W / 2), u = ring ? Math.abs(rad - ring.r) : W / 2
+          const roof = heightAt(t) + H + 0.28 + Math.sqrt(Math.max(0, (W / 2) ** 2 - u * u)) - 0.45
+          const up = Math.max(0, Math.min(roof - t.y, Math.sqrt(Math.max(0, want.current ** 2 - f * f))))
+          nx = px; nz = pz; ny = t.y + up
+          next = Math.hypot(f, up)
         }
-        next = Math.min(want.current, Math.max(2.6, ((clear - 0.6) * len) / flat))
       }
-      if (next > len) next = len + (next - len) * (1 - Math.exp(-Math.min(dt, 0.25) * 3))
-      if (Math.abs(next - len) > 0.001) c.set(t.x + (dx / len) * next, t.y + (dy / len) * next, t.z + (dz / len) * next)
+      // Pull in at once (never through a wall), ease back out
+      const k = 1 - Math.exp(-Math.min(dt, 0.25) * 3)
+      if (next < len) c.set(nx, ny, nz)
+      else c.set(c.x + (nx - c.x) * k, c.y + (ny - c.y) * k, c.z + (nz - c.z) * k)
+      next = c.distanceTo(t)
       armSet.current = next
       last.current = { ...p }
     }
