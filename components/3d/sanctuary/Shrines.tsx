@@ -1,12 +1,12 @@
 'use client'
 // components/3d/sanctuary/Shrines.tsx — The real pets in the gallery cubbies.
-// Every placed pet gets a frame on a white mat, a colour card in its species' colour, a little brass nameplate and,
-// once someone has lit one, a candle: all instanced, a handful of draw calls however full the galleries are.
+// Every placed pet gets a frame that nearly fills its cubby, a white mat, a colour card in its species' colour and a
+// candle beside it, burning once someone has lit one: all instanced, a handful of draw calls however full the galleries are.
 // Only the shrines near the avatar load their real photo (each is a texture in GPU memory). Tap a frame to visit.
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useFrame, type ThreeEvent } from '@react-three/fiber'
-import { Color, InstancedMesh, MeshStandardMaterial, Object3D, type Texture } from 'three'
+import { AdditiveBlending, CanvasTexture, Color, DoubleSide, InstancedMesh, MeshStandardMaterial, Object3D, type Texture } from 'three'
 import type { Pet } from '@/types'
 import { SPECIES_LOOK } from '@/lib/utils'
 import { petTexture } from '../textures'
@@ -15,9 +15,19 @@ import { useLamp, useLampGlow } from './shared'
 
 const NEAR = 7       // photos load only for shrines this close to the avatar…
 const MAX_NEAR = 24  // …and never more than this many at once
-const FH = ROW_H - 0.07, FW = FH * 0.8, TILT = -0.1
+// the frame nearly fills the cubby (the narrowest is 0.43 wide), nudged left to leave room for the candle
+const FH = ROW_H - 0.05, FW = FH * 0.82, TILT = -0.1, DX = -0.035, CANDLE_X = DX + FW / 2 + 0.055
 const isTap = (e: ThreeEvent<MouseEvent>) => e.delta < 6
 const noRay = () => null
+
+/** A soft round falloff for the glow round a lit candle. */
+function haloTexture() {
+  const c = document.createElement('canvas'); c.width = c.height = 64
+  const g = c.getContext('2d')!, gr = g.createRadialGradient(32, 32, 0, 32, 32, 32)
+  gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(0.35, 'rgba(255,255,255,.35)'); gr.addColorStop(1, 'rgba(255,255,255,0)')
+  g.fillStyle = gr; g.fillRect(0, 0, 64, 64)
+  return new CanvasTexture(c)
+}
 
 function useTexture(make: () => Texture, deps: unknown[]) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -41,25 +51,26 @@ function placer() {
 export function GalleryShrines({ pets, playerPos, onOpen }: { pets: Pet[]; playerPos: React.RefObject<P>; onOpen: (pet: Pet, slot: Slot) => void }) {
   const placed = useMemo(() => pets.filter(p => SLOTS[p.shrine_position]), [pets])
   const lit = useMemo(() => placed.filter(p => p.candle_count > 0), [placed])
-  const refs = { frames: useRef<InstancedMesh>(null), mats: useRef<InstancedMesh>(null), cards: useRef<InstancedMesh>(null), plates: useRef<InstancedMesh>(null), candles: useRef<InstancedMesh>(null), flames: useRef<InstancedMesh>(null) }
+  const refs = { frames: useRef<InstancedMesh>(null), mats: useRef<InstancedMesh>(null), cards: useRef<InstancedMesh>(null), candles: useRef<InstancedMesh>(null), flames: useRef<InstancedMesh>(null), halos: useRef<InstancedMesh>(null) }
   const flame = useMemo(() => new MeshStandardMaterial({ color: '#FFE0A0', emissive: '#FFB040', emissiveIntensity: 9, toneMapped: false }), [])
   const glows = useMemo((): [MeshStandardMaterial, number, number?][] => [[flame, 9, 0.45]], [flame])
+  const halo = useTexture(haloTexture, [])
   useLampGlow(glows, useLamp())
 
   useLayoutEffect(() => {
     const at = placer(), c = new Color()
     placed.forEach((pet, i) => {
       const s = SLOTS[pet.shrine_position]
-      refs.frames.current!.setMatrixAt(i, at(s, 0, -0.01, -0.02))
-      refs.mats.current!.setMatrixAt(i, at(s, 0, -0.01, 0.0))
-      refs.cards.current!.setMatrixAt(i, at(s, 0, -0.005, 0.003))
+      refs.frames.current!.setMatrixAt(i, at(s, DX, -0.008, -0.02))
+      refs.mats.current!.setMatrixAt(i, at(s, DX, -0.008, 0.0))
+      refs.cards.current!.setMatrixAt(i, at(s, DX, -0.004, 0.003))
       refs.cards.current!.setColorAt(i, c.set(SPECIES_LOOK[pet.species].to))
-      refs.plates.current!.setMatrixAt(i, at(s, 0, -ROW_H / 2 + 0.04, 0.17, -0.5))
+      refs.candles.current!.setMatrixAt(i, at(s, CANDLE_X, -ROW_H / 2 + 0.09, 0.15, 0))
     })
     lit.forEach((pet, i) => {
       const s = SLOTS[pet.shrine_position]
-      refs.candles.current!.setMatrixAt(i, at(s, FW / 2 + 0.04, -ROW_H / 2 + 0.08, 0.15, 0))
-      refs.flames.current!.setMatrixAt(i, at(s, FW / 2 + 0.04, -ROW_H / 2 + 0.145, 0.15, 0, [1, 1.6, 1]))
+      refs.flames.current!.setMatrixAt(i, at(s, CANDLE_X, -ROW_H / 2 + 0.15, 0.15, 0, [1, 1.7, 1]))
+      refs.halos.current!.setMatrixAt(i, at(s, CANDLE_X, -ROW_H / 2 + 0.15, 0.15, 0))
     })
     for (const r of Object.values(refs)) {
       const m = r.current
@@ -101,23 +112,24 @@ export function GalleryShrines({ pets, playerPos, onOpen }: { pets: Pet[]; playe
         <meshStandardMaterial color="#5E3A1E" roughness={0.4} />
       </instancedMesh>
       <instancedMesh key={`m${n}`} ref={refs.mats} args={[undefined, undefined, n]} count={placed.length} raycast={noRay}>
-        <planeGeometry args={[FW * 0.86, FH * 0.88]} />
+        <planeGeometry args={[FW * 0.92, FH * 0.93]} />
         <meshStandardMaterial color="#EFE6D6" roughness={0.85} />
       </instancedMesh>
       <instancedMesh key={`c${n}`} ref={refs.cards} args={[undefined, undefined, n]} count={placed.length} raycast={noRay}>
-        <planeGeometry args={[FW * 0.66, FH * 0.7]} />
+        <planeGeometry args={[FW * 0.82, FH * 0.85]} />
         <meshStandardMaterial roughness={0.7} />
       </instancedMesh>
-      <instancedMesh key={`p${n}`} ref={refs.plates} args={[undefined, undefined, n]} count={placed.length} raycast={noRay}>
-        <boxGeometry args={[FW * 0.8, 0.045, 0.012]} />
-        <meshStandardMaterial color="#C9A15A" roughness={0.35} metalness={0.7} />
-      </instancedMesh>
-      <instancedMesh key={`k${nl}`} ref={refs.candles} args={[undefined, undefined, nl]} count={lit.length} raycast={noRay}>
-        <cylinderGeometry args={[0.022, 0.022, 0.07, 10]} />
+      <instancedMesh key={`k${n}`} ref={refs.candles} args={[undefined, undefined, n]} count={placed.length} raycast={noRay}>
+        <cylinderGeometry args={[0.026, 0.026, 0.09, 12]} />
         <meshStandardMaterial color="#F8EEDC" roughness={0.6} />
       </instancedMesh>
       <instancedMesh key={`l${nl}`} ref={refs.flames} args={[undefined, undefined, nl, ]} count={lit.length} raycast={noRay} material={flame}>
-        <sphereGeometry args={[0.011, 8, 6]} />
+        <sphereGeometry args={[0.013, 8, 6]} />
+      </instancedMesh>
+      {/* a soft warm glow round each lit flame */}
+      <instancedMesh key={`h${nl}`} ref={refs.halos} args={[undefined, undefined, nl]} count={lit.length} raycast={noRay}>
+        <planeGeometry args={[0.26, 0.26]} />
+        <meshBasicMaterial map={halo} color="#FFE2A8" transparent opacity={1} side={DoubleSide} blending={AdditiveBlending} depthWrite={false} toneMapped={false} />
       </instancedMesh>
       {near.map(pet => <NearPhoto key={pet.id} pet={pet} slot={SLOTS[pet.shrine_position]} />)}
     </>
@@ -127,10 +139,10 @@ export function GalleryShrines({ pets, playerPos, onOpen }: { pets: Pet[]; playe
 /** The real photo, laid over a nearby shrine's colour card. */
 function NearPhoto({ pet, slot }: { pet: Pet; slot: Slot }) {
   const tex = useTexture(() => petTexture(pet, false), [pet.id, pet.primary_photo_url])
-  const matrix = useMemo(() => placer()(slot, 0, -0.005, 0.005), [slot])
+  const matrix = useMemo(() => placer()(slot, DX, -0.004, 0.005), [slot])
   return (
     <mesh matrix={matrix} matrixAutoUpdate={false} raycast={noRay}>
-      <planeGeometry args={[FW * 0.68, FH * 0.72]} />
+      <planeGeometry args={[FW * 0.84, FH * 0.87]} />
       <meshStandardMaterial map={tex} roughness={0.55} />
     </mesh>
   )

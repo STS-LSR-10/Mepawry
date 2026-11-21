@@ -821,11 +821,13 @@ function Grade({ interior, night, day }: { interior: boolean; night: boolean; da
           when the lamps light those insides */}
       <N8AO aoRadius={interior ? 0.45 : 2.2} intensity={interior ? (night ? 1.6 : 3.2) : 3} distanceFalloff={1} halfRes quality="medium" />
       <Bloom mipmapBlur luminanceThreshold={0.92} luminanceSmoothing={0.2} intensity={0.45} radius={0.7} />
+      {/* tone map first: saturation and contrast on raw HDR (the lamp-washed oak goes past 1) turn those colours
+          negative, which showed as jagged black patches in the cubbies */}
+      <ToneMapping mode={ToneMappingMode.ACES_FILMIC} />
       <HueSaturation saturation={interior ? 0.1 : 0.16} />
       {/* indoors by day: a touch darker and punchier; at night no darkening and less contrast, or the lamp-lit
           shadows crush to black */}
       <BrightnessContrast brightness={interior ? (night ? 0.03 : day ? 0 : -0.05) : 0.01} contrast={interior ? (night ? 0.04 : 0.14) : 0.1} />
-      <ToneMapping mode={ToneMappingMode.ACES_FILMIC} />
       <Vignette offset={0.3} darkness={interior ? 0.6 : 0.42} />
       <SMAA />
     </EffectComposer>
