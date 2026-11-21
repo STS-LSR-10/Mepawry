@@ -749,7 +749,9 @@ function Wing({ m, open }: { m: Mats; open: 1 | -1 }) {
         <mesh position-y={2.3} scale-y={(h - 2.4) / WING_DOOR} material={m.frame} castShadow><torusGeometry args={[WING_DOOR, 0.12, 8, 32, Math.PI]} /></mesh>
         {[-1, 1].map(k => <mesh key={k} position={[k * WING_DOOR, 1.15, 0]} material={m.frame} castShadow><boxGeometry args={[0.2, 2.3, 0.2]} /></mesh>)}
       </group>
-      <mesh position-y={h} material={m.frame} castShadow><boxGeometry args={[w + 0.3, 0.22, d + 0.3]} /></mesh>
+      {/* a ring beam round the top (not a solid lid: the glass roof above lifts off when you're inside) */}
+      {[-1, 1].map(k => <mesh key={`z${k}`} position={[0, h, k * d / 2]} material={m.frame} castShadow><boxGeometry args={[w + 0.3, 0.22, 0.3]} /></mesh>)}
+      {[-1, 1].map(k => <mesh key={`x${k}`} position={[k * w / 2, h, 0]} material={m.frame} castShadow><boxGeometry args={[0.3, 0.22, d + 0.3]} /></mesh>)}
       <Roof><mesh position-y={h + 0.1} rotation-x={-Math.PI / 2} material={m.glass} raycast={noRay}><planeGeometry args={[w, d]} /></mesh></Roof>
     </group>
   )
