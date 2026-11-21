@@ -108,6 +108,8 @@ export const SLOTS: Slot[] = RINGS.flatMap((ring, ri) => {
 })
 export const FLOOR_CAPACITY = SLOTS.length
 export const FLOOR_COUNT = 33
+/** A dome this close to full opens (and shows) the next one too, so people can choose there while the last shelves go. */
+export const OPEN_NEXT_AT_FREE = 100
 
 // ── VIP niches (in the pavilion on the terrace) ──
 

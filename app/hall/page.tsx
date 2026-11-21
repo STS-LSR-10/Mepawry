@@ -86,7 +86,8 @@ export default function HallPage() {
   const onPeopleHere = useCallback((n: number, st: 'connecting' | 'live' | 'offline') => { setHereNow(n); setLive(st) }, [])
   const activity = useActivity()
   const [floors, setFloors] = useState<Floor[]>([])
-  // Only the domes that have opened are offered (the next one appears when the newest has fewer than 150 shelves left)
+  // Only the domes that have opened can be visited (the next opens when the newest has fewer than 100 shelves left);
+  // the dome after them shows in the picker, greyed out, as the one coming next
   const shownDomes = Math.max(currentFloor, ...floors.filter(f => f.is_open).map(f => f.id))
   useEffect(() => {
     fetch('/api/floors').then(r => r.json()).then(d => setFloors(d.floors ?? [])).catch(() => {})
@@ -275,7 +276,8 @@ export default function HallPage() {
       <FloorSelector
         open={floorSelectorOpen}
         onClose={() => setFloorSelectorOpen(false)}
-        floors={floors.slice(0, shownDomes)}
+        floors={floors.slice(0, shownDomes + 1)}
+        openCount={shownDomes}
         currentFloorId={currentFloor}
         onSelectFloor={f => { if (f !== currentFloor) goToFloor(f, ARRIVAL) }}
       />

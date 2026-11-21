@@ -7,7 +7,7 @@ import { randomUUID } from 'node:crypto'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { BACKDROPS, FRAMES } from '@/lib/decor'
 import type { Floor, GlobalStats, GuestbookEntry, Pet, Profile, Species, TributeType } from '@/types'
-import { FLOOR_CAPACITY, FLOOR_COUNT, VIP_CAPACITY } from '@/components/3d/sanctuary/plan'
+import { FLOOR_CAPACITY, FLOOR_COUNT, OPEN_NEXT_AT_FREE, VIP_CAPACITY } from '@/components/3d/sanctuary/plan'
 import { generateSlug, getFloorName } from '@/lib/utils'
 import { FREE_GIFT_COOLDOWN_DAYS, FREE_GIFT_SHOWS_DAYS, giftById, type LeftGift } from '@/lib/gifts'
 
@@ -352,8 +352,6 @@ export async function getTopNames(limit = 10): Promise<{ name: string; count: nu
   return rows.map(r => ({ name: r.name, count: Number(r.count) }))
 }
 
-/** A dome this close to full opens (and shows) the next one too, so people can choose there while the last shelves go. */
-export const OPEN_NEXT_AT_FREE = 150
 
 export async function getFloors(): Promise<Floor[]> {
   const counts = new Array(FLOOR_COUNT + 1).fill(0)
@@ -365,7 +363,7 @@ export async function getFloors(): Promise<Floor[]> {
   }))
 }
 
-/** Domes fill one at a time: the lowest with a free shelf, plus the next one once it has fewer than 150 left. */
+/** Domes fill one at a time: the lowest with a free shelf, plus the next one once it has fewer than OPEN_NEXT_AT_FREE left. */
 export function openFloorsFrom(counts: number[]): number[] {
   let f = 1
   while (f < FLOOR_COUNT && counts[f] >= FLOOR_CAPACITY) f++

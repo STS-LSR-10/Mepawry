@@ -1,6 +1,6 @@
 'use client'
 // components/shrine/SlotPicker.tsx — Choose a shelf in the dome that's filling now (domes fill one at a time;
-// when it's down to its last 150 shelves the next dome opens too, and you can pick either).
+// when it's down to its last 100 shelves the next dome opens too, and you can pick either).
 // Shelves are shown room by room in the order a visitor meets them, eye-level rows first.
 
 import { useEffect, useMemo, useState } from 'react'
