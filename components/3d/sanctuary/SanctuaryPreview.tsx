@@ -856,7 +856,7 @@ const TIMES: Record<TimeOfDay, {
   },
   night: {
     sun: [50, 60, -40], color: '#9FB4E8', intensity: 0.45, bounce: 0.05, sky: [2, 0.4, 0.002], envSun: 0.6,
-    fog: ['#121826', 80, 380], hemi: ['#34446E', '#151810', 0.16], env: 0.22, inside: { hemi: 1.0, env: 0.14, sky: '#E0A468', ground: '#4A3220' }, lamp: 1,
+    fog: ['#121826', 80, 380], hemi: ['#34446E', '#151810', 0.16], env: 0.22, inside: { hemi: 1.4, env: 0.14, sky: '#E0A468', ground: '#5A3E28' }, lamp: 1,
     skySun: [0, -25, -100],
   },
 }
@@ -935,7 +935,9 @@ export function SanctuaryWorld({ time, interior: inRoom, cutaway = false, low, d
         {children}
       </RoofContext.Provider>
       </LampContext.Provider>
-      {!low && <Grade interior={interior} night={time === 'night'} day={time === 'day'} />}
+      {/* the walkable hall at night is a lamp-lit room even with the roof off: grade it like one, or the wide outdoor AO
+          blacks out the shelving along the walkway */}
+      {!low && <Grade interior={interior || (lampFill && time === 'night')} night={time === 'night'} day={time === 'day'} />}
     </>
   )
 }
