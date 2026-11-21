@@ -57,12 +57,13 @@ export async function getPetsOnFloor(floor: number): Promise<Pet[]> {
   return (must(await db().from('pets').select('*').eq('floor_id', floor).order('shrine_position'))) ?? []
 }
 
-export async function getMemorials(opts: { species?: string; waitingOnly?: boolean; search?: string; page?: number; limit?: number }) {
+export async function getMemorials(opts: { species?: string; waitingOnly?: boolean; search?: string; page?: number; limit?: number; since?: string }) {
   const page = Math.max(1, opts.page ?? 1)
   const limit = Math.min(100, opts.limit ?? 24)
   let q = db().from('pets').select('*', { count: 'exact' }).order('created_at', { ascending: false })
   if (opts.species && opts.species !== 'all') q = q.eq('species', opts.species)
   if (opts.waitingOnly) q = q.eq('candle_count', 0)
+  if (opts.since) q = q.gte('created_at', opts.since)
   if (opts.search) q = q.ilike('name', `%${opts.search.replace(/[\\%_]/g, '\\$&')}%`)
   const { data, count, error } = await q.range((page - 1) * limit, page * limit - 1)
   if (error) throw new Error(error.message)

@@ -1,15 +1,14 @@
 'use client'
-// components/shrine/NewPetsViewer.tsx — Opened from the board by the reception door: the 50 newest pets, one big
-// photo at a time, with ‹ › buttons (also arrow keys and swipe) and a link to each pet's shrine.
+// components/shrine/NewPetsViewer.tsx — Opened from the "Today we remember" board by the reception door: the pets
+// who joined today (the visitor's own day), one big photo at a time, with ‹ › buttons (also arrow keys and swipe) and a link to each pet's shrine.
 
 import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
 import { Modal } from '@/components/ui/Modal'
 import { useT } from '@/lib/i18n'
-import { flagEmoji, formatYears, SPECIES_LOOK, timeAgo } from '@/lib/utils'
+import { flagEmoji, formatYears, SPECIES_LOOK, startOfToday, timeAgo } from '@/lib/utils'
 import type { Pet } from '@/types'
 
-const COUNT = 50
 
 export function NewPetsViewer({ open, onClose }: { open: boolean; onClose: () => void }) {
   const t = useT()
@@ -20,7 +19,7 @@ export function NewPetsViewer({ open, onClose }: { open: boolean; onClose: () =>
   useEffect(() => {
     if (!open) return
     setI(0)
-    fetch(`/api/pets?limit=${COUNT}`).then(r => r.json()).then(d => setPets(d.pets ?? [])).catch(() => setPets([]))
+    fetch(`/api/pets?limit=100&since=${encodeURIComponent(startOfToday())}`).then(r => r.json()).then(d => setPets(d.pets ?? [])).catch(() => setPets([]))
   }, [open])
 
   const n = pets?.length ?? 0
@@ -37,12 +36,14 @@ export function NewPetsViewer({ open, onClose }: { open: boolean; onClose: () =>
   const arrow = 'absolute top-1/2 -translate-y-1/2 flex h-11 w-11 items-center justify-center rounded-full bg-white/85 text-2xl text-[#5A3A22] shadow-md transition hover:bg-white disabled:opacity-40'
 
   return (
-    <Modal open={open} onClose={onClose} title={`🐾 ${t('New friends')}`} className="max-w-md">
-      <p className="-mt-1 mb-3 text-sm text-[#8A6A52]">{t('The {n} newest pets to join the sanctuary', { n: COUNT })}</p>
+    <Modal open={open} onClose={onClose} title={`🕯️ ${t('Today we remember')}`} className="max-w-md">
+      <p className="-mt-1 mb-3 text-sm text-[#8A6A52]">{t('Friends who joined the sanctuary today')}</p>
       {!pets ? (
         <div className="flex aspect-square items-center justify-center rounded-2xl bg-[#F4EDE0] text-sm text-[#8A6A52]">{t('Loading…')}</div>
       ) : !p || !look ? (
-        <div className="flex aspect-square items-center justify-center rounded-2xl bg-[#F4EDE0] text-sm text-[#8A6A52]">—</div>
+        <div className="flex aspect-square flex-col items-center justify-center gap-1 rounded-2xl bg-[#F4EDE0] px-6 text-center text-sm text-[#8A6A52]">
+          <span className="text-3xl">🕯️</span>{t('No new friends have joined yet today.')}
+        </div>
       ) : (
         <>
           <div className="relative select-none"
@@ -61,7 +62,7 @@ export function NewPetsViewer({ open, onClose }: { open: boolean; onClose: () =>
           <div className="mt-3 text-center">
             <h3 className="font-serif text-xl font-semibold text-[#3A2A1A]">{look.emoji} {p.name} {flagEmoji(p.country_code)}</h3>
             <p className="mt-0.5 text-sm text-[#8A6A52]">{[formatYears(p.birth_year, p.death_year), timeAgo(p.created_at)].filter(Boolean).join(' · ')}</p>
-            {p.epitaph && <p className="mt-2 line-clamp-3 text-sm italic text-[#5A4636]">“{p.epitaph}”</p>}
+            {p.epitaph && <p className="mt-2 max-h-32 overflow-y-auto whitespace-pre-line text-sm italic text-[#5A4636]">“{p.epitaph}”</p>}
             <Link href={`/${p.slug}`} className="mt-3 inline-block rounded-full bg-[#B07A4F] px-5 py-2 text-sm font-semibold text-white hover:bg-[#9A673F]">
               {t('Visit {name}', { name: p.name })}
             </Link>

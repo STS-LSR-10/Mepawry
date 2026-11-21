@@ -109,9 +109,10 @@ const t: string[] = [
   "Lassú",
   "Normál",
   "Gyors",
-  "Új barátok",
-  "A szentély {n} legújabb kedvence",
+  "Ma rájuk emlékezünk",
+  "Barátok, akik ma érkeztek a szentélybe",
   "Előző",
   "Következő",
+  "Ma még nem érkezett új barát.",
 ]
 export default t

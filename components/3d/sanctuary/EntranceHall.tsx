@@ -3,8 +3,8 @@
 // A curved reception desk ("Welcome to Mepawry") with marble panels faces the front door. Openings left and right
 // lead into the outer gallery; the doorway behind the desk leads on to the inner gallery, the garden and the VIP
 // pavilion — each has a sign above it. Behind the desk to the right, a slatted oak wall with the MEPAWRY SANCTUARY
-// lettering and a screen showing the latest community-board stories (tap it to open the board); to the left, a mirror and a plant shelf. A board near the door cycles
-// through the newest pets. Lounge corners with armchairs, a sofa and coffee tables, hanging ferns, potted palms, a wooden chandelier.
+// lettering and a screen showing the latest community-board stories (tap it to open the board); to the left, a mirror and a plant shelf. A board near the door, "Today we
+// remember", cycles through the pets who joined today. Lounge corners with armchairs, a sofa and coffee tables, hanging ferns, potted palms, a wooden chandelier.
 
 import { useEffect, useMemo } from 'react'
 import { CanvasTexture, ExtrudeGeometry, MeshStandardMaterial, Shape, SRGBColorSpace, Vector2, type Texture } from 'three'
@@ -12,6 +12,7 @@ import {
   Armchair, FernPot, Ferns, herringboneTexture, Roses, Rug, rugTexture, SideTable, useDecorLamps, useDecorMaterials, type DMats,
 } from './decor'
 import { polar, useLamp, type V3 } from './shared'
+import { startOfToday } from '@/lib/utils'
 
 function tex(w: number, h: number, draw: (g: CanvasRenderingContext2D) => void) {
   const c = document.createElement('canvas')
@@ -40,6 +41,29 @@ const lettersTexture = () => tex(512, 160, g => {
   g.font = '600 50px Georgia, serif'; g.fillText('SANCTUARY', 256, 116)
 })
 
+/** Break text into at most `max` lines that fit `width`, between words (Intl.Segmenter also splits Thai, which has
+ * no spaces); the last line ends in … when the text runs on. */
+function wrapLines(g: CanvasRenderingContext2D, text: string, width: number, max: number) {
+  const words = [...new Intl.Segmenter(undefined, { granularity: 'word' }).segment(text.replace(/\s+/g, ' ').trim())].map(w => w.segment)
+  const lines: string[][] = [[]]
+  const str = (l: string[]) => l.join('')
+  for (const w of words) {
+    const line = lines[lines.length - 1]
+    if (!line.length && w === ' ') continue
+    if (line.length && g.measureText(str(line) + w).width > width) {
+      if (lines.length === max) {
+        // out of room: drop whole words until the … fits
+        while (line.length && g.measureText(str(line).trimEnd() + '…').width > width) line.pop()
+        line.push('…')
+        break
+      }
+      lines.push(w === ' ' ? [] : [w]); continue
+    }
+    line.push(w)
+  }
+  return lines.map(l => str(l).replace(/\s+…$/, '…'))
+}
+
 type BoardPost = { author_name: string; body: string; like_count: number; comment_count: number; pet: { name: string } | null }
 
 /** The screen on the slat wall: the latest stories from the community board. */
@@ -59,13 +83,7 @@ function drawBoard(g: CanvasRenderingContext2D, posts: BoardPost[] | null) {
     g.fillStyle = '#5A3A22'; g.font = '700 28px sans-serif'
     g.fillText(`${p.author_name}${p.pet ? ` · 🐾 ${p.pet.name}` : ''}`.slice(0, 48), 44, y + 32)
     g.fillStyle = '#3A2A1A'; g.font = '26px sans-serif'
-    // fit the story to two lines, breaking between words (Intl.Segmenter also splits Thai, which has no spaces)
-    const words = [...new Intl.Segmenter(undefined, { granularity: 'word' }).segment(p.body.replace(/\s+/g, ' ').trim())].map(w => w.segment); const lines = ['']
-    for (const ch of words) {
-      if (!lines[lines.length - 1] && ch === ' ') continue
-      if (g.measureText(lines[lines.length - 1] + ch).width > W - 220) { if (lines.length === 2) { lines[1] = lines[1].slice(0, -1) + '…'; break } lines.push('') }
-      lines[lines.length - 1] += ch
-    }
+    const lines = wrapLines(g, p.body, W - 220, 2)
     lines.forEach((l, k) => g.fillText(l, 44, y + 70 + k * 32))
     g.textAlign = 'right'; g.fillStyle = '#B0603A'; g.font = '24px sans-serif'
     g.fillText(`❤ ${p.like_count}  💬 ${p.comment_count}`, W - 44, y + 32); g.textAlign = 'left'
@@ -98,41 +116,53 @@ function BoardScreen({ m }: { m: DMats }) {
   )
 }
 
-type NewPet = { name: string; primary_photo_url: string | null; species: 'dog' | 'cat' | 'other' }
+type NewPet = { name: string; primary_photo_url: string | null; species: 'dog' | 'cat' | 'other'; birth_year: number | null; death_year: number | null; epitaph: string | null }
 const SPECIES_EMOJI = { dog: '🐶', cat: '🐱', other: '🐰' }
-const SHOW_MS = 4500 // how long each pet stays on the board
+const SHOW_MS = 6000 // how long each pet stays on the board (time to read their words)
 
-/** The board by the door: one of the newest pets at a time, a big photo and the name. */
-function drawNewPet(g: CanvasRenderingContext2D, pets: NewPet[] | null, i: number, img: HTMLImageElement | null) {
+/** The board by the door: the friends who joined today, one at a time — photo, name, years and the words their
+ * family wrote. */
+function drawToday(g: CanvasRenderingContext2D, pets: NewPet[] | null, i: number, img: HTMLImageElement | null) {
   const W = 384, H = 512
   g.fillStyle = '#F4EDE0'; g.fillRect(0, 0, W, H)
-  g.fillStyle = '#3E5A36'; g.fillRect(0, 0, W, 64)
-  g.fillStyle = '#FFFFFF'; g.font = '700 32px Georgia, serif'; g.textAlign = 'center'; g.textBaseline = 'middle'
-  g.fillText('🐾 New friends', W / 2, 34)
+  g.fillStyle = '#3E5A36'; g.fillRect(0, 0, W, 78)
+  g.fillStyle = '#FFFFFF'; g.textAlign = 'center'; g.textBaseline = 'middle'
+  g.font = '700 30px Georgia, serif'; g.fillText('Today we remember', W / 2, 30)
+  g.fillStyle = '#D9E6CC'; g.font = 'italic 17px Georgia, serif'
+  g.fillText(new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }), W / 2, 58)
   const p = pets?.[i]
   if (!p) {
-    g.fillStyle = '#8A7A66'; g.font = 'italic 22px Georgia, serif'; g.fillText(pets ? 'Waiting for new friends' : 'Loading…', W / 2, 250)
+    g.fillStyle = '#8A7A66'; g.font = 'italic 22px Georgia, serif'
+    if (!pets) g.fillText('Loading…', W / 2, 260)
+    else { g.fillText('No new friends have', W / 2, 240); g.fillText('joined yet today.', W / 2, 270); g.font = 'italic 17px Georgia, serif'; g.fillText('Every friend here is remembered, always.', W / 2, 320) }
     return
   }
   // the photo, cropped square, in a gilt frame
-  const x = 32, y = 84, s = W - 64
-  g.fillStyle = '#B48A4A'; g.beginPath(); g.roundRect(x - 6, y - 6, s + 12, s + 12, 14); g.fill()
-  g.save(); g.beginPath(); g.roundRect(x, y, s, s, 10); g.clip()
+  const s = 190, x = (W - s) / 2, y = 98
+  g.fillStyle = '#B48A4A'; g.beginPath(); g.roundRect(x - 5, y - 5, s + 10, s + 10, 12); g.fill()
+  g.save(); g.beginPath(); g.roundRect(x, y, s, s, 8); g.clip()
   g.fillStyle = '#E3D6BF'; g.fillRect(x, y, s, s)
   if (img) {
     const k = Math.max(s / img.width, s / img.height)
     g.drawImage(img, x + (s - img.width * k) / 2, y + (s - img.height * k) / 2, img.width * k, img.height * k)
-  } else { g.font = '150px sans-serif'; g.fillText(SPECIES_EMOJI[p.species] ?? '🐾', W / 2, y + s / 2 + 8) }
+  } else { g.font = '100px sans-serif'; g.fillText(SPECIES_EMOJI[p.species] ?? '🐾', W / 2, y + s / 2 + 6) }
   g.restore()
-  g.fillStyle = '#3A2A1A'; g.font = '700 30px Georgia, serif'
-  g.fillText(p.name.length > 18 ? p.name.slice(0, 17) + '…' : p.name, W / 2, y + s + 36)
-  g.fillStyle = '#8A6A52'; g.font = '17px sans-serif'
-  g.fillText(`${i + 1} / ${pets.length}  ·  Tap to see them all`, W / 2, H - 22)
+  g.fillStyle = '#3A2A1A'; g.font = '700 27px Georgia, serif'
+  g.fillText(p.name.length > 20 ? p.name.slice(0, 19) + '…' : p.name, W / 2, y + s + 30)
+  const years = p.birth_year && p.death_year ? `${p.birth_year} – ${p.death_year}` : p.death_year ? `† ${p.death_year}` : p.birth_year ? `b. ${p.birth_year}` : ''
+  let ty = y + s + 56
+  if (years) { g.fillStyle = '#8A6A52'; g.font = '16px sans-serif'; g.fillText(years, W / 2, ty); ty += 26 }
+  if (p.epitaph) {
+    g.fillStyle = '#5A4636'; g.font = 'italic 18px Georgia, serif'
+    wrapLines(g, `“${p.epitaph}”`, W - 56, years ? 3 : 4).forEach((l, k) => g.fillText(l, W / 2, ty + k * 23))
+  }
+  g.fillStyle = '#8A6A52'; g.font = '15px sans-serif'
+  g.fillText(`${i + 1} / ${pets.length}  ·  Tap to see them all`, W / 2, H - 18)
 }
 
-/** The board by the front door, cycling through the newest pets; tapping it opens the new-friends viewer in the hall page. */
+/** The board by the front door, cycling through today's new friends; tapping it opens the new-friends viewer in the hall page. */
 function NewPetsBoard({ m }: { m: DMats }) {
-  const t = useMemo(() => tex(384, 512, g => drawNewPet(g, null, 0, null)), [])
+  const t = useMemo(() => tex(384, 512, g => drawToday(g, null, 0, null)), [])
   useEffect(() => {
     let off = false, pets: NewPet[] = [], i = 0
     const imgs = new Map<string, Promise<HTMLImageElement | null>>()
@@ -147,16 +177,16 @@ function NewPetsBoard({ m }: { m: DMats }) {
     const show = async () => {
       const p = pets[i], img = p ? await photo(p.primary_photo_url) : null
       if (off) return
-      drawNewPet((t.image as HTMLCanvasElement).getContext('2d')!, pets, i, img)
+      drawToday((t.image as HTMLCanvasElement).getContext('2d')!, pets, i, img)
       t.needsUpdate = true
       if (pets.length > 1) photo(pets[(i + 1) % pets.length].primary_photo_url) // have the next one ready
     }
-    const load = () => fetch('/api/pets?limit=50').then(r => r.json()).then((d: { pets?: NewPet[] }) => {
+    const load = () => fetch(`/api/pets?limit=100&since=${encodeURIComponent(startOfToday())}`).then(r => r.json()).then((d: { pets?: NewPet[] }) => {
       pets = d.pets ?? []; i = Math.min(i, Math.max(0, pets.length - 1)); show()
     }).catch(() => {})
     load()
     const tick = setInterval(() => { if (pets.length > 1) { i = (i + 1) % pets.length; show() } }, SHOW_MS)
-    const refresh = setInterval(load, 300_000)
+    const refresh = setInterval(load, 120_000)
     return () => { off = true; clearInterval(tick); clearInterval(refresh); t.dispose() }
   }, [t])
   const cursor = (c: string) => () => { document.body.style.cursor = c }

@@ -115,3 +115,10 @@ export const SPECIES_LOOK = {
 export function isPhotoDataUrl(v: unknown): v is string {
   return typeof v === 'string' && v.length < 2_000_000 && /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(v)
 }
+
+/** Local midnight as an ISO time, so "today" is the visitor's own day. */
+export function startOfToday(): string {
+  const d = new Date()
+  d.setHours(0, 0, 0, 0)
+  return d.toISOString()
+}

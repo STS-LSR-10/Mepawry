@@ -15,6 +15,8 @@ export async function GET(req: NextRequest) {
     search: q.get('search') ?? undefined,
     page: Number(q.get('page')) || 1,
     limit: Number(q.get('limit')) || undefined,
+    // only pets added from this moment on (e.g. the visitor's midnight, for "today"); anything not a date is ignored
+    since: Number.isNaN(Date.parse(q.get('since') ?? '')) ? undefined : new Date(q.get('since')!).toISOString(),
   })
   return NextResponse.json(data)
 }

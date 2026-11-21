@@ -109,9 +109,10 @@ const t: string[] = [
   "Hidas",
   "Normaali",
   "Nopea",
-  "Uudet ystävät",
-  "{n} uusinta lemmikkiä pyhäkössä",
+  "Tänään muistamme",
+  "Ystävät, jotka liittyivät pyhäkköön tänään",
   "Edellinen",
   "Seuraava",
+  "Tänään ei ole vielä tullut uusia ystäviä.",
 ]
 export default t

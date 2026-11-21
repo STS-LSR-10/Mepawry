@@ -109,9 +109,10 @@ const t: string[] = [
   "Perlahan",
   "Biasa",
   "Pantas",
-  "Kawan baharu",
-  "{n} haiwan terbaharu di tempat suci",
+  "Hari ini kita mengenang",
+  "Sahabat yang menyertai tempat suci hari ini",
   "Sebelumnya",
   "Seterusnya",
+  "Belum ada sahabat baharu hari ini.",
 ]
 export default t
