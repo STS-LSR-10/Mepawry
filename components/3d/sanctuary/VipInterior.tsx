@@ -113,13 +113,14 @@ export function VipInterior({ y, z, vip }: { y: number; z: number; vip?: VipPets
   return (
     <group position={[0, y, z]}>
       {/* ── domed hall ── */}
-      <mesh rotation-x={-Math.PI / 2} rotation-z={Math.PI / 8} position-y={0.03} receiveShadow>
+      {/* the floor lies on the terrace's stone: pulled forward (and the medallion further) so they never flicker */}
+      <mesh rotation-x={-Math.PI / 2} rotation-z={Math.PI / 8} position-y={0.035} receiveShadow>
         <circleGeometry args={[r - 0.05, 8]} />
-        <meshStandardMaterial map={floor} roughness={0.35} envMapIntensity={0.4} />
+        <meshStandardMaterial map={floor} roughness={0.35} envMapIntensity={0.4} polygonOffset polygonOffsetFactor={-1} polygonOffsetUnits={-4} />
       </mesh>
-      <mesh rotation-x={-Math.PI / 2} position-y={0.035} receiveShadow>
+      <mesh rotation-x={-Math.PI / 2} position-y={0.045} receiveShadow>
         <circleGeometry args={[VIP_PLANTER_R - 0.5, 48]} />
-        <meshStandardMaterial map={medallion} roughness={0.25} />
+        <meshStandardMaterial map={medallion} roughness={0.25} polygonOffset polygonOffsetFactor={-2} polygonOffsetUnits={-8} />
       </mesh>
       <TieredFountain m={m} />
       <PlanterRing r={PLANTER_R} m={m} />
@@ -148,14 +149,15 @@ export function VipInterior({ y, z, vip }: { y: number; z: number; vip?: VipPets
       {[-1, 1].map(s => <FlowerUrn key={s} at={[s * 1.25, 0, apothem - 0.5]} m={m} scale={0.9} />)}
 
       {/* a rug at each side of the walk round the fountain (the armchairs are in the wings, leaving the way clear) */}
-      {[-1, 1].map(s => <Rug key={s} at={[s * 3.5, 0.04, 1.6]} size={[1.2, 2.2]} tex={s < 0 ? rugA : rugB} ry={s * 0.5} />)}
+      {[-1, 1].map(s => <Rug key={s} at={[s * 3.5, 0.055, 1.6]} size={[1.2, 2.2]} tex={s < 0 ? rugA : rugB} ry={s * 0.5} />)}
 
       {/* ── the wings ── */}
       {[-1, 1].map(s => (
         <group key={s} position={[s * VIP_WING.x, 0, 0]}>
-          <mesh rotation-x={-Math.PI / 2} position-y={0.03} receiveShadow>
+          {/* sits on the terrace's stone: a little higher and pulled forward so the two never flicker */}
+          <mesh rotation-x={-Math.PI / 2} position-y={0.035} receiveShadow>
             <planeGeometry args={[VIP_WING.w - 0.1, VIP_WING.d - 0.1]} />
-            <meshStandardMaterial map={wingFloor} roughness={0.35} envMapIntensity={0.4} />
+            <meshStandardMaterial map={wingFloor} roughness={0.35} envMapIntensity={0.4} polygonOffset polygonOffsetFactor={-1} polygonOffsetUnits={-4} />
           </mesh>
           <group position={[0, 0, -VIP_WING.d / 2 + 0.06]}><Wainscot w={VIP_WING.w - 0.3} m={m} /></group>
           {[-1.5, 1.5].map((x, k) => (
@@ -165,7 +167,7 @@ export function VipInterior({ y, z, vip }: { y: number; z: number; vip?: VipPets
           <group position={[s * (VIP_WING.w / 2 - 0.06), 0, 0]} rotation-y={-s * Math.PI / 2}><Wainscot w={VIP_WING.d - 0.3} m={m} /></group>
           <group position={[s * (VIP_WING.w / 2 - 0.22), 0, 0.2]} rotation-y={-s * Math.PI / 2}><Niche k={s < 0 ? 7 : 10} m={m} sample={photos[s > 0 ? 3 : 7]} vip={vip} w={1.3} h={2.3} seat /></group>
           {/* seating by the front glass, leaving the way clear from the hall to the alcoves */}
-          <Rug at={[0, 0.04, 1.35]} size={[2.4, 1.3]} tex={rugB} />
+          <Rug at={[0, 0.05, 1.35]} size={[2.4, 1.3]} tex={rugB} />
           <Armchair at={[-0.75, 0, 1.45]} ry={Math.PI / 2} m={m} />
           <Armchair at={[0.75, 0, 1.45]} ry={-Math.PI / 2} m={m} fabric={m.velvet} />
           <SideTable at={[0, 0, 1.6]} m={m} />

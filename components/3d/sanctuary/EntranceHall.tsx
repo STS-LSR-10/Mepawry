@@ -354,7 +354,7 @@ export function EntranceHall({ at, r }: { at: [number, number]; r: number }) {
         <circleGeometry args={[2.4, 48]} />
         <meshStandardMaterial color="#D5CCBE" roughness={0.25} />
       </mesh>
-      <mesh rotation-x={-Math.PI / 2} position={[0, 0.042, -0.6]}>
+      <mesh rotation-x={-Math.PI / 2} position={[0, 0.05, -0.6]}>
         <ringGeometry args={[2.32, 2.42, 64]} />
         <meshStandardMaterial color="#B48A4A" metalness={0.5} roughness={0.35} />
       </mesh>

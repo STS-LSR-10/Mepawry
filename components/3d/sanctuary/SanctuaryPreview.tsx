@@ -204,11 +204,12 @@ function FlattenTori({ children }: { children: React.ReactNode }) {
 
 // ── Entrance pavilion: octagonal glasshouse with a lattice dome and a cupola ──
 
-function DomePavilion({ m, sign, at, r, wall, y = 0, doors = [2] }: { m: Mats; sign?: Texture; at: [number, number]; r: number; wall: number; y?: number; doors?: number[] }) {
+function DomePavilion({ m, sign, at, r, wall, y = 0, doors = [2], floor = true }: { m: Mats; sign?: Texture; at: [number, number]; r: number; wall: number; y?: number; doors?: number[]; floor?: boolean }) {
   const sides = 8
   return (
     <group position={[at[0], y, at[1]]} rotation-y={Math.PI / 8}> {/* turns side 2 (the door) to face straight down the path */}
-      <mesh rotation-x={-Math.PI / 2} position-y={0.03} receiveShadow material={m.stone}><circleGeometry args={[r, 8]} /></mesh>
+      {/* a plain stone floor, unless the room inside lays its own (two floors at one height flicker) */}
+      {floor && <mesh rotation-x={-Math.PI / 2} position-y={0.03} receiveShadow material={m.stone}><circleGeometry args={[r, 8]} /></mesh>}
       {Array.from({ length: sides }, (_, i) => {
         const a = (i / sides) * Math.PI * 2, a2 = ((i + 0.5) / sides) * Math.PI * 2
         const side = 2 * r * Math.sin(Math.PI / sides)
@@ -702,7 +703,7 @@ function VipPavilion({ m, vip }: { m: Mats; vip?: VipPets }) {
       ))}
       {/* main domed pavilion and its two wings */}
       {/* doors: the front, and arched doorways left and right into the wings */}
-      <DomePavilion m={m} at={[0, z - VIP_BACK]} r={VIP_DOME.r} wall={VIP_DOME.wall} y={y} doors={[0, 2, 4]} />
+      <DomePavilion m={m} at={[0, z - VIP_BACK]} r={VIP_DOME.r} wall={VIP_DOME.wall} y={y} doors={[0, 2, 4]} floor={false} />
       <VipInterior y={y} z={z - VIP_BACK} vip={vip} />
       {[-1, 1].map(s => (
         <group key={s} position={[s * VIP_WING.x, y, z - VIP_BACK]}>
@@ -912,7 +913,7 @@ export function SanctuaryWorld({ time, interior: inRoom, cutaway = false, low, d
         <FlattenTori>
           {RINGS.map(g => <Gallery key={g.r} {...g} m={m} demo={demo} />)}
         </FlattenTori>
-        <DomePavilion m={m} sign={sign} at={[DOME.x, DOME.z]} r={DOME.r} wall={DOME.wall} doors={[0, 2, 4, 6]} />
+        <DomePavilion m={m} sign={sign} at={[DOME.x, DOME.z]} r={DOME.r} wall={DOME.wall} doors={[0, 2, 4, 6]} floor={false} />
         <EntranceHall at={[DOME.x, DOME.z]} r={DOME.r} />
         {SIDE_DOORS.map(a => <SideDoor key={a} a={a} m={m} />)}
         <VipPavilion m={m} vip={vip} />
