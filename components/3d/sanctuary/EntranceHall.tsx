@@ -3,8 +3,8 @@
 // A curved reception desk ("Welcome to Mepawry") with marble panels faces the front door. Openings left and right
 // lead into the outer gallery; the doorway behind the desk leads on to the inner gallery, the garden and the VIP
 // pavilion — each has a sign above it. Behind the desk to the right, a slatted oak wall with the MEPAWRY SANCTUARY
-// lettering and a screen showing the latest community-board stories (tap it to open the board); to the left, a mirror and a plant shelf. A board near the door shows the
-// newest pets. Lounge corners with armchairs, a sofa and coffee tables, hanging ferns, potted palms, a wooden chandelier.
+// lettering and a screen showing the latest community-board stories (tap it to open the board); to the left, a mirror and a plant shelf. A board near the door cycles
+// through the newest pets. Lounge corners with armchairs, a sofa and coffee tables, hanging ferns, potted palms, a wooden chandelier.
 
 import { useEffect, useMemo } from 'react'
 import { CanvasTexture, ExtrudeGeometry, MeshStandardMaterial, Shape, SRGBColorSpace, Vector2, type Texture } from 'three'
@@ -100,60 +100,64 @@ function BoardScreen({ m }: { m: DMats }) {
 
 type NewPet = { name: string; primary_photo_url: string | null; species: 'dog' | 'cat' | 'other' }
 const SPECIES_EMOJI = { dog: '🐶', cat: '🐱', other: '🐰' }
+const SHOW_MS = 4500 // how long each pet stays on the board
 
-/** The board by the door: the newest pets to join, as a little grid of portraits. */
-function drawNewPets(g: CanvasRenderingContext2D, pets: NewPet[] | null, photos: (HTMLImageElement | null)[]) {
+/** The board by the door: one of the newest pets at a time, a big photo and the name. */
+function drawNewPet(g: CanvasRenderingContext2D, pets: NewPet[] | null, i: number, img: HTMLImageElement | null) {
   const W = 384, H = 512
   g.fillStyle = '#F4EDE0'; g.fillRect(0, 0, W, H)
-  g.fillStyle = '#3E5A36'; g.fillRect(0, 0, W, 70)
-  g.fillStyle = '#FFFFFF'; g.font = '700 34px Georgia, serif'; g.textAlign = 'center'; g.textBaseline = 'middle'
-  g.fillText('🐾 New friends', W / 2, 37)
-  if (!pets?.length) {
+  g.fillStyle = '#3E5A36'; g.fillRect(0, 0, W, 64)
+  g.fillStyle = '#FFFFFF'; g.font = '700 32px Georgia, serif'; g.textAlign = 'center'; g.textBaseline = 'middle'
+  g.fillText('🐾 New friends', W / 2, 34)
+  const p = pets?.[i]
+  if (!p) {
     g.fillStyle = '#8A7A66'; g.font = 'italic 22px Georgia, serif'; g.fillText(pets ? 'Waiting for new friends' : 'Loading…', W / 2, 250)
     return
   }
-  // 3 × 2 portraits
-  pets.slice(0, 6).forEach((p, i) => {
-    const cx = 72 + (i % 3) * 120, cy = 150 + Math.floor(i / 3) * 150, r = 48
-    g.save(); g.beginPath(); g.arc(cx, cy, r, 0, Math.PI * 2); g.closePath()
-    g.fillStyle = '#E3D6BF'; g.fill(); g.clip()
-    const img = photos[i]
-    if (img) {
-      const s = Math.max((2 * r) / img.width, (2 * r) / img.height)
-      g.drawImage(img, cx - (img.width * s) / 2, cy - (img.height * s) / 2, img.width * s, img.height * s)
-    } else { g.font = '48px sans-serif'; g.fillText(SPECIES_EMOJI[p.species] ?? '🐾', cx, cy + 3) }
-    g.restore()
-    g.strokeStyle = '#B48A4A'; g.lineWidth = 4; g.beginPath(); g.arc(cx, cy, r, 0, Math.PI * 2); g.stroke()
-    g.fillStyle = '#3A2A1A'; g.font = '600 18px sans-serif'
-    g.fillText(p.name.length > 11 ? p.name.slice(0, 10) + '…' : p.name, cx, cy + r + 20)
-  })
-  g.fillStyle = '#3E5A36'; g.font = '600 19px sans-serif'
-  g.fillText('Tap to meet the newest 50 →', W / 2, H - 34)
+  // the photo, cropped square, in a gilt frame
+  const x = 32, y = 84, s = W - 64
+  g.fillStyle = '#B48A4A'; g.beginPath(); g.roundRect(x - 6, y - 6, s + 12, s + 12, 14); g.fill()
+  g.save(); g.beginPath(); g.roundRect(x, y, s, s, 10); g.clip()
+  g.fillStyle = '#E3D6BF'; g.fillRect(x, y, s, s)
+  if (img) {
+    const k = Math.max(s / img.width, s / img.height)
+    g.drawImage(img, x + (s - img.width * k) / 2, y + (s - img.height * k) / 2, img.width * k, img.height * k)
+  } else { g.font = '150px sans-serif'; g.fillText(SPECIES_EMOJI[p.species] ?? '🐾', W / 2, y + s / 2 + 8) }
+  g.restore()
+  g.fillStyle = '#3A2A1A'; g.font = '700 30px Georgia, serif'
+  g.fillText(p.name.length > 18 ? p.name.slice(0, 17) + '…' : p.name, W / 2, y + s + 36)
+  g.fillStyle = '#8A6A52'; g.font = '17px sans-serif'
+  g.fillText(`${i + 1} / ${pets.length}  ·  Tap to see them all`, W / 2, H - 22)
 }
 
-/** The board by the front door, showing the newest pets; tapping it opens the new-friends viewer in the hall page. */
+/** The board by the front door, cycling through the newest pets; tapping it opens the new-friends viewer in the hall page. */
 function NewPetsBoard({ m }: { m: DMats }) {
-  const t = useMemo(() => tex(384, 512, g => drawNewPets(g, null, [])), [])
+  const t = useMemo(() => tex(384, 512, g => drawNewPet(g, null, 0, null)), [])
   useEffect(() => {
-    let off = false
-    const draw = (pets: NewPet[], photos: (HTMLImageElement | null)[]) => {
-      if (off) return
-      drawNewPets((t.image as HTMLCanvasElement).getContext('2d')!, pets, photos)
-      t.needsUpdate = true
-    }
-    const load = () => fetch('/api/pets?limit=6').then(r => r.json()).then(async (d: { pets?: NewPet[] }) => {
-      const pets = d.pets ?? []
-      draw(pets, [])
-      const photos = await Promise.all(pets.slice(0, 6).map(p => new Promise<HTMLImageElement | null>(res => {
-        if (!p.primary_photo_url) return res(null)
+    let off = false, pets: NewPet[] = [], i = 0
+    const imgs = new Map<string, Promise<HTMLImageElement | null>>()
+    const photo = (url: string | null) => {
+      if (!url) return Promise.resolve(null)
+      if (!imgs.has(url)) imgs.set(url, new Promise(res => {
         const img = new Image(); img.crossOrigin = 'anonymous'
-        img.onload = () => res(img); img.onerror = () => res(null); img.src = p.primary_photo_url
-      })))
-      draw(pets, photos)
+        img.onload = () => res(img); img.onerror = () => res(null); img.src = url
+      }))
+      return imgs.get(url)!
+    }
+    const show = async () => {
+      const p = pets[i], img = p ? await photo(p.primary_photo_url) : null
+      if (off) return
+      drawNewPet((t.image as HTMLCanvasElement).getContext('2d')!, pets, i, img)
+      t.needsUpdate = true
+      if (pets.length > 1) photo(pets[(i + 1) % pets.length].primary_photo_url) // have the next one ready
+    }
+    const load = () => fetch('/api/pets?limit=50').then(r => r.json()).then((d: { pets?: NewPet[] }) => {
+      pets = d.pets ?? []; i = Math.min(i, Math.max(0, pets.length - 1)); show()
     }).catch(() => {})
     load()
-    const id = setInterval(load, 120_000)
-    return () => { off = true; clearInterval(id); t.dispose() }
+    const tick = setInterval(() => { if (pets.length > 1) { i = (i + 1) % pets.length; show() } }, SHOW_MS)
+    const refresh = setInterval(load, 300_000)
+    return () => { off = true; clearInterval(tick); clearInterval(refresh); t.dispose() }
   }, [t])
   const cursor = (c: string) => () => { document.body.style.cursor = c }
   return (
