@@ -14,6 +14,7 @@ export async function GET(req: NextRequest) {
     waitingOnly: q.get('waiting') === 'true',
     search: q.get('search') ?? undefined,
     page: Number(q.get('page')) || 1,
+    limit: Number(q.get('limit')) || undefined,
   })
   return NextResponse.json(data)
 }

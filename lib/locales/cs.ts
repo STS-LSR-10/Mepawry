@@ -109,5 +109,9 @@ const t: string[] = [
   "Pomalu",
   "Normálně",
   "Rychle",
+  "Noví přátelé",
+  "{n} nejnovějších mazlíčků ve svatyni",
+  "Předchozí",
+  "Další",
 ]
 export default t

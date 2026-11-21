@@ -12,6 +12,7 @@ import { loadSpot } from '@/lib/spot'
 import { describe, getVisitor, useActivity, useOnlineCount } from '@/lib/visitor'
 import { useAccount } from '@/lib/account'
 import { BoardSheet } from '@/components/board/Board'
+import { NewPetsViewer } from '@/components/shrine/NewPetsViewer'
 import { LookEditor } from '@/components/account/LookEditor'
 import { MyPageSheet } from '@/components/account/MyPageSheet'
 import { useMyLook } from '@/lib/look'
@@ -54,6 +55,7 @@ export default function HallPage() {
   const [floorSelectorOpen, setFloorSelectorOpen] = useState(false)
   // The community board opens from the header button or by tapping the board in the lobby
   const [boardOpen, setBoardOpen] = useState(false)
+  const [newPetsOpen, setNewPetsOpen] = useState(false)
   const myLook = useMyLook()
   const t = useT()
   const { lang } = useLang()
@@ -69,6 +71,11 @@ export default function HallPage() {
     const open = () => setBoardOpen(true)
     window.addEventListener('mepawry:board', open)
     return () => window.removeEventListener('mepawry:board', open)
+  }, [])
+  useEffect(() => {
+    const open = () => setNewPetsOpen(true)
+    window.addEventListener('mepawry:new-pets', open)
+    return () => window.removeEventListener('mepawry:new-pets', open)
   }, [])
 
   // Live numbers
@@ -261,6 +268,7 @@ export default function HallPage() {
       <div className={`pointer-events-none fixed inset-0 z-40 bg-[#17131B] transition-opacity duration-300 ${fading ? 'opacity-100' : 'opacity-0'}`} />
 
       <BoardSheet open={boardOpen} onClose={() => setBoardOpen(false)} />
+      <NewPetsViewer open={newPetsOpen} onClose={() => setNewPetsOpen(false)} />
       <MyPageSheet open={myPageOpen} onClose={() => setMyPageOpen(false)} name={avatarName} />
 
       {/* Dome picker */}

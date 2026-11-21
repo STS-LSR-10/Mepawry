@@ -109,5 +109,9 @@ const t: string[] = [
   "Yavaş",
   "Normal",
   "Hızlı",
+  "Yeni dostlar",
+  "Sığınağa katılan en yeni {n} dost",
+  "Önceki",
+  "Sonraki",
 ]
 export default t

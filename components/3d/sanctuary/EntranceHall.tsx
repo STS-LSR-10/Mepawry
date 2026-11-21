@@ -3,8 +3,8 @@
 // A curved reception desk ("Welcome to Mepawry") with marble panels faces the front door. Openings left and right
 // lead into the outer gallery; the doorway behind the desk leads on to the inner gallery, the garden and the VIP
 // pavilion — each has a sign above it. Behind the desk to the right, a slatted oak wall with the MEPAWRY SANCTUARY
-// lettering and a screen showing the latest community-board stories (tap it to open the board); to the left, a mirror and a plant shelf. A directory map stands near the
-// door. Lounge corners with armchairs, a sofa and coffee tables, hanging ferns, potted palms, a wooden chandelier.
+// lettering and a screen showing the latest community-board stories (tap it to open the board); to the left, a mirror and a plant shelf. A board near the door shows the
+// newest pets. Lounge corners with armchairs, a sofa and coffee tables, hanging ferns, potted palms, a wooden chandelier.
 
 import { useEffect, useMemo } from 'react'
 import { CanvasTexture, ExtrudeGeometry, MeshStandardMaterial, Shape, SRGBColorSpace, Vector2, type Texture } from 'three'
@@ -39,16 +39,6 @@ const lettersTexture = () => tex(512, 160, g => {
   g.font = '700 64px Georgia, serif'; g.fillText('MEPAWRY', 256, 52)
   g.font = '600 50px Georgia, serif'; g.fillText('SANCTUARY', 256, 116)
 })
-
-/** A little plan of the site: two rings of galleries, the garden, the VIP pavilion and the entrance. */
-function sitePlan(g: CanvasRenderingContext2D, cx: number, cy: number, s: number) {
-  g.fillStyle = '#7FA86A'; g.beginPath(); g.arc(cx, cy, s, 0, Math.PI * 2); g.fill()
-  for (const [r, w] of [[0.82, 0.16], [0.52, 0.16]]) { g.strokeStyle = '#D9B98C'; g.lineWidth = s * w; g.beginPath(); g.arc(cx, cy, s * r, 0, Math.PI * 2); g.stroke() }
-  g.fillStyle = '#F1E7D6'; g.fillRect(cx - s * 0.3, cy - s * 0.38, s * 0.6, s * 0.2)
-  g.fillStyle = '#C9A15A'; g.beginPath(); g.arc(cx, cy - s * 0.3, s * 0.11, 0, Math.PI * 2); g.fill()
-  g.fillStyle = '#9CCBDA'; g.beginPath(); g.arc(cx, cy + s * 0.05, s * 0.07, 0, Math.PI * 2); g.fill()
-  g.fillStyle = '#C9A15A'; g.beginPath(); g.arc(cx, cy + s * 0.82, s * 0.12, 0, Math.PI * 2); g.fill()
-}
 
 type BoardPost = { author_name: string; body: string; like_count: number; comment_count: number; pet: { name: string } | null }
 
@@ -108,14 +98,73 @@ function BoardScreen({ m }: { m: DMats }) {
   )
 }
 
-const directoryTexture = () => tex(384, 512, g => {
-  g.fillStyle = '#F4EDE0'; g.fillRect(0, 0, 384, 512)
-  g.fillStyle = '#3E5A36'; g.fillRect(0, 0, 384, 70)
-  g.fillStyle = '#FFFFFF'; g.font = '700 36px Georgia, serif'; g.textAlign = 'center'; g.fillText('Directories', 192, 48)
-  sitePlan(g, 192, 220, 130)
-  g.fillStyle = '#3A2A1A'; g.textAlign = 'left'; g.font = '19px sans-serif'
-  ;['● You are here — Reception', '← → Outer gallery · Zones A–H', '↑ Inner gallery · Garden', '↑ VIP pavilion (terrace)'].forEach((t, i) => g.fillText(t, 26, 392 + i * 30))
-})
+type NewPet = { name: string; primary_photo_url: string | null; species: 'dog' | 'cat' | 'other' }
+const SPECIES_EMOJI = { dog: '🐶', cat: '🐱', other: '🐰' }
+
+/** The board by the door: the newest pets to join, as a little grid of portraits. */
+function drawNewPets(g: CanvasRenderingContext2D, pets: NewPet[] | null, photos: (HTMLImageElement | null)[]) {
+  const W = 384, H = 512
+  g.fillStyle = '#F4EDE0'; g.fillRect(0, 0, W, H)
+  g.fillStyle = '#3E5A36'; g.fillRect(0, 0, W, 70)
+  g.fillStyle = '#FFFFFF'; g.font = '700 34px Georgia, serif'; g.textAlign = 'center'; g.textBaseline = 'middle'
+  g.fillText('🐾 New friends', W / 2, 37)
+  if (!pets?.length) {
+    g.fillStyle = '#8A7A66'; g.font = 'italic 22px Georgia, serif'; g.fillText(pets ? 'Waiting for new friends' : 'Loading…', W / 2, 250)
+    return
+  }
+  // 3 × 2 portraits
+  pets.slice(0, 6).forEach((p, i) => {
+    const cx = 72 + (i % 3) * 120, cy = 150 + Math.floor(i / 3) * 150, r = 48
+    g.save(); g.beginPath(); g.arc(cx, cy, r, 0, Math.PI * 2); g.closePath()
+    g.fillStyle = '#E3D6BF'; g.fill(); g.clip()
+    const img = photos[i]
+    if (img) {
+      const s = Math.max((2 * r) / img.width, (2 * r) / img.height)
+      g.drawImage(img, cx - (img.width * s) / 2, cy - (img.height * s) / 2, img.width * s, img.height * s)
+    } else { g.font = '48px sans-serif'; g.fillText(SPECIES_EMOJI[p.species] ?? '🐾', cx, cy + 3) }
+    g.restore()
+    g.strokeStyle = '#B48A4A'; g.lineWidth = 4; g.beginPath(); g.arc(cx, cy, r, 0, Math.PI * 2); g.stroke()
+    g.fillStyle = '#3A2A1A'; g.font = '600 18px sans-serif'
+    g.fillText(p.name.length > 11 ? p.name.slice(0, 10) + '…' : p.name, cx, cy + r + 20)
+  })
+  g.fillStyle = '#3E5A36'; g.font = '600 19px sans-serif'
+  g.fillText('Tap to meet the newest 50 →', W / 2, H - 34)
+}
+
+/** The board by the front door, showing the newest pets; tapping it opens the new-friends viewer in the hall page. */
+function NewPetsBoard({ m }: { m: DMats }) {
+  const t = useMemo(() => tex(384, 512, g => drawNewPets(g, null, [])), [])
+  useEffect(() => {
+    let off = false
+    const draw = (pets: NewPet[], photos: (HTMLImageElement | null)[]) => {
+      if (off) return
+      drawNewPets((t.image as HTMLCanvasElement).getContext('2d')!, pets, photos)
+      t.needsUpdate = true
+    }
+    const load = () => fetch('/api/pets?limit=6').then(r => r.json()).then(async (d: { pets?: NewPet[] }) => {
+      const pets = d.pets ?? []
+      draw(pets, [])
+      const photos = await Promise.all(pets.slice(0, 6).map(p => new Promise<HTMLImageElement | null>(res => {
+        if (!p.primary_photo_url) return res(null)
+        const img = new Image(); img.crossOrigin = 'anonymous'
+        img.onload = () => res(img); img.onerror = () => res(null); img.src = p.primary_photo_url
+      })))
+      draw(pets, photos)
+    }).catch(() => {})
+    load()
+    const id = setInterval(load, 120_000)
+    return () => { off = true; clearInterval(id); t.dispose() }
+  }, [t])
+  const cursor = (c: string) => () => { document.body.style.cursor = c }
+  return (
+    <group onClick={e => { e.stopPropagation(); if (e.delta < 6) window.dispatchEvent(new Event('mepawry:new-pets')) }}
+      onPointerOver={cursor('pointer')} onPointerOut={cursor('')}>
+      <mesh position={[0, 1.35, 0]} material={m.panelDark} castShadow><boxGeometry args={[1.0, 1.32, 0.06]} /></mesh>
+      <mesh position={[0, 1.35, 0.035]}><planeGeometry args={[0.92, 1.24]} /><meshStandardMaterial map={t} roughness={0.6} /></mesh>
+      {[-0.4, 0.4].map(x => <mesh key={x} position={[x, 0.36, 0]} material={m.panelDark}><boxGeometry args={[0.06, 0.72, 0.06]} /></mesh>)}
+    </group>
+  )
+}
 
 const passageSign = (label: string) => tex(512, 96, g => {
   g.fillStyle = '#3B2A1C'; g.beginPath(); g.roundRect(2, 2, 508, 92, 14); g.fill()
@@ -224,7 +273,6 @@ export function EntranceHall({ at, r }: { at: [number, number]; r: number }) {
   const floor = useMemo(() => { const t = herringboneTexture(); t.repeat.set(4, 4); return t }, [])
   const welcome = useMemo(welcomeTexture, [])
   const letters = useMemo(lettersTexture, [])
-  const directory = useMemo(directoryTexture, [])
   const signs = useMemo(() => ({
     left: passageSign('← Outer Gallery · Zones A–D'),
     right: passageSign('Outer Gallery · Zones E–H →'),
@@ -300,11 +348,9 @@ export function EntranceHall({ at, r }: { at: [number, number]; r: number }) {
       {signOver(0, signs.right)}
       {signOver(6, signs.back)}
 
-      {/* directory board near the front right */}
+      {/* the new-friends board near the front right */}
       <group position={[3.2, 0, 2.2]} rotation-y={-0.75}>
-        <mesh position={[0, 1.35, 0]} material={m.panelDark} castShadow><boxGeometry args={[1.0, 1.32, 0.06]} /></mesh>
-        <mesh position={[0, 1.35, 0.035]}><planeGeometry args={[0.92, 1.24]} /><meshStandardMaterial map={directory} roughness={0.6} /></mesh>
-        {[-0.4, 0.4].map(x => <mesh key={x} position={[x, 0.36, 0]} material={m.panelDark}><boxGeometry args={[0.06, 0.72, 0.06]} /></mesh>)}
+        <NewPetsBoard m={m} />
       </group>
 
       {/* lounge, front left: armchairs round a coffee table on a rug */}

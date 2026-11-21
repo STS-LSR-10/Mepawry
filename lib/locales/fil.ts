@@ -109,5 +109,9 @@ const t: string[] = [
   "Mabagal",
   "Karaniwan",
   "Mabilis",
+  "Mga bagong kaibigan",
+  "Ang {n} pinakabagong alaga sa santuwaryo",
+  "Nakaraan",
+  "Susunod",
 ]
 export default t

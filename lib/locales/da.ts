@@ -109,5 +109,9 @@ const t: string[] = [
   "Langsom",
   "Normal",
   "Hurtig",
+  "Nye venner",
+  "De {n} nyeste kæledyr i helligdommen",
+  "Forrige",
+  "Næste",
 ]
 export default t

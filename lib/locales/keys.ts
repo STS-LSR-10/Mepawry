@@ -111,4 +111,8 @@ export const KEYS = [
   "Slow",
   "Normal",
   "Fast",
+  "New friends",
+  "The {n} newest pets to join the sanctuary",
+  "Previous",
+  "Next",
 ] as const
