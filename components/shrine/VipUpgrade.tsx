@@ -1,5 +1,5 @@
 'use client'
-// components/shrine/VipUpgrade.tsx — On a shrine page: shows the VIP badge, lets the owner see the VIP Garden
+// components/shrine/VipUpgrade.tsx — On a shrine page: shows the VIP badge, lets the owner see the VIP pavilion
 // upgrade (payment opens soon), and lets an admin place or remove the pet right now.
 
 import { useState } from 'react'
@@ -30,7 +30,7 @@ export function VipUpgrade({ pet, isOwner, onChange }: { pet: Pet; isOwner: bool
     return (
       <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
         <span className="rounded-full bg-gradient-to-r from-[#F3D99B] to-[#D9B26A] px-4 py-1.5 text-xs font-bold text-[#3A2612] shadow">
-          ✿ In the VIP Garden · Floor {pet.floor_id}, niche {pet.vip_position! + 1}
+          ✿ In the VIP pavilion · Dome {pet.floor_id}, niche {pet.vip_position! + 1}
         </span>
         {admin && <button disabled={busy} onClick={() => act('remove')} className="text-xs text-[#FFE2C0]/80 underline">Remove from VIP</button>}
       </div>
@@ -40,23 +40,23 @@ export function VipUpgrade({ pet, isOwner, onChange }: { pet: Pet; isOwner: bool
   return (
     <>
       <button onClick={() => setOpen(true)} className="mt-3 rounded-full border border-[#E8C365]/60 bg-[#E8C365]/15 px-4 py-1.5 text-xs font-semibold text-[#FFE2A8] hover:bg-[#E8C365]/25">
-        ✿ Move {pet.name} to the VIP Garden
+        ✿ Move {pet.name} to the VIP pavilion
       </button>
-      <Modal open={open} onClose={() => setOpen(false)} title="The VIP Garden">
+      <Modal open={open} onClose={() => setOpen(false)} title="The VIP pavilion">
         <div className="space-y-4">
           <p className="text-sm text-[#5C5046]">
-            A big arched niche of {pet.name}’s own in the flower garden on floor {pet.floor_id}, under fairy lights and climbing roses.
+            A big arched niche of {pet.name}’s own in the domed glass pavilion on the terrace of Dome {pet.floor_id}, softly lit under a crystal chandelier.
           </p>
           <ul className="space-y-1.5 text-sm text-[#2A1E17]">
             <li>🌸 A large gold-framed portrait, easy to find</li>
-            <li>✨ Fairy lights and lanterns around the niche</li>
-            <li>📍 In the VIP pavilion at the heart of every dome</li>
+            <li>✨ A warm glow lighting the niche</li>
+            <li>📍 In the VIP pavilion at the far end of the garden</li>
             <li>🕯️ Candles, flowers and the guestbook stay the same</li>
           </ul>
           {error && <p role="alert" className="text-sm text-[#C0392B]">{error}</p>}
           {admin ? (
             <button disabled={busy} onClick={() => act('place')} className="w-full rounded-2xl bg-[#D9823B] py-3 text-sm font-semibold text-white disabled:opacity-60">
-              {busy ? 'Placing…' : 'Admin: place in the VIP Garden now'}
+              {busy ? 'Placing…' : 'Admin: place in the VIP pavilion now'}
             </button>
           ) : (
             <button disabled className="w-full rounded-2xl bg-[#E8DFD6] py-3 text-sm font-semibold text-[#8E8278]">

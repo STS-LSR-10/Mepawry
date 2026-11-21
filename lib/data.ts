@@ -42,6 +42,13 @@ export async function storePhoto(petId: string, dataUrl: string): Promise<string
   return bucket.getPublicUrl(path).data.publicUrl
 }
 
+/** Deletes every photo stored under a pet's folder. */
+async function removeFolder(petId: string) {
+  const bucket = db().storage.from('pet-photos')
+  const { data: files } = await bucket.list(petId)
+  if (files?.length) await bucket.remove(files.map(f => `${petId}/${f.name}`))
+}
+
 // ── Pets ──
 
 export async function getPetBySlug(slug: string): Promise<Pet | null> {
@@ -130,42 +137,50 @@ export async function createPet(
   const id = randomUUID()
   const fields = petFields(data)
   const photo = data.primary_photo_url ? await storePhoto(id, data.primary_photo_url) : null
-  let suffix = ''
-  for (let attempt = 0; attempt < 5; attempt++) {
-    const { floor, openFloors, taken } = await getOpenSlots(pick?.floor)
-    if (taken.length >= FLOOR_CAPACITY) throw new Error('The memorial building is full')
-    let position: number
-    if (pick) {
-      if (!openFloors.includes(pick.floor)) throw new SlotTakenError('That dome just filled up. Please pick a shelf again.')
-      if (!Number.isInteger(pick.position) || pick.position < 0 || pick.position >= FLOOR_CAPACITY) throw new SlotTakenError('Please pick a shelf.')
-      if (taken.includes(pick.position)) throw new SlotTakenError('Someone just took that shelf. Please pick another.')
-      position = pick.position
-    } else {
-      const used = new Set(taken)
-      position = 0
-      while (used.has(position)) position++
+  let made = false
+  try {
+    let suffix = ''
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const { floor, openFloors, taken } = await getOpenSlots(pick?.floor)
+      if (taken.length >= FLOOR_CAPACITY) throw new Error('The memorial building is full')
+      let position: number
+      if (pick) {
+        if (!openFloors.includes(pick.floor)) throw new SlotTakenError('That dome just filled up. Please pick a shelf again.')
+        if (!Number.isInteger(pick.position) || pick.position < 0 || pick.position >= FLOOR_CAPACITY) throw new SlotTakenError('Please pick a shelf.')
+        if (taken.includes(pick.position)) throw new SlotTakenError('Someone just took that shelf. Please pick another.')
+        position = pick.position
+      } else {
+        const used = new Set(taken)
+        position = 0
+        while (used.has(position)) position++
+      }
+      const { data: pet, error } = await db().from('pets').insert({
+        id,
+        country_code: /^[A-Z]{2}$/.test(owner.country) ? owner.country : 'XX', // the form's choice (in fields) wins
+        ...fields,
+        slug: generateSlug(fields.name, floor, position) + suffix,
+        primary_photo_url: photo,
+        floor_id: floor,
+        shrine_position: position,
+        owner_id: owner.id,
+      }).select().single()
+      if (error?.code === '23505') {
+        if (error.message.includes('slug')) { suffix = '-' + id.slice(0, 4); continue } // a past pet had this address
+        if (pick) throw new SlotTakenError('Someone just took that shelf. Please pick another.')
+        continue
+      }
+      if (error) throw new Error(error.message)
+      made = true
+      const editToken = randomUUID()
+      must(await db().from('edit_tokens').insert({ pet_id: id, token: editToken }))
+      return { pet: pet as Pet, editToken }
     }
-    const { data: pet, error } = await db().from('pets').insert({
-      id,
-      country_code: /^[A-Z]{2}$/.test(owner.country) ? owner.country : 'XX', // the form's choice (in fields) wins
-      ...fields,
-      slug: generateSlug(fields.name, floor, position) + suffix,
-      primary_photo_url: photo,
-      floor_id: floor,
-      shrine_position: position,
-      owner_id: owner.id,
-    }).select().single()
-    if (error?.code === '23505') {
-      if (error.message.includes('slug')) { suffix = '-' + id.slice(0, 4); continue } // a past pet had this address
-      if (pick) throw new SlotTakenError('Someone just took that shelf. Please pick another.')
-      continue
-    }
-    if (error) throw new Error(error.message)
-    const editToken = randomUUID()
-    must(await db().from('edit_tokens').insert({ pet_id: id, token: editToken }))
-    return { pet: pet as Pet, editToken }
+    throw new Error('The hall is busy, please try again')
+  } catch (err) {
+    // no pet was made: don't leave its photo behind in storage
+    if (photo && !made) await removeFolder(id).catch(() => {})
+    throw err
   }
-  throw new Error('The hall is busy, please try again')
 }
 
 /** Old memorials made before accounts: the browser's edit token proves who made them. */
@@ -187,6 +202,8 @@ export async function updatePet(petId: string, ownerId: string, data: Partial<Pe
   if (!isUuid(petId)) return null
   const fields = petFields(data)
   if (!fields.name) return null
+  // check ownership before uploading, so nobody can put files in someone else's pet folder
+  if (!must(await db().from('pets').select('id').eq('id', petId).eq('owner_id', ownerId).maybeSingle())) return null
   const photo = photoDataUrl ? { primary_photo_url: await storePhoto(petId, photoDataUrl) } : {}
   return must(await db().from('pets').update({ ...fields, ...photo, updated_at: new Date().toISOString() })
     .eq('id', petId).eq('owner_id', ownerId).select().maybeSingle())
@@ -197,9 +214,7 @@ export async function deletePet(petId: string, ownerId: string): Promise<boolean
   if (!isUuid(petId)) return false
   const pet = must(await db().from('pets').select('id').eq('id', petId).eq('owner_id', ownerId).maybeSingle())
   if (!pet) return false
-  const bucket = db().storage.from('pet-photos')
-  const { data: files } = await bucket.list(petId)
-  if (files?.length) await bucket.remove(files.map(f => `${petId}/${f.name}`))
+  await removeFolder(petId)
   must(await db().from('pets').delete().eq('id', petId).eq('owner_id', ownerId))
   return true
 }
@@ -415,7 +430,7 @@ export async function heartbeat(id: string | null): Promise<number> {
   return must(await db().rpc('heartbeat', { p_id: id && /^[\w-]{8,64}$/.test(id) ? id : null }))
 }
 
-// ── VIP Garden ──
+// ── VIP pavilion ──
 
 /**
  * Gives a pet a VIP niche on its own floor (the first free one, or the one asked for). Returns the pet, or an
@@ -430,7 +445,7 @@ export async function placeInVip(petId: string, want?: number): Promise<Pet | { 
   let pos = Number.isInteger(want) && want! >= 0 && want! < VIP_CAPACITY ? want! : -1
   if (pos >= 0 && taken.has(pos)) return { error: 'That VIP niche is taken' }
   if (pos < 0) { pos = 0; while (taken.has(pos)) pos++ }
-  if (pos >= VIP_CAPACITY) return { error: `The VIP Garden on floor ${pet.floor_id} is full` }
+  if (pos >= VIP_CAPACITY) return { error: `The VIP pavilion in Dome ${pet.floor_id} is full` }
   const { data, error } = await db().from('pets').update({ vip_position: pos }).eq('id', petId).select().single()
   if (error?.code === '23505') return { error: 'That VIP niche was just taken, please try again' }
   if (error) throw new Error(error.message)

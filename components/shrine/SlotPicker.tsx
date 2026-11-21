@@ -113,7 +113,7 @@ export function SlotPicker({ value, onChange, reloadKey, vip, onVip }: {
   )
 }
 
-/** The VIP Garden's big niches on this floor: gold squares. Admins can pick one now; others see it's coming. */
+/** The VIP pavilion's big niches in this dome: gold squares. Admins can pick one now; others see it's coming. */
 function VipSection({ floor, taken, admin, open, onToggle, value, onPick }: {
   floor: number; taken: Set<number>; admin: boolean; open: boolean; onToggle: () => void
   value: number | null; onPick: (v: number | null) => void
@@ -122,7 +122,7 @@ function VipSection({ floor, taken, admin, open, onToggle, value, onPick }: {
   return (
     <div className="rounded-xl border border-[#E8C365] bg-gradient-to-b from-[#FFF8E6] to-white">
       <button type="button" onClick={onToggle} aria-expanded={open} className="flex w-full items-center justify-between px-3 py-2 text-sm">
-        <span className="font-semibold text-[#8A6418]">✿ VIP Garden <span className="font-normal text-[#B08A3A]">· big arched niche · ฿{VIP_PRICE_THB}</span></span>
+        <span className="font-semibold text-[#8A6418]">✿ VIP pavilion <span className="font-normal text-[#B08A3A]">· big arched niche · ฿{VIP_PRICE_THB}</span></span>
         <span className="text-xs text-[#8E8278]">{free} free {open ? '▴' : '▾'}</span>
       </button>
       {open && (
@@ -135,7 +135,7 @@ function VipSection({ floor, taken, admin, open, onToggle, value, onPick }: {
                   key={i} type="button" disabled={!isFree || !admin}
                   onClick={() => onPick(on ? null : i)}
                   aria-label={`VIP niche ${i + 1}${isFree ? '' : ', taken'}`} aria-pressed={on}
-                  title={isFree ? `VIP niche ${i + 1}, floor ${floor}` : 'Taken'}
+                  title={isFree ? `VIP niche ${i + 1}, Dome ${floor}` : 'Taken'}
                   className={cn('h-7 rounded-md text-[10px] font-semibold transition',
                     on ? 'bg-[#D9A12B] text-white ring-2 ring-[#D9A12B]/40'
                       : isFree ? 'bg-[#F6E6B8] text-[#8A6418] enabled:hover:bg-[#EBCF7E] disabled:cursor-not-allowed' : 'cursor-not-allowed bg-[#5C5046]/70 text-white')}
@@ -147,7 +147,7 @@ function VipSection({ floor, taken, admin, open, onToggle, value, onPick }: {
           </div>
           <p className="mt-2 text-[11px] text-[#8A6418]">
             {admin
-              ? value != null ? <>Admin: they’ll be placed in VIP niche {value + 1} as well as their shelf.</> : <>Admin: tap a niche to place them in the VIP Garden too.</>
+              ? value != null ? <>Admin: they’ll be placed in VIP niche {value + 1} as well as their shelf.</> : <>Admin: tap a niche to place them in the VIP pavilion too.</>
               : <>VIP niches open with payments soon. You can upgrade later from their shrine page.</>}
           </p>
         </div>

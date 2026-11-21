@@ -1,4 +1,4 @@
-// app/api/pets/[id]/vip/route.ts — Put a pet in (or take it out of) the VIP Garden.
+// app/api/pets/[id]/vip/route.ts — Put a pet in (or take it out of) the VIP pavilion.
 // For now only admins (ADMIN_EMAILS) can do this; once payments are connected, the payment webhook will call
 // placeInVip for the owner who paid.
 

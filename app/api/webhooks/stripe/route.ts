@@ -15,16 +15,13 @@ export async function POST(req: NextRequest) {
 
   let event: Stripe.Event
 
+  // Only Stripe can tell us a payment happened: without the secret and its signature, refuse
+  if (!webhookSecret || !sig) return NextResponse.json({ error: 'Webhook not configured' }, { status: 400 })
   try {
-    if (webhookSecret && sig) {
-      event = stripe.webhooks.constructEvent(body, sig, webhookSecret)
-    } else {
-      // Mock event handling for development/sandbox
-      event = JSON.parse(body)
-    }
+    event = stripe.webhooks.constructEvent(body, sig, webhookSecret)
   } catch (err: any) {
     console.error(`Webhook signature verification failed: ${err.message}`)
-    return NextResponse.json({ error: `Webhook Error: ${err.message}` }, { status: 400 })
+    return NextResponse.json({ error: 'Invalid signature' }, { status: 400 })
   }
 
   // Idempotency: In real database, check if event.id was already processed
