@@ -23,7 +23,7 @@ import type { Pet } from '@/types'
 
 type V3 = [number, number, number]
 
-const DOOR_OPEN = 1.22              // radians the doors stand open at (~70°): you see their glass and bars, and they clear the candle and vase
+const DOOR_OPEN = (145 * Math.PI) / 180 // the doors stand open at 145°: swung right back, folded out to the sides, clear of the inside
 
 /**
  * The cabinet's measurements. The case is W wide, its straight sides H tall, DP deep, with a shallow (segmental)
@@ -126,7 +126,8 @@ function FitCamera({ d, vip }: { d: Dims; vip: boolean }) {
     // from the feet to the top of the crown (the VIP crest and its crown stand taller), and out to the open doors
     const top = d.SPRING + d.OUT.rise + (vip ? 0.78 : 0.25), bottom = -d.H / 2 - 0.3
     const half = (top - bottom) / 2 + 0.05, mid = (top + bottom) / 2 - 0.05
-    const z = Math.max(half / t, (d.OUT.half + 0.52) / (t * aspect)) + 0.5
+    const wide = d.DOOR_HALF * (1 - Math.cos(DOOR_OPEN)) + 0.08 // out to the tips of the open doors
+    const z = Math.max(half / t, wide / (t * aspect)) + 0.5
     camera.position.set(0, mid + 0.04, z)
     camera.lookAt(0, mid, 0)
   }, [camera, size.width, size.height, d, vip])
