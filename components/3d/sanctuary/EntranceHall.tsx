@@ -120,44 +120,51 @@ type NewPet = { name: string; primary_photo_url: string | null; species: 'dog' |
 const SPECIES_EMOJI = { dog: '🐶', cat: '🐱', other: '🐰' }
 const SHOW_MS = 6000 // how long each pet stays on the board (time to read their words)
 
-/** The board by the door: the friends who joined today, one at a time — photo, name, years and the words their
- * family wrote. */
+/** The board by the door: the friends who joined today, one at a time — the photo fills the board, with the title
+ * across the top and their name, years and the words their family wrote across the bottom. */
 function drawToday(g: CanvasRenderingContext2D, pets: NewPet[] | null, i: number, img: HTMLImageElement | null) {
   const W = 384, H = 512
-  g.fillStyle = '#F4EDE0'; g.fillRect(0, 0, W, H)
-  g.fillStyle = '#3E5A36'; g.fillRect(0, 0, W, 78)
-  g.fillStyle = '#FFFFFF'; g.textAlign = 'center'; g.textBaseline = 'middle'
-  g.font = '700 30px Georgia, serif'; g.fillText('Today we remember', W / 2, 30)
-  g.fillStyle = '#D9E6CC'; g.font = 'italic 17px Georgia, serif'
-  g.fillText(new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }), W / 2, 58)
   const p = pets?.[i]
+  const shade = (y0: number, y1: number, a0: number, a1: number) => {
+    const gr = g.createLinearGradient(0, y0, 0, y1); gr.addColorStop(0, `rgba(20,14,8,${a0})`); gr.addColorStop(1, `rgba(20,14,8,${a1})`)
+    g.fillStyle = gr; g.fillRect(0, y0, W, y1 - y0)
+  }
+  // the picture, cropped to fill the whole board (or a soft species backdrop without one)
+  if (p && img) {
+    const k = Math.max(W / img.width, H / img.height)
+    g.drawImage(img, (W - img.width * k) / 2, (H - img.height * k) / 2, img.width * k, img.height * k)
+  } else {
+    const gr = g.createLinearGradient(0, 0, W, H); gr.addColorStop(0, '#E9DCC4'); gr.addColorStop(1, '#C9B08A')
+    g.fillStyle = gr; g.fillRect(0, 0, W, H)
+    if (p) { g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = '170px sans-serif'; g.fillText(SPECIES_EMOJI[p.species] ?? '🐾', W / 2, H / 2 - 30) }
+  }
+  g.textAlign = 'center'; g.textBaseline = 'middle'
+  g.shadowColor = 'rgba(0,0,0,.6)'; g.shadowBlur = 6
+  shade(0, 110, 0.7, 0)
+  g.fillStyle = '#FFFFFF'; g.font = '700 30px Georgia, serif'; g.fillText('Today we remember', W / 2, 30)
+  g.fillStyle = '#F1E4C8'; g.font = 'italic 17px Georgia, serif'
+  g.fillText(new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }), W / 2, 57)
   if (!p) {
-    g.fillStyle = '#8A7A66'; g.font = 'italic 22px Georgia, serif'
+    g.fillStyle = '#5A4636'; g.shadowBlur = 0; g.font = 'italic 22px Georgia, serif'
     if (!pets) g.fillText('Loading…', W / 2, 260)
-    else { g.fillText('No new friends have', W / 2, 240); g.fillText('joined yet today.', W / 2, 270); g.font = 'italic 17px Georgia, serif'; g.fillText('Every friend here is remembered, always.', W / 2, 320) }
+    else { g.fillText('No new friends have', W / 2, 240); g.fillText('joined yet today.', W / 2, 270); g.font = 'italic 16px Georgia, serif'; g.fillText('Every friend here is remembered, always.', W / 2, 320) }
     return
   }
-  // the photo, cropped square, in a gilt frame
-  const s = 190, x = (W - s) / 2, y = 98
-  g.fillStyle = '#B48A4A'; g.beginPath(); g.roundRect(x - 5, y - 5, s + 10, s + 10, 12); g.fill()
-  g.save(); g.beginPath(); g.roundRect(x, y, s, s, 8); g.clip()
-  g.fillStyle = '#E3D6BF'; g.fillRect(x, y, s, s)
-  if (img) {
-    const k = Math.max(s / img.width, s / img.height)
-    g.drawImage(img, x + (s - img.width * k) / 2, y + (s - img.height * k) / 2, img.width * k, img.height * k)
-  } else { g.font = '100px sans-serif'; g.fillText(SPECIES_EMOJI[p.species] ?? '🐾', W / 2, y + s / 2 + 6) }
-  g.restore()
-  g.fillStyle = '#3A2A1A'; g.font = '700 27px Georgia, serif'
-  g.fillText(p.name.length > 20 ? p.name.slice(0, 19) + '…' : p.name, W / 2, y + s + 30)
+  // name, years and their words over a dark fade at the bottom
+  g.font = 'italic 18px Georgia, serif'
+  const words = p.epitaph ? wrapLines(g, `“${p.epitaph}”`, W - 48, 3) : []
   const years = p.birth_year && p.death_year ? `${p.birth_year} – ${p.death_year}` : p.death_year ? `† ${p.death_year}` : p.birth_year ? `b. ${p.birth_year}` : ''
-  let ty = y + s + 56
-  if (years) { g.fillStyle = '#8A6A52'; g.font = '16px sans-serif'; g.fillText(years, W / 2, ty); ty += 26 }
-  if (p.epitaph) {
-    g.fillStyle = '#5A4636'; g.font = 'italic 18px Georgia, serif'
-    wrapLines(g, `“${p.epitaph}”`, W - 56, years ? 3 : 4).forEach((l, k) => g.fillText(l, W / 2, ty + k * 23))
-  }
-  g.fillStyle = '#8A6A52'; g.font = '15px sans-serif'
+  const top = H - 58 - words.length * 23 - (years ? 24 : 0) - 34
+  g.shadowBlur = 0; shade(top - 110, top - 20, 0, 0.55); shade(top - 20, H, 0.55, 0.85); g.shadowBlur = 6
+  let y = top
+  g.fillStyle = '#FFFFFF'; g.font = '700 30px Georgia, serif'
+  g.fillText(p.name.length > 20 ? p.name.slice(0, 19) + '…' : p.name, W / 2, y); y += 30
+  if (years) { g.fillStyle = '#E8D9BE'; g.font = '16px sans-serif'; g.fillText(years, W / 2, y); y += 24 }
+  g.fillStyle = '#FBF3E4'; g.font = 'italic 18px Georgia, serif'
+  words.forEach((l, k) => g.fillText(l, W / 2, y + k * 23))
+  g.fillStyle = '#D9C8AA'; g.font = '14px sans-serif'
   g.fillText(`${i + 1} / ${pets.length}  ·  Tap to see them all`, W / 2, H - 18)
+  g.shadowBlur = 0
 }
 
 /** The board by the front door, cycling through today's new friends; tapping it opens the new-friends viewer in the hall page. */
