@@ -1,6 +1,7 @@
 'use client'
 // app/preview/cabinet/page.tsx — Look at the redesigned shrine cabinet (arched, with doors) beside the current one,
-// and its VIP version, with a sample pet. ?vip=1 starts on the VIP one, ?old=1 on the old walnut box.
+// and its VIP version, with a sample pet. ?vip=1 starts on the VIP one, ?old=1 on the old walnut box,
+// ?frame=<id> tries a frame from lib/decor.ts.
 
 import { useEffect, useState } from 'react'
 import dynamic from 'next/dynamic'
@@ -17,7 +18,8 @@ const SAMPLE: Pet = {
 
 export default function CabinetPreviewPage() {
   const [mode, setMode] = useState<'new' | 'vip' | 'old'>('new')
-  useEffect(() => { const q = new URLSearchParams(window.location.search); setMode(q.get('old') === '1' ? 'old' : q.get('vip') === '1' ? 'vip' : 'new') }, [])
+  const [frame, setFrame] = useState<string | null>(null)
+  useEffect(() => { const q = new URLSearchParams(window.location.search); setFrame(q.get('frame')); setMode(q.get('old') === '1' ? 'old' : q.get('vip') === '1' ? 'vip' : 'new') }, [])
   const old = mode === 'old'
   const Cabinet = old ? Current : Arched
   return (
@@ -28,7 +30,7 @@ export default function CabinetPreviewPage() {
         ))}
       </div>
       <div className={`relative w-full max-w-[760px] ${mode === 'vip' ? 'h-[460px] sm:h-[600px]' : 'h-[360px] sm:h-[460px]'}`}>
-        <Cabinet key={mode} pet={mode === 'vip' ? { ...SAMPLE, vip_position: 0 } : SAMPLE} candlesToday={3} flowers={4} gifts={mode === 'vip' ? ['food', 'toys', 'little', 'special', 'food', 'little', 'toys', 'special', 'little', 'food', 'toys', 'little'] : ['sweetfish', 'toys', 'little', 'special']} />
+        <Cabinet key={mode + frame} pet={{ ...SAMPLE, frame_style: frame, ...(mode === 'vip' ? { vip_position: 0 } : {}) }} candlesToday={3} flowers={4} gifts={mode === 'vip' ? ['food', 'toys', 'little', 'special', 'food', 'little', 'toys', 'special', 'little', 'food', 'toys', 'little'] : ['sweetfish', 'toys', 'little', 'special']} />
       </div>
       <p className="mt-2 text-xs text-[#FFE2C0]/60">Tap a door to close or open it · drag to look around</p>
     </main>

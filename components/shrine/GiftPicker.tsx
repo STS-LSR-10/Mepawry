@@ -259,12 +259,18 @@ function FooterRow({ icon, title, sub, children }: { icon: React.ReactNode; titl
   )
 }
 
+const FRAME_GROUPS = [['classic', 'Metal and wood'], ['plain', 'Plain colours'], ['pattern', 'Patterned']] as const
+
 /** Frames as little framed cards: the swatch is the frame, cream inside, a paw where the portrait goes. */
 function FrameGrid({ frames, current, picked, onPick }: { frames: FrameStyle[]; current: string; picked?: string; onPick: (f: FrameStyle) => void }) {
   const t = useT()
-  return (
+  return FRAME_GROUPS.map(([group, title]) => {
+    const list = frames.filter(f => f.group === group)
+    return list.length > 0 && (
+    <div key={group} className="mb-3">
+    <h3 className="mb-2 text-xs font-semibold text-[#5C5046]">{t(title)}</h3>
     <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
-      {frames.map(f => {
+      {list.map(f => {
         const on = picked === f.id
         return (
           <button key={f.id} onClick={() => onPick(f)} aria-pressed={on}
@@ -279,7 +285,9 @@ function FrameGrid({ frames, current, picked, onPick }: { frames: FrameStyle[]; 
         )
       })}
     </div>
-  )
+    </div>
+    )
+  })
 }
 
 /** Backdrops as painted thumbnails, the same paintings the cabinet uses. Seasonal ones first. */

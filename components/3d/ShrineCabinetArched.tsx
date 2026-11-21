@@ -16,7 +16,8 @@ import { glowTexture, moonTexture, petTexture, plaqueTexture } from './textures'
 import { microMap } from './look'
 import { useContextLossRecovery, useQuality } from './quality'
 import { giftById } from '@/lib/gifts'
-import { DEFAULT_BACKDROP, frameById } from '@/lib/decor'
+import { DEFAULT_BACKDROP, frameById, type FrameStyle } from '@/lib/decor'
+import { DEFAULT_FRAME_TILE, FRAME_TILE, framePatternTexture } from './frameTextures'
 import { backdropTexture } from './backdrops'
 import { BabysBreath, Bokeh, GiftSprite, Halo, PillarCandle, useMaterials, useTex, type Mats } from './ShrineCabinet'
 import type { Pet } from '@/types'
@@ -242,7 +243,7 @@ function Cabinet({ d, pet, candlesToday, flowers, gifts, low }: { d: Dims; pet: 
 
       {/* ── Inside ── */}
       {grand && !low && <Halo glow={glow} at={[0, d.PORTRAIT_Y, BACK + 0.03]} size={2.1 * d.PORTRAIT} color="#FFD27A" opacity={0.5} />}
-      <Portrait d={d} photo={photo} frame={frameMat} />
+      <Portrait d={d} photo={photo} frame={frameMat} style={style} />
       {[-1, 1].map(s => SHELF_Y.map(y => (
         <group key={`${s}${y}`} position={[s * SHELF_X, y, BACK + 0.22]}>
           <RoundedBox args={[d.SHELF_W, 0.04, 0.42]} radius={0.01} smoothness={2} material={look.shelf} />
@@ -270,14 +271,24 @@ function Cabinet({ d, pet, candlesToday, flowers, gifts, low }: { d: Dims; pet: 
 }
 
 /** The portrait in the frame they chose, with a bevelled inner lip and a cream mat. */
-function Portrait({ d, photo, frame }: { d: Dims; photo: Texture; frame: MeshStandardMaterial }) {
-  const fw = 0.98, fh = 1.18, b = 0.085
-  const bars: [number, number, number, number][] = [
-    [0, fh / 2 - b / 2, fw, b], [0, -fh / 2 + b / 2, fw, b], [-fw / 2 + b / 2, 0, b, fh], [fw / 2 - b / 2, 0, b, fh],
-  ]
+const FW = 0.98, FH = 1.18, FB = 0.085
+const BARS: [number, number, number, number][] = [
+  [0, FH / 2 - FB / 2, FW, FB], [0, -FH / 2 + FB / 2, FW, FB], [-FW / 2 + FB / 2, 0, FB, FH], [FW / 2 - FB / 2, 0, FB, FH],
+]
+
+function Portrait({ d, photo, frame, style }: { d: Dims; photo: Texture; frame: MeshStandardMaterial; style: FrameStyle }) {
+  const fw = FW, fh = FH, b = FB, bars = BARS
+  // patterned frames: each bar gets its own copy of the tile, repeated to its length so the pattern isn't stretched
+  const barMats = useMemo(() => style.pattern ? bars.map(([, , w, h]) => {
+    const tile = FRAME_TILE[style.pattern!] ?? DEFAULT_FRAME_TILE, map = framePatternTexture(style.pattern!)
+    if (style.pattern === 'oak' && w > h) { map.center.set(0.5, 0.5); map.rotation = Math.PI / 2; map.repeat.set(h / tile, w / tile) } // grain along the bar
+    else map.repeat.set(w / tile, h / tile)
+    return new MeshStandardMaterial({ map, metalness: style.metalness, roughness: style.roughness })
+  }) : null, [style, bars])
+  useEffect(() => () => barMats?.forEach(m => { m.map?.dispose(); m.dispose() }), [barMats])
   return (
     <group position={[0, d.PORTRAIT_Y, d.BACK + 0.06]} scale={d.PORTRAIT}>
-      {bars.map(([x, y, w, h], i) => <RoundedBox key={i} args={[w, h, 0.07]} radius={0.015} smoothness={2} position={[x, y, 0]} material={frame} />)}
+      {bars.map(([x, y, w, h], i) => <RoundedBox key={i} args={[w, h, 0.07]} radius={0.015} smoothness={2} position={[x, y, 0]} material={barMats?.[i] ?? frame} />)}
       {bars.map(([x, y, w, h], i) => (
         <mesh key={`l${i}`} position={[x * 0.83, y * 0.86, 0.02]} material={frame}>
           <boxGeometry args={[i < 2 ? w - 0.16 : 0.015, i < 2 ? 0.015 : h - 0.16, 0.02]} />
