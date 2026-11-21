@@ -112,7 +112,7 @@ export function AddPetModal({ open, onClose }: AddPetModalProps) {
       }
       // Email given: attach it to the guest account; confirming it lets them sign in anywhere later
       if (email.trim() && needsEmail) {
-        const { error } = await account.supabase()?.auth.updateUser({ email: email.trim() }, { emailRedirectTo: `${window.location.origin}/me` })
+        const { error } = await account.supabase()?.auth.updateUser({ email: email.trim() }, { emailRedirectTo: `${window.location.origin}/auth/callback?next=/me` })
           ?? { error: new Error('no client') }
         setEmailNote(error ? 'failed' : 'sent')
       }

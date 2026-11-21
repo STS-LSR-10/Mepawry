@@ -29,16 +29,26 @@ export function LoginPanel({ title, compact = false }: { title: string; compact?
   const [error, setError] = useState('')
   const [embedded, setEmbedded] = useState(false)
   useEffect(() => setEmbedded(inApp()), [])
+  // Back from a sign-in link that didn't work (expired, used already, or opened in another browser)
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get('login') === 'failed')
+      setError('That sign-in link didn’t work. It may have expired, or been opened in a different browser. Send a new one, or use the code from the email.')
+  }, [])
+  // Offer Google only once it's switched on in Supabase (otherwise the button leads to an error page)
+  const [googleOn, setGoogleOn] = useState(false)
+  useEffect(() => {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL, key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    if (!url || !key) return
+    fetch(`${url}/auth/v1/settings`, { headers: { apikey: key } }).then(r => r.json()).then(s => setGoogleOn(!!s?.external?.google)).catch(() => {})
+  }, [])
+  // Where a link in a sign-in email lands: the callback swaps its one-time code for a session, then back here
+  const callback = () => `${window.location.origin}/auth/callback?next=${encodeURIComponent(window.location.pathname + window.location.search)}`
 
   const google = async () => {
     setError('')
     const sb = supabase()
     if (!sb) return setError('Sign-in isn’t available right now.')
-    const next = window.location.pathname + window.location.search
-    const { error } = await sb.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}` },
-    })
+    const { error } = await sb.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: callback() } })
     if (error) setError(error.message)
   }
 
@@ -47,7 +57,7 @@ export function LoginPanel({ title, compact = false }: { title: string; compact?
     const sb = supabase()
     if (!sb || !email.trim()) return
     setBusy(true); setError('')
-    const { error } = await sb.auth.signInWithOtp({ email: email.trim(), options: { shouldCreateUser: true } })
+    const { error } = await sb.auth.signInWithOtp({ email: email.trim(), options: { shouldCreateUser: true, emailRedirectTo: callback() } })
     setBusy(false)
     if (error) setError(error.message)
     else setStep('code')
@@ -74,6 +84,7 @@ export function LoginPanel({ title, compact = false }: { title: string; compact?
 
       {step === 'email' ? (
         <>
+          {googleOn && <>
           <button onClick={google} className="flex w-full items-center justify-center gap-3 rounded-xl border border-[#D4C9BF] bg-white py-3 text-sm font-semibold text-[#2A1E17] hover:bg-[#FAF7F2]">
             <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden>
               <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z" />
@@ -89,17 +100,19 @@ export function LoginPanel({ title, compact = false }: { title: string; compact?
             </p>
           )}
           <div className="flex items-center gap-3 text-xs text-[#B5A99F]"><span className="h-px flex-1 bg-[#E8DFD6]" />or<span className="h-px flex-1 bg-[#E8DFD6]" /></div>
+          </>}
           <form onSubmit={sendCode} className="space-y-3">
             <label htmlFor="login-email" className="sr-only">Email</label>
             <input id="login-email" type="email" required autoComplete="email" placeholder="you@email.com" value={email} onChange={e => setEmail(e.target.value)} className={input} />
             <button disabled={busy} className="w-full rounded-xl bg-[#D9823B] py-3 text-sm font-semibold text-white hover:bg-[#C67129] disabled:opacity-60">
-              {busy ? 'Sending…' : 'Email me a sign-in code'}
+              {busy ? 'Sending…' : 'Email me a sign-in link'}
             </button>
           </form>
         </>
       ) : (
         <form onSubmit={verify} className="space-y-3">
-          <p className="text-center text-sm text-[#5C5046]">We sent a code to <b>{email}</b>.</p>
+          <p className="text-center text-sm text-[#5C5046]">We sent an email to <b>{email}</b>.<br />Tap the link in it, or type the code from it here.</p>
+          <p className="text-center text-xs text-[#8E8278]">Not there? Check your spam folder.</p>
           <label htmlFor="login-code" className="sr-only">Code from the email</label>
           <input
             id="login-code" inputMode="numeric" autoComplete="one-time-code" required maxLength={10} placeholder="123456"

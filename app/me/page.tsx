@@ -106,7 +106,7 @@ function GuestCard() {
     e.preventDefault()
     if (!email.trim()) return
     setState('busy')
-    const { error } = await supabase()?.auth.updateUser({ email: email.trim() }, { emailRedirectTo: `${window.location.origin}/me` }) ?? { error: true }
+    const { error } = await supabase()?.auth.updateUser({ email: email.trim() }, { emailRedirectTo: `${window.location.origin}/auth/callback?next=/me` }) ?? { error: true }
     setState(error ? 'error' : 'sent')
   }
   return (
