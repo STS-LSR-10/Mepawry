@@ -27,7 +27,7 @@ export const VIP_BACK = 0.8                                         // the VIP h
 export const VIP_DOME = { r: 5.3, wall: 4.6 }
 export const VIP_WING = { w: 5.2, d: 4.4, x: 7.7 }
 export const VIP_CENTER: P = { x: 0, z: VIP.z - VIP_BACK }
-export const VIP_PLANTER_R = 2.05                                  // the ring of planters round the VIP fountain (0.9 m deep)
+export const VIP_PLANTER_R = 2.05                                  // the marble medallion in the middle of the VIP hall
 export const TERRACE = { x0: -11.2, x1: 11.2, z0: VIP.z - 0.8 - 6, z1: VIP.z - 0.8 + 6 }   // its footprint
 export const STAIRS = { x0: -1.8, x1: 1.8, z0: TERRACE.z1, z1: TERRACE.z1 + 2.2 }            // down to the garden
 export const FOUNTAIN = { x: 0, z: 5, r: 3.4 }                                               // the garden fountain
@@ -124,7 +124,8 @@ const vip = (x: number, z: number, rot: number, seat = false, w = 1.3, h = 2.6):
   standAt: { x: x + Math.sin(rot) * 1.5, z: z + Math.cos(rot) * 1.5 },
 })
 
-/** The domed hall's four diagonal alcoves and its window-seat alcove, then each wing's two alcoves and seat alcove. */
+/** The domed hall's four diagonal alcoves and its window-seat alcove, each wing's two back alcoves and seat alcove,
+ * then each wing's two front alcoves. */
 export const VIP_SLOTS: VipSlot[] = [
   ...[1, 3, 5, 7].map(i => { const w = domeWall(i, 0.22); return vip(w.x, w.z, w.rot) }),
   (() => { const w = domeWall(6, 0.22); return vip(w.x, w.z, w.rot, true, 1.8) })(),
@@ -132,6 +133,8 @@ export const VIP_SLOTS: VipSlot[] = [
     ...[-1.5, 1.5].map(x => vip(s * VIP_WING.x + x, VIP_CENTER.z - VIP_WING.d / 2 + 0.22, 0, false, 1.15, 2.3)),
     vip(s * (VIP_WING.x + VIP_WING.w / 2 - 0.22), VIP_CENTER.z + 0.2, -s * Math.PI / 2, true, 1.3, 2.3),
   ]),
+  // added later (so the earlier niches keep their numbers): two alcoves against each wing's front glass
+  ...[-1, 1].flatMap(s => [-1.3, 1.3].map(x => vip(s * VIP_WING.x + x, VIP_CENTER.z + VIP_WING.d / 2 - 0.22, Math.PI, false, 1.15, 2.3))),
 ]
 export const VIP_CAPACITY = VIP_SLOTS.length
 

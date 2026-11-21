@@ -4,7 +4,7 @@
 // sides), the reception dome and its four doorways, the garden, and the VIP terrace you climb by its stairs.
 
 import {
-  CAB_D, DOME, DOOR_HALF, PATH_END, FOUNTAIN, RINGS, SIDE_DOORS, STAIRS, TERRACE, VIP, VIP_CENTER, VIP_DOME, VIP_PLANTER_R, VIP_WING, W, type P,
+  CAB_D, DOME, DOOR_HALF, PATH_END, FOUNTAIN, RINGS, SIDE_DOORS, STAIRS, TERRACE, VIP, VIP_CENTER, VIP_DOME, VIP_WING, W, type P,
 } from './sanctuary/plan'
 
 export type { P }
@@ -79,7 +79,6 @@ function vipBlocked(p: P): boolean {
   const { x: cx, z: cz } = VIP_CENTER
   // hall walls: the door at the front, arched doorways into the wings left and right
   if (domeBlocked(p, cx, cz, VIP_DOME.r, [{ at: Q, half: 1.05 }, { at: 0, half: 1.05 }, { at: Math.PI, half: 1.05 }])) return true
-  if (near(p, cx, cz, VIP_PLANTER_R + 0.45)) return true                  // fountain in its ring of planters
   if ([-1, 1].some(s => near(p, s * 1.25, cz + VIP_DOME.r * 0.86, 0.3))) return true // urns by the door
   for (const s of [-1, 1]) {
     const wx = s * VIP_WING.x, hw = VIP_WING.w / 2, hd = VIP_WING.d / 2
@@ -87,9 +86,8 @@ function vipBlocked(p: P): boolean {
     const inWing = local.x > -hw - RADIUS && local.x < hw + RADIUS && local.z > -hd - RADIUS && local.z < hd + RADIUS
     if (!inWing) continue
     // the wing's own walls: back, front (glass) and the far end; its near end has a doorway into the hall
-    if (local.z < -hd + 0.25 + RADIUS || local.z > hd - 0.1 - RADIUS || local.x > hw - 0.25 - RADIUS) return true
+    if (local.z < -hd + 0.25 + RADIUS || local.z > hd - 0.25 - RADIUS || local.x > hw - 0.25 - RADIUS) return true // walls and the alcoves along them
     if (Math.abs(local.x + hw) < 0.1 + RADIUS && Math.abs(local.z) > 1.05 - RADIUS) return true
-    if (near(p, wx, cz + 1.5, 0.95)) return true                          // armchairs and side table by the front glass
   }
   return false
 }
