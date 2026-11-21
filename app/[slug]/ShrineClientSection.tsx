@@ -17,7 +17,7 @@ import { useT } from '@/lib/i18n'
 import type { Pet, GuestbookEntry } from '@/types'
 
 // WebGL only runs in the browser
-const ShrineCabinet = dynamic(() => import('@/components/3d/ShrineCabinet'), {
+const ShrineCabinet = dynamic(() => import('@/components/3d/ShrineCabinetArched'), {
   ssr: false,
   loading: () => <div className="grid h-full place-items-center text-sm text-[#FAF7F2]/50">Opening the shrine…</div>,
 })

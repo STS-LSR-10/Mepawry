@@ -27,7 +27,7 @@ const SHELF_Y = [0.42, -0.16]
 const PASTEL = ['#FF8A80', '#FFC170', '#FFE680', '#9EEA8C', '#74D4E8', '#A79BFF', '#FF9AE0']
 type V3 = [number, number, number]
 
-function useTex(make: () => Texture, deps: unknown[]) {
+export function useTex(make: () => Texture, deps: unknown[]) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const t = useMemo(make, deps)
   useEffect(() => () => t.dispose(), [t])
@@ -101,7 +101,7 @@ function FitCamera() {
 }
 
 /** Shared materials, so ~150 meshes don't each compile their own. */
-function useMaterials(low: boolean) {
+export function useMaterials(low: boolean) {
   const wood = useTex(() => woodTexture(), [])
   const mats = useMemo(() => {
     const woodMat = withRim(new MeshStandardMaterial({ map: wood, bumpMap: wood, bumpScale: 2, roughnessMap: microMap('grain'), color: '#B88A6A', roughness: 0.55, metalness: 0 }), 0.6)
@@ -124,7 +124,7 @@ function useMaterials(low: boolean) {
   useEffect(() => () => Object.values(mats).forEach(m => m.dispose()), [mats])
   return mats
 }
-type Mats = ReturnType<typeof useMaterials>
+export type Mats = ReturnType<typeof useMaterials>
 
 function Cabinet({ pet, candlesToday, flowers, gifts, low }: { pet: Pet; candlesToday: number; flowers: number; gifts: string[]; low: boolean }) {
   const m = useMaterials(low)
@@ -253,7 +253,7 @@ function Portrait({ photo, frame }: { photo: Texture; frame: MeshStandardMateria
 }
 
 /** A soft additive glow; fakes bloom around flames and bulbs. */
-function Halo({ glow, at, size, color, opacity = 0.8 }: { glow: Texture; at: V3; size: number; color: string; opacity?: number }) {
+export function Halo({ glow, at, size, color, opacity = 0.8 }: { glow: Texture; at: V3; size: number; color: string; opacity?: number }) {
   return (
     <sprite position={at} scale={[size, size, 1]}>
       <spriteMaterial map={glow} color={color} transparent opacity={opacity} blending={AdditiveBlending} depthWrite={false} toneMapped={false} />
@@ -281,7 +281,7 @@ function Flame({ at, size = 1 }: { at: V3; size?: number }) {
 const CANDLE_MAX_STEPS = 6
 
 /** One pillar candle on a brass dish. Each candle lit in the last 24 hours makes it a little taller, up to a cap. */
-function PillarCandle({ at, today, glow, m, low }: { at: V3; today: number; glow: Texture; m: Mats; low: boolean }) {
+export function PillarCandle({ at, today, glow, m, low }: { at: V3; today: number; glow: Texture; m: Mats; low: boolean }) {
   const target = 0.14 + 0.035 * Math.min(Math.max(today, 0), CANDLE_MAX_STEPS)
   const body = useRef<Mesh>(null!)
   const top = useRef<Group>(null!)
@@ -323,7 +323,7 @@ function GiftDecor({ gifts }: { gifts: string[] }) {
   const shown = gifts.slice(0, GIFT_SPOTS.length)
   return <>{shown.map((id, i) => <GiftSprite key={`${i}${id}`} emoji={giftById(id)?.emoji ?? '🎁'} at={GIFT_SPOTS[i]} />)}</>
 }
-function GiftSprite({ emoji, at }: { emoji: string; at: V3 }) {
+export function GiftSprite({ emoji, at }: { emoji: string; at: V3 }) {
   const map = useTex(() => {
     const c = document.createElement('canvas')
     c.width = c.height = 128
@@ -344,7 +344,7 @@ function GiftSprite({ emoji, at }: { emoji: string; at: V3 }) {
 }
 
 /** Dried baby's breath in a small glass vase; more sprigs as more flowers are left. */
-function BabysBreath({ at, stems, m }: { at: V3; stems: number; m: Mats }) {
+export function BabysBreath({ at, stems, m }: { at: V3; stems: number; m: Mats }) {
   const blossoms = useRef<InstancedMesh>(null!)
   const sprigs = useMemo(() => Array.from({ length: stems }, (_, i) => {
     const a = (i / stems) * Math.PI * 2 + i * 0.7
@@ -445,7 +445,7 @@ function GlassDoor({ side, m }: { side: -1 | 1; m: Mats }) {
 }
 
 /** Big soft out-of-focus lights drifting around the shrine, kept inside the view so the canvas edge never cuts one. */
-function Bokeh({ count }: { count: number }) {
+export function Bokeh({ count }: { count: number }) {
   const glow = useTex(() => glowTexture(), [])
   const ref = useRef<Group>(null!)
   const { width, height } = useThree(s => s.viewport)
