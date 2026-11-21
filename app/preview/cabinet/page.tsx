@@ -1,6 +1,6 @@
 'use client'
 // app/preview/cabinet/page.tsx — Look at the redesigned shrine cabinet (arched, with doors) beside the current one,
-// with a sample pet, before it goes on the shrine pages. ?old=1 shows the current cabinet.
+// and its VIP version, with a sample pet. ?vip=1 starts on the VIP one, ?old=1 on the old walnut box.
 
 import { useEffect, useState } from 'react'
 import dynamic from 'next/dynamic'
@@ -16,17 +16,19 @@ const SAMPLE: Pet = {
 }
 
 export default function CabinetPreviewPage() {
-  const [old, setOld] = useState(false)
-  useEffect(() => { setOld(new URLSearchParams(window.location.search).get('old') === '1') }, [])
+  const [mode, setMode] = useState<'new' | 'vip' | 'old'>('new')
+  useEffect(() => { const q = new URLSearchParams(window.location.search); setMode(q.get('old') === '1' ? 'old' : q.get('vip') === '1' ? 'vip' : 'new') }, [])
+  const old = mode === 'old'
   const Cabinet = old ? Current : Arched
   return (
     <main className="flex min-h-screen flex-col items-center bg-[radial-gradient(ellipse_at_top,#4A2A1A,#1E120C)] px-4 pt-10">
       <div className="mb-4 flex gap-2 text-sm">
-        <button onClick={() => setOld(false)} className={`rounded-full px-4 py-1.5 ${!old ? 'bg-[#D9823B] text-white' : 'bg-white/10 text-[#FFE2C0]'}`}>New: arched</button>
-        <button onClick={() => setOld(true)} className={`rounded-full px-4 py-1.5 ${old ? 'bg-[#D9823B] text-white' : 'bg-white/10 text-[#FFE2C0]'}`}>Current</button>
+        {([['new', 'Arched'], ['vip', '👑 VIP'], ['old', 'Old']] as const).map(([k, label]) => (
+          <button key={k} onClick={() => setMode(k)} className={`rounded-full px-4 py-1.5 ${mode === k ? 'bg-[#D9823B] text-white' : 'bg-white/10 text-[#FFE2C0]'}`}>{label}</button>
+        ))}
       </div>
-      <div className="relative h-[360px] w-full max-w-[760px] sm:h-[460px]">
-        <Cabinet key={String(old)} pet={SAMPLE} candlesToday={3} flowers={4} gifts={['food', 'toys', 'little', 'special']} />
+      <div className={`relative w-full max-w-[760px] ${mode === 'vip' ? 'h-[460px] sm:h-[600px]' : 'h-[360px] sm:h-[460px]'}`}>
+        <Cabinet key={mode} pet={mode === 'vip' ? { ...SAMPLE, vip_position: 0 } : SAMPLE} candlesToday={3} flowers={4} gifts={mode === 'vip' ? ['food', 'toys', 'little', 'special', 'food', 'little', 'toys', 'special', 'little', 'food', 'toys', 'little'] : ['food', 'toys', 'little', 'special']} />
       </div>
       <p className="mt-2 text-xs text-[#FFE2C0]/60">Tap a door to close or open it · drag to look around</p>
     </main>

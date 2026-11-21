@@ -148,7 +148,8 @@ export function ShrineClientSection({ pet: initialPet, candlesToday: initialToda
   return (
     <>
       {/* 3D shrine cabinet */}
-      <div className="relative -mx-4 h-[360px] w-[calc(100%+2rem)] max-w-[760px] sm:h-[460px]" aria-label={`${pet.name}'s shrine, ${candles} candles lit`}>
+      {/* a VIP pet's cabinet is the big one, like its niche in the VIP pavilion: give it more room */}
+      <div className={`relative -mx-4 w-[calc(100%+2rem)] max-w-[760px] ${pet.vip_position != null ? 'h-[460px] sm:h-[600px]' : 'h-[360px] sm:h-[460px]'}`} aria-label={`${pet.name}'s shrine, ${candles} candles lit`}>
         <ShrineCabinet pet={pet} candlesToday={candlesToday} flowers={flowers} gifts={gifts.map(g => g.item)} />
       </div>
       <p className="mt-1 rounded-full bg-black/30 px-4 py-1.5 text-sm text-[#FFE2C0]">
