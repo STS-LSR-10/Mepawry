@@ -114,5 +114,7 @@ const t: string[] = [
   "Iliyotangulia",
   "Inayofuata",
   "Bado hakuna mnyama mpya leo.",
+  "Muziki",
+  "Sauti",
 ]
 export default t

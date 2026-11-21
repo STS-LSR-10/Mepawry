@@ -114,5 +114,7 @@ const t: string[] = [
   "Sebelumnya",
   "Seterusnya",
   "Belum ada haiwan peliharaan baharu hari ini.",
+  "Muzik",
+  "Kelantangan",
 ]
 export default t

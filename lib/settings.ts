@@ -1,6 +1,6 @@
 'use client'
 // lib/settings.ts — Display preferences saved in this browser (graphics quality, how many visitors to show,
-// how fast you walk and the view turns).
+// how fast you walk and the view turns, the music on/off and its volume).
 // Changing one tells open pages at once, so the hall updates without a reload.
 
 import { useEffect, useState } from 'react'
@@ -9,7 +9,7 @@ export type GraphicsPref = 'auto' | 'high' | 'low'
 export type CrowdPref = 'auto' | 'few' | 'many'
 export type SpeedPref = 'slow' | 'normal' | 'fast'
 
-const DEFAULTS = { 'pm-graphics': 'auto', 'pm-crowd': 'auto', 'pm-walk': 'normal', 'pm-turn': 'normal' } as const
+const DEFAULTS = { 'pm-graphics': 'auto', 'pm-crowd': 'auto', 'pm-walk': 'normal', 'pm-turn': 'normal', 'pm-sound': 'on', 'pm-volume': '0.5' } as const
 type Key = keyof typeof DEFAULTS
 const EVENT = 'mepawry:prefs'
 

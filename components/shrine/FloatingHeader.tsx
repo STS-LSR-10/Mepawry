@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button'
 import { formatCount } from '@/lib/utils'
 import { AddPetModal } from './AddPetModal'
 import { openSettings, useT } from '@/lib/i18n'
+import { SoundButton } from '@/components/site/SoundButton'
 
 interface FloatingHeaderProps {
   visitorCount: number
@@ -69,6 +70,7 @@ export function FloatingHeader({
             <Button size="sm" onClick={() => setAddPetOpen(true)} className="shadow-sm">
               {t('+ Add my pet')}
             </Button>
+            <SoundButton />
             <button
               onClick={openSettings}
               aria-label={t('Settings')}

@@ -116,4 +116,6 @@ export const KEYS = [
   "Previous",
   "Next",
   "No new pets have joined yet today.",
+  "Music",
+  "Volume",
 ] as const

@@ -114,5 +114,7 @@ const t: string[] = [
   "Trước",
   "Tiếp",
   "Hôm nay chưa có thú cưng mới nào.",
+  "Nhạc",
+  "Âm lượng",
 ]
 export default t

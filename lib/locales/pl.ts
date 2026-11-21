@@ -114,5 +114,7 @@ const t: string[] = [
   "Poprzedni",
   "Następny",
   "Dziś nie dołączyło jeszcze żadne nowe zwierzę.",
+  "Muzyka",
+  "Głośność",
 ]
 export default t

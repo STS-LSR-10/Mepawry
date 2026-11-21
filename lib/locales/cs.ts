@@ -114,5 +114,7 @@ const t: string[] = [
   "Předchozí",
   "Další",
   "Dnes zatím nepřibyl žádný nový mazlíček.",
+  "Hudba",
+  "Hlasitost",
 ]
 export default t

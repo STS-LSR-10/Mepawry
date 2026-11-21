@@ -114,5 +114,7 @@ const t: string[] = [
   "Előző",
   "Következő",
   "Ma még nem érkezett új kedvenc.",
+  "Zene",
+  "Hangerő",
 ]
 export default t
