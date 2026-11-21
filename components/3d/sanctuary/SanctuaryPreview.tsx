@@ -238,7 +238,8 @@ function DomePavilion({ m, sign, at, r, wall, y = 0, doors = [2], floor = true }
                   {sign && i === 2 && (
                     <mesh position={[0, 3.55, 0.12]}>
                       <planeGeometry args={[3.4, 0.62]} />
-                      <meshStandardMaterial map={sign} roughness={0.6} transparent alphaTest={0.4} />
+                      {/* cream faces the full sun: tint it down and keep it matte so it doesn't wash out white */}
+                      <meshStandardMaterial map={sign} color="#C2B5A0" roughness={0.9} envMapIntensity={0.35} transparent alphaTest={0.4} />
                     </mesh>
                   )}
                 </group>
