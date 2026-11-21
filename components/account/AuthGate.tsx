@@ -39,8 +39,8 @@ async function sha256(text: string) {
 
 /**
  * Sign in with Google (the only way in). Google's own button runs on our page and hands back a signed ID token,
- * which Supabase checks, so people only ever see mepawry.com (not Supabase's address). Without a Google client
- * id configured it falls back to the redirect flow through Supabase.
+ * which Supabase checks, so people only ever see mepawry.com (no hop via Supabase's address, so Google's
+ * branding check only has to cover our own domain).
  * compact: no icon/heading (when the surrounding card already explains).
  */
 export function LoginPanel({ title, compact = false }: { title: string; compact?: boolean }) {
@@ -51,10 +51,6 @@ export function LoginPanel({ title, compact = false }: { title: string; compact?
   const [copied, setCopied] = useState(false)
   const box = useRef<HTMLDivElement>(null)
   useEffect(() => setEmbedded(inApp()), [])
-  // Back from Google (redirect flow) with a sign-in that didn't go through
-  useEffect(() => {
-    if (new URLSearchParams(window.location.search).get('login') === 'failed') setError('Signing in didn’t go through. Please try again.')
-  }, [])
   // Is Google switched on in Supabase, and do we have our own Google client? (the Supabase address and the
   // client id come from the server at runtime, like the account client, not from the build)
   const [googleOn, setGoogleOn] = useState<boolean | null>(null)
@@ -76,7 +72,7 @@ export function LoginPanel({ title, compact = false }: { title: string; compact?
     ;(async () => {
       const raw = Array.from(crypto.getRandomValues(new Uint8Array(16)), b => b.toString(16).padStart(2, '0')).join('')
       const hashed = await sha256(raw) // Google puts the hash in the token; Supabase checks it against the raw one
-      try { await loadGsi() } catch { if (!gone) setClientId(''); return } // script blocked: use the redirect button
+      try { await loadGsi() } catch { if (!gone) setError('Google sign-in couldn’t load. Check your connection, or try another browser.'); return }
       if (gone || !box.current) return
       const g = (window as unknown as { google: Gsi }).google
       g.accounts.id.initialize({
@@ -96,15 +92,6 @@ export function LoginPanel({ title, compact = false }: { title: string; compact?
     return () => { gone = true }
   }, [googleOn, clientId, embedded, supabase, refresh])
 
-  // Fallback: the redirect flow through Supabase's address
-  const google = async () => {
-    setError('')
-    const sb = supabase()
-    if (!sb) return setError('Sign-in isn’t available right now.')
-    const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent(window.location.pathname + window.location.search.replace(/[?&]login=failed/, ''))}`
-    const { error } = await sb.auth.signInWithOAuth({ provider: 'google', options: { redirectTo } })
-    if (error) setError(error.message)
-  }
   const copyLink = async () => { try { await navigator.clipboard.writeText(window.location.href); setCopied(true) } catch {} }
 
   return (
@@ -123,23 +110,14 @@ export function LoginPanel({ title, compact = false }: { title: string; compact?
             {copied ? '✓ Link copied' : 'Copy this page’s link'}
           </button>
         </div>
-      ) : googleOn && clientId ? (
+      ) : (
+        // Google draws its own button here (until then, a quiet placeholder the same size)
         <div className="flex min-h-[44px] justify-center">
           <div ref={box} className={cn('w-full max-w-[400px]', busy && 'pointer-events-none opacity-50')} />
         </div>
-      ) : (
-        <button onClick={google} disabled={!googleOn} className="flex w-full items-center justify-center gap-3 rounded-xl border border-[#D4C9BF] bg-white py-3 text-sm font-semibold text-[#2A1E17] hover:bg-[#FAF7F2] disabled:opacity-50">
-          <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden>
-            <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z" />
-            <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z" />
-            <path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.5 39.6 16.2 44 24 44z" />
-            <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z" />
-          </svg>
-          Continue with Google
-        </button>
       )}
       {busy && <p className="text-center text-xs text-[#8E8278]">Signing you in…</p>}
-      {googleOn === false && !embedded && <p className="text-center text-xs text-[#8E8278]">Sign-in is being set up. Please check back soon.</p>}
+      {(googleOn === false || (googleOn && !clientId)) && !embedded && <p className="text-center text-xs text-[#8E8278]">Sign-in is being set up. Please check back soon.</p>}
       {error && <p role="alert" className="text-center text-sm text-[#C0392B]">{error}</p>}
     </div>
   )
