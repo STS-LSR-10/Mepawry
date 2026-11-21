@@ -94,8 +94,13 @@ const FLOOR_NAMES: Record<number, string> = {
   33: 'Rainbow Meadow',
 }
 
+const ROMAN = ['', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X']
+/** Dome names; past the 33rd they come round again with a numeral ("First Light II", …). */
 export function getFloorName(floorId: number): string {
-  return FLOOR_NAMES[floorId] ?? `Floor ${floorId}`
+  const n = Object.keys(FLOOR_NAMES).length, round = Math.floor((floorId - 1) / n)
+  const name = FLOOR_NAMES[((floorId - 1) % n) + 1]
+  if (!name) return `Dome ${floorId}`
+  return round === 0 ? name : `${name} ${ROMAN[round] ?? round + 1}`
 }
 
 /** Country code → flag emoji ("TH" → 🇹🇭) */

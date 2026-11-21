@@ -4,7 +4,7 @@
 import { Suspense, useCallback, useEffect, useState } from 'react'
 import { FloatingHeader } from '@/components/shrine/FloatingHeader'
 import { FloorSelector } from '@/components/shrine/FloorSelector'
-import { ARRIVAL, FLOOR_COUNT, SLOTS, VIP_ENTRY, VIP_SLOTS, type P } from '@/components/3d/sanctuary/plan'
+import { ARRIVAL, SLOTS, VIP_ENTRY, VIP_SLOTS, type P } from '@/components/3d/sanctuary/plan'
 import type { Pet } from '@/types'
 
 const PILL = 'glass rounded-full border border-white/20 px-4 py-2.5 text-sm text-[#FAF7F2] shadow-md hover:bg-white/20'
@@ -35,7 +35,7 @@ export default function HallPage() {
   const [startAt, setStartAt] = useState<P | null | undefined>(undefined) // undefined until we've looked
   useEffect(() => {
     const s = loadSpot()
-    if (s && s.floor <= FLOOR_COUNT) { setCurrentFloor(s.floor); setStartAt({ x: s.x, z: s.z }) }
+    if (s && Number.isInteger(s.floor) && s.floor >= 1) { setCurrentFloor(s.floor); setStartAt({ x: s.x, z: s.z }) }
     else setStartAt(null)
   }, [])
   const [arrival, setArrival] = useState<{ at: P } | null>(null)

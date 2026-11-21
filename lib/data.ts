@@ -7,7 +7,7 @@ import { randomUUID } from 'node:crypto'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { BACKDROPS, FRAMES } from '@/lib/decor'
 import type { Floor, GlobalStats, GuestbookEntry, Pet, Profile, Species, TributeType } from '@/types'
-import { FLOOR_CAPACITY, FLOOR_COUNT, OPEN_NEXT_AT_FREE, VIP_CAPACITY } from '@/components/3d/sanctuary/plan'
+import { FLOOR_CAPACITY, OPEN_NEXT_AT_FREE, VIP_CAPACITY } from '@/components/3d/sanctuary/plan'
 import { generateSlug, getFloorName } from '@/lib/utils'
 import { FREE_GIFT_COOLDOWN_DAYS, FREE_GIFT_SHOWS_DAYS, giftById, type LeftGift } from '@/lib/gifts'
 
@@ -353,12 +353,17 @@ export async function getTopNames(limit = 10): Promise<{ name: string; count: nu
 }
 
 
+/**
+ * Every dome so far: all the opened ones (and any with pets in them), plus one more after them — not open yet,
+ * shown greyed out as the next to come. There's no last dome: a new one opens whenever the newest is nearly full.
+ */
 export async function getFloors(): Promise<Floor[]> {
-  const counts = new Array(FLOOR_COUNT + 1).fill(0)
+  const counts: number[] = []
   for (const r of must(await db().rpc('floor_counts')) as { floor_id: number; n: number }[]) counts[r.floor_id] = Number(r.n)
   const open = openFloorsFrom(counts)
-  return Array.from({ length: FLOOR_COUNT }, (_, i) => ({
-    id: i + 1, name: getFloorName(i + 1), capacity: FLOOR_CAPACITY, current_count: counts[i + 1],
+  const last = Math.max(open[open.length - 1], counts.length - 1) + 1
+  return Array.from({ length: last }, (_, i) => ({
+    id: i + 1, name: getFloorName(i + 1), capacity: FLOOR_CAPACITY, current_count: counts[i + 1] ?? 0,
     is_open: open.includes(i + 1), opened_at: null, created_at: '',
   }))
 }
@@ -366,8 +371,8 @@ export async function getFloors(): Promise<Floor[]> {
 /** Domes fill one at a time: the lowest with a free shelf, plus the next one once it has fewer than OPEN_NEXT_AT_FREE left. */
 export function openFloorsFrom(counts: number[]): number[] {
   let f = 1
-  while (f < FLOOR_COUNT && counts[f] >= FLOOR_CAPACITY) f++
-  return FLOOR_CAPACITY - counts[f] < OPEN_NEXT_AT_FREE && f < FLOOR_COUNT ? [f, f + 1] : [f]
+  while ((counts[f] ?? 0) >= FLOOR_CAPACITY) f++
+  return FLOOR_CAPACITY - (counts[f] ?? 0) < OPEN_NEXT_AT_FREE ? [f, f + 1] : [f]
 }
 
 export async function getOpenFloors(): Promise<number[]> {
@@ -376,7 +381,7 @@ export async function getOpenFloors(): Promise<number[]> {
 
 /** The floor new shrines go to first (the lowest open one). */
 export async function getOpenFloor(): Promise<number> {
-  return (await getOpenFloors())[0] ?? FLOOR_COUNT
+  return (await getOpenFloors())[0] ?? 1
 }
 
 /** Latest real happenings: candles, flowers, guestbook messages and new shrines. */
