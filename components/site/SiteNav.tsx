@@ -92,6 +92,10 @@ export function SiteFooter() {
           {LINKS.map(l => <Link key={l.href} href={l.href} className="hover:text-[#2A1E17]">{t(l.label)}</Link>)}
         </div>
         <span>{t('Made with care for everyone who has loved an animal.')}</span>
+        <span className="flex w-full justify-center gap-4 text-xs">
+          <Link href="/privacy" className="hover:text-[#2A1E17]">Privacy</Link>
+          <Link href="/terms" className="hover:text-[#2A1E17]">Terms</Link>
+        </span>
       </div>
     </footer>
   )
