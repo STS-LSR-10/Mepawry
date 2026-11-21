@@ -153,7 +153,7 @@ export function GiftPicker({ open, onClose, pet, onLeft, onDecor }: {
           <p className="mt-3 text-xs text-[#8E8278]">{tab === 'special' ? t('Stay by their shrine for {n} days with your name', { n: SPECIAL_GIFT_SHOWS_DAYS }) : t(cat.hint)}</p>
 
           {/* Items */}
-          <div className="mt-3 max-h-[46dvh] overflow-y-auto pr-1 -mr-1">
+          <div className="mt-3 max-h-[46dvh] overflow-y-auto overscroll-contain pr-1 -mr-1">
             {tab === 'frames' && (
               <FrameGrid frames={FRAMES.filter(f => f.id !== DEFAULT_FRAME)} current={currentFrame} picked={decor?.id}
                 onPick={f => setDecor({ kind: 'frame', id: f.id, name: f.name, price: f.price })} />

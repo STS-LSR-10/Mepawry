@@ -30,8 +30,12 @@ export function Modal({ open, onClose, title, children, className }: ModalProps)
       if (e.key === 'Escape') closeRef.current()
     }
     document.addEventListener('keydown', handler)
+    // Hold the page still behind the dialog: scrolling inside it moves only the dialog
+    const root = document.documentElement, before = root.style.overflow
+    root.style.overflow = 'hidden'
     return () => {
       document.removeEventListener('keydown', handler)
+      root.style.overflow = before
       prev?.focus()
     }
   }, [open])
@@ -48,7 +52,7 @@ export function Modal({ open, onClose, title, children, className }: ModalProps)
     >
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        className="absolute inset-0 touch-none bg-black/50 backdrop-blur-sm"
         onClick={onClose}
         aria-hidden="true"
       />
@@ -60,7 +64,7 @@ export function Modal({ open, onClose, title, children, className }: ModalProps)
         className={cn(
           'relative z-10 w-full sm:max-w-[480px]',
           'bg-white rounded-t-3xl sm:rounded-3xl shadow-xl',
-          'max-h-[90dvh] overflow-y-auto',
+          'max-h-[90dvh] overflow-y-auto overscroll-contain',
           'outline-none',
           className
         )}
