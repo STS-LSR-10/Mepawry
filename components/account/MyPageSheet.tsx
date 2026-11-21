@@ -1,6 +1,6 @@
 'use client'
 // components/account/MyPageSheet.tsx — "My page" from the name pill in the hall: change your name, sign in
-// (Google or an email code) so your pets follow you, or — when signed in — jump to your memorials, look, sign out.
+// (with Google) so your pets follow you, or — when signed in — jump to your memorials, look, sign out.
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
@@ -79,7 +79,7 @@ export function MyPageSheet({ open, onClose, name }: { open: boolean; onClose: (
         ) : (
           <div className="space-y-3 rounded-3xl bg-white p-5 text-left shadow-sm">
             <p className="font-semibold text-[#2A1E17]">🐾 Keep your pets on every device</p>
-            <p className="text-sm text-[#8E8278]">Sign in once with Google or your email. Your memorials, letters and look follow you to any phone or computer.</p>
+            <p className="text-sm text-[#8E8278]">Sign in once with Google. Your memorials, letters and look follow you to any phone or computer.</p>
             <LoginPanel title="Sign in" compact />
           </div>
         )}

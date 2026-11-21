@@ -48,11 +48,8 @@ export function AddPetModal({ open, onClose }: AddPetModalProps) {
   const account = useAccount()
   const [country, setCountry] = useState('XX')
   const [showFlag, setShowFlag] = useState(true)
-  const [email, setEmail] = useState('')
-  const [emailNote, setEmailNote] = useState<'sent' | 'failed' | null>(null)
   const [needLogin, setNeedLogin] = useState(false) // guest sign-in unavailable: fall back to a real sign-in
   // A real account (not a guest) already keeps their memorials on every device
-  const needsEmail = !account.user || (account.user.isAnonymous && !account.user.email)
 
   // Pre-fill the country: where this visit comes from, else their profile, else the browser's region setting
   useEffect(() => {
@@ -110,12 +107,6 @@ export function AddPetModal({ open, onClose }: AddPetModalProps) {
         const v = await fetch(`/api/pets/${data.pet.id}/vip`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'place', position: vipNiche }) }).catch(() => null)
         if (!v?.ok) setError('Their shrine is placed, but the VIP niche couldn’t be set. Try again from their shrine page.')
       }
-      // Email given: attach it to the guest account; confirming it lets them sign in anywhere later
-      if (email.trim() && needsEmail) {
-        const { error } = await account.supabase()?.auth.updateUser({ email: email.trim() }, { emailRedirectTo: `${window.location.origin}/auth/callback?next=/me` })
-          ?? { error: new Error('no client') }
-        setEmailNote(error ? 'failed' : 'sent')
-      }
       setCreatedSlug(data.pet.slug)
       setStep('success')
     } catch (err) {
@@ -134,8 +125,6 @@ export function AddPetModal({ open, onClose }: AddPetModalProps) {
     setForm({ name: '', species: 'dog', birth_year: '', death_year: '', epitaph: '' })
     setSlot(null)
     setVipNiche(null)
-    setEmail('')
-    setEmailNote(null)
     setNeedLogin(false)
     setShowFlag(true)
     onClose()
@@ -146,8 +135,7 @@ export function AddPetModal({ open, onClose }: AddPetModalProps) {
       {step === 'success' ? (
         <SuccessView
           name={form.name}
-          note={emailNote === 'sent' ? `We sent a link to ${email}. Tap it to keep ${form.name} safe on any phone.`
-            : account.user?.isAnonymous ? 'We’ll remember you on this device. Add your email in My memorials to keep them on any phone.'
+          note={account.user?.isAnonymous ? 'We’ll remember you on this device. Sign in with Google in My memorials to keep them on any phone.'
             : 'You can edit it anytime from My memorials.'}
           onClose={() => { const slug = createdSlug; handleClose(); if (slug) router.push(`/${slug}`) }}
         />
@@ -239,21 +227,6 @@ export function AddPetModal({ open, onClose }: AddPetModalProps) {
             </div>
           </div>
 
-
-          {/* Email (guests only) */}
-          {needsEmail && (
-            <div>
-              <label htmlFor="pet-email" className="block text-sm font-medium text-[#2A1E17] mb-1.5">
-                Your email — so you never lose them <span className="font-normal text-[#8E8278]">(optional)</span>
-              </label>
-              <input
-                id="pet-email" type="email" autoComplete="email" placeholder="you@example.com"
-                value={email} onChange={e => setEmail(e.target.value)}
-                className="w-full rounded-xl border border-[#D4C9BF] bg-white px-4 py-2.5 text-sm text-[#2A1E17] placeholder:text-[#B5A99F] focus:outline-none focus:ring-2 focus:ring-[#D9823B]"
-              />
-              <p className="mt-1 text-center text-xs text-[#8E8278]">We’ll send you one link to get back to them from any phone. No password, no spam.</p>
-            </div>
-          )}
 
           {/* Country */}
           <CountryPicker value={country} onChange={setCountry} showFlag={showFlag} onShowFlag={setShowFlag} />
