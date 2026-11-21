@@ -92,14 +92,17 @@ export function withRim<M extends Material>(mat: M, strength = 1): M {
  * Set by the hall each frame-ish (a uniform, so changing it costs nothing).
  */
 export const AVATAR_FILL = { value: new Color(0, 0, 0) }
+/** Scales the avatars' own lit colour: in full sun the cream and white clothes washed out, so they're toned down by day. */
+export const AVATAR_EXPOSURE = { value: 1 }
 
 /** Rim light + the avatar fill, for character materials (your avatar and other visitors'). */
 export const avatarShade = (shader: WebGLProgramParametersWithUniforms) => {
   injectRim(shader, RIM.strength)
   shader.uniforms.uAvatarFill = AVATAR_FILL
+  shader.uniforms.uAvatarExposure = AVATAR_EXPOSURE
   shader.fragmentShader = shader.fragmentShader
-    .replace('uniform vec3 uRimColor;', 'uniform vec3 uRimColor; uniform vec3 uAvatarFill;')
-    .replace('gl_FragColor.rgb += uRimColor * rimF * uRimStrength;', 'gl_FragColor.rgb += uRimColor * rimF * uRimStrength + diffuseColor.rgb * uAvatarFill;')
+    .replace('uniform vec3 uRimColor;', 'uniform vec3 uRimColor; uniform vec3 uAvatarFill; uniform float uAvatarExposure;')
+    .replace('gl_FragColor.rgb += uRimColor * rimF * uRimStrength;', 'gl_FragColor.rgb = gl_FragColor.rgb * uAvatarExposure + uRimColor * rimF * uRimStrength + diffuseColor.rgb * uAvatarFill;')
 }
 
 /** For JSX materials: <meshStandardMaterial onBeforeCompile={rim} />. */

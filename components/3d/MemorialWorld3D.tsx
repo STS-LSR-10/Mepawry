@@ -10,7 +10,7 @@ import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'rea
 import { useRouter } from 'next/navigation'
 import type * as THREE from 'three'
 import type { LocalSky, Season } from '@/lib/sky'
-import { AVATAR_FILL, RIM } from './look'
+import { AVATAR_EXPOSURE, AVATAR_FILL, RIM } from './look'
 import { CrowdAvatars, useCrowd, type Me } from './Crowd'
 import { crowdLimit, turnFactor, usePref, walkFactor, type CrowdPref, type SpeedPref } from '@/lib/settings'
 import { useT } from '@/lib/i18n'
@@ -149,6 +149,7 @@ export default function MemorialWorld3D({ floorId, avatarName, avatarGender, ava
     // The sanctuary is properly lit (sun, sky and lamps reach the avatars), so only a faint extra fill after dark
     RIM.strength.value = time === 'night' ? 0.12 : 0.1
     const dark = time === 'night' ? 1 : time === 'evening' ? 0.5 : 0
+    AVATAR_EXPOSURE.value = time === 'night' ? 1 : time === 'evening' ? 0.9 : inside ? 0.82 : 0.74
     if (inside) AVATAR_FILL.value.set('#FFC08A').multiplyScalar(0.08 * dark)
     else AVATAR_FILL.value.set('#AFC2E8').multiplyScalar(0.05 * dark)
   }, [time, inside])

@@ -3,7 +3,7 @@
 
 import assert from 'node:assert'
 import { heightAt, isFree, planRoute, type P } from '../components/3d/walk'
-import { ARRIVAL, FRONT, SLOTS, SPAWN, VIP_ENTRY, VIP_SLOTS } from '../components/3d/sanctuary/plan'
+import { ARRIVAL, FRONT, PATH_END, SLOTS, SPAWN, VIP_ENTRY, VIP_SLOTS } from '../components/3d/sanctuary/plan'
 
 const polar = (a: number, r: number): P => ({ x: Math.cos(a) * r, z: Math.sin(a) * r })
 const reaches = (to: P, tol = 0.8) => {
@@ -15,7 +15,7 @@ const reaches = (to: P, tol = 0.8) => {
 assert(isFree(SPAWN), 'spawn is free')
 for (const [name, p] of Object.entries({
   reception: ARRIVAL, outerGallery: polar(FRONT + 0.6, 33), outerBack: polar(-FRONT, 33), innerGallery: polar(FRONT + 1.2, 21),
-  garden: { x: 6, z: 9 }, vipEntry: VIP_ENTRY, vipHall: { x: 0, z: -9.8 + 3.4 }, vipWing: { x: 7.7, z: -10.9 },
+  garden: { x: 6, z: 9 }, pathEnd: { x: 0, z: PATH_END }, vipEntry: VIP_ENTRY, vipHall: { x: 0, z: -9.8 + 3.4 }, vipWing: { x: 7.7, z: -10.9 },
 })) {
   assert(isFree(p), `${name} is free`)
   assert(reaches(p), `${name} is reachable`)

@@ -24,7 +24,7 @@ import { GalleryInterior } from './GalleryInterior'
 import { VipInterior, type VipPets } from './VipInterior'
 import { EntranceHall } from './EntranceHall'
 
-import { DOME, FOUNTAIN, FRONT, PLINTH, RINGS, SIDE_DOORS, SILL, STAIRS, VIP, VIP_BACK, VIP_DOME, VIP_WING } from './plan'
+import { DOME, FOUNTAIN, FRONT, PATH_END, PLINTH, RINGS, SIDE_DOORS, SILL, STAIRS, VIP, VIP_BACK, VIP_DOME, VIP_WING } from './plan'
 
 /** Glass lets taps through to whatever is behind it. */
 const noRay = () => null
@@ -286,6 +286,8 @@ function Ground({ low }: { low: boolean }) {
   }
   const rings = useMemo(() => [path(37.2, 39.6, 120), path(26.6, 27.6, 80)], []) // eslint-disable-line react-hooks/exhaustive-deps
   const straight = useMemo(() => { const t = paving.clone(); t.wrapS = t.wrapT = RepeatWrapping; t.repeat.set(2, 30); t.needsUpdate = true; return t }, [paving])
+  const entry = useMemo(() => { const t = paving.clone(); t.wrapS = t.wrapT = RepeatWrapping; t.repeat.set(2, PATH_END - 38); t.needsUpdate = true; return t }, [paving])
+  const bay = useMemo(() => { const t = paving.clone(); t.wrapS = t.wrapT = RepeatWrapping; t.repeat.set(2.4, 4.8); t.needsUpdate = true; return t }, [paving])
   const round = useMemo(() => { const t = paving.clone(); t.wrapS = t.wrapT = RepeatWrapping; t.repeat.set(6, 6); t.needsUpdate = true; return t }, [paving])
   return (
     <group>
@@ -300,9 +302,14 @@ function Ground({ low }: { low: boolean }) {
         </mesh>
       ))}
       {/* the entrance path from the front, through both openings to the fountain */}
-      <mesh rotation-x={-Math.PI / 2} position={[0, 0.016, 58]} receiveShadow>
-        <planeGeometry args={[4, 40]} />
-        <meshStandardMaterial map={straight} color="#EBD2AE" roughness={0.9} />
+      <mesh rotation-x={-Math.PI / 2} position={[0, 0.016, (38 + PATH_END) / 2]} receiveShadow>
+        <planeGeometry args={[4, PATH_END - 38]} />
+        <meshStandardMaterial map={entry} color="#EBD2AE" roughness={0.9} />
+      </mesh>
+      {/* a round paved bay where the path ends */}
+      <mesh rotation-x={-Math.PI / 2} position={[0, 0.017, PATH_END]} receiveShadow>
+        <circleGeometry args={[2.4, 40]} />
+        <meshStandardMaterial map={bay} color="#EBD2AE" roughness={0.9} />
       </mesh>
       {/* path from the entrance through the inner opening to the terrace stairs */}
       <mesh rotation-x={-Math.PI / 2} position={[0, 0.017, 15]} receiveShadow>
@@ -454,6 +461,7 @@ function GardenLamps({ low }: { low: boolean }) {
     // the central path, entrance to terrace stairs, either side (clear of the fountain walkway)
     for (const z of [11, 15, 19, 23]) for (const s of [-1, 1]) out.push([s * 2.15, 0, z]) // the reception dome starts at z ≈ 27
     for (const s of [-1, 1]) out.push([s * 2.15, 0, STAIRS.z1 + 0.7])                  // at the foot of the terrace stairs
+    for (const s of [-1, 1]) out.push([s * 2.15, 0, 45.5], [s * 2.6, 0, PATH_END + 0.6]) // the entrance path and the bay at its end
     // round the fountain walkway, leaving the path ends open
     for (let i = 0; i < 8; i++) { const a = (i / 8) * Math.PI * 2 + Math.PI / 8; out.push([FOUNTAIN.x + Math.cos(a) * (FOUNTAIN.r + 2.05), 0, FOUNTAIN.z + Math.sin(a) * (FOUNTAIN.r + 2.05)]) }
     // the walk between the galleries and the one round the outside
@@ -617,7 +625,7 @@ function Hedges() {
     const out: { p: V3; s: V3; c: string }[] = []
     // a ring of clipped shrubs round the fountain, leaving the path open front and back
     for (let i = 0; i < 12; i++) { const a = (i / 12) * Math.PI * 2 + Math.PI / 12; if (Math.abs(Math.cos(a)) < 0.3) continue; const [x, , z] = polar(a, 6.1); out.push({ p: [x, 0.5, 5 + z], s: [0.55, 0.85, 0.55], c: '#3F6B34' }) }
-    ;[-1, 1].forEach(s => [44, 50, 56, 62].forEach(z => out.push({ p: [s * 3, 0.7, z], s: [0.55, 1.3, 0.55], c: '#3A6630' })))
+    ;[-1, 1].forEach(s => [43, 47.5].forEach(z => out.push({ p: [s * 3, 0.7, z], s: [0.55, 1.3, 0.55], c: '#3A6630' })))
     return out
   }, [])
   const ref = useRef<InstancedMesh>(null)

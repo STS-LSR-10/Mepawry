@@ -136,6 +136,7 @@ export const VIP_CAPACITY = VIP_SLOTS.length
 
 // ── Where people appear ──
 
+export const PATH_END = 54                                     // the entrance path runs out to here, ending in a round bay
 export const SPAWN: P = { x: 0, z: 42 }                       // on the path in front of the reception
 export const ARRIVAL: P = { x: 0, z: DOME.z + 2.6 }           // inside the reception, in front of the desk (changing floors)
 export const VIP_ENTRY: P = { x: 0, z: VIP.z + 4.2 }          // on the terrace, in front of the VIP hall's door

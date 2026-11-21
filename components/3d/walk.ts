@@ -4,7 +4,7 @@
 // sides), the reception dome and its four doorways, the garden, and the VIP terrace you climb by its stairs.
 
 import {
-  CAB_D, DOME, DOOR_HALF, FOUNTAIN, RINGS, SIDE_DOORS, STAIRS, TERRACE, VIP, VIP_CENTER, VIP_DOME, VIP_PLANTER_R, VIP_WING, W, type P,
+  CAB_D, DOME, DOOR_HALF, PATH_END, FOUNTAIN, RINGS, SIDE_DOORS, STAIRS, TERRACE, VIP, VIP_CENTER, VIP_DOME, VIP_PLANTER_R, VIP_WING, W, type P,
 } from './sanctuary/plan'
 
 export type { P }
@@ -12,7 +12,7 @@ export type { P }
 const RADIUS = 0.35     // avatar's half-width; obstacles grow by this much
 const PARK = 44         // how far out you can wander (the forest starts beyond)
 const CELL = 0.5
-const X0 = -46, Z0 = -46, X1 = 46, Z1 = 46
+const X0 = -46, Z0 = -46, X1 = 46, Z1 = 57
 const NX = Math.round((X1 - X0) / CELL), NZ = Math.round((Z1 - Z0) / CELL)
 const TAU = Math.PI * 2
 
@@ -98,7 +98,8 @@ function vipBlocked(p: P): boolean {
 
 /** Can the avatar stand here? */
 export function isFree(p: P): boolean {
-  if (Math.hypot(p.x, p.z) > PARK) return false
+  // beyond the park edge only the entrance path (and the round bay at its end) is walkable
+  if (Math.hypot(p.x, p.z) > PARK && !(Math.abs(p.x) < 2 - RADIUS && p.z < PATH_END) && Math.hypot(p.x, p.z - PATH_END) > 2.4 - RADIUS) return false
   if (ringBlocked(p) || receptionBlocked(p)) return false
   if (near(p, FOUNTAIN.x, FOUNTAIN.z, FOUNTAIN.r)) return false
   if (near(p, -11, 1, 0.5) || near(p, 12, -1, 0.5)) return false       // the willows' trunks
