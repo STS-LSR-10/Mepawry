@@ -92,10 +92,27 @@ const FLOOR_NAMES: Record<number, string> = {
   25: 'Hidden Garden', 26: 'Cherry Hill', 27: 'Sunflower Hill', 28: 'Lantern Bay',
   29: 'Willow Creek', 30: 'Autumn Path', 31: 'Moonlit Meadow', 32: 'Quiet Harbor',
   33: 'Rainbow Meadow',
+  34: 'Velvet Dusk', 35: 'Honey Meadow', 36: 'Silver Brook', 37: 'Clover Field',
+  38: 'Gentle Tide', 39: 'Maple Hollow', 40: 'Dandelion Hill', 41: 'Evening Bell',
+  42: 'Pine Whisper', 43: 'Sunrise Glen', 44: 'Bluebell Wood', 45: 'Firefly Garden',
+  46: 'Quiet Lagoon', 47: 'Amber Fields', 48: 'Lavender Rest', 49: 'Soft Rain',
+  50: 'Harvest Moon', 51: 'Paw Print Path', 52: 'Daisy Chain', 53: 'Cedar Grove',
+  54: 'Peach Blossom', 55: 'Seashell Shore', 56: 'Mossy Stone', 57: 'Golden Hour',
+  58: 'Meadowlark', 59: 'Little Lantern', 60: 'Sleepy Hollow', 61: 'Wildflower Way',
+  62: 'Sunbeam Court', 63: 'Pebble Creek', 64: 'Hazel Wood', 65: 'Morning Dew',
+  66: 'Snowdrop Garden', 67: 'Tulip Terrace', 68: 'Bamboo Grove', 69: 'Lotus Pond',
+  70: 'Jasmine Night', 71: 'Starfall Ridge', 72: 'Cloudberry Hill', 73: 'Kite Meadow',
+  74: 'Tender Heart', 75: 'Hummingbird Lane', 76: 'Sandcastle Bay', 77: 'Fawn Hollow',
+  78: 'Primrose Path', 79: 'Linden Avenue', 80: 'Robin’s Rest', 81: 'Driftwood Cove',
+  82: 'Sunset Ridge', 83: 'Blue Lantern', 84: 'Milky Way', 85: 'Teacup Garden',
+  86: 'Butterfly Field', 87: 'Owl’s Perch', 88: 'Gentle Breeze', 89: 'Saffron Sky',
+  90: 'Wishing Well', 91: 'Forget-Me-Not', 92: 'Heather Moor', 93: 'Glowworm Glen',
+  94: 'Candle Harbor', 95: 'Thistledown', 96: 'Moonflower', 97: 'Aurora Garden',
+  98: 'Evergreen', 99: 'Homecoming', 100: 'Forever Home',
 }
 
 const ROMAN = ['', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X']
-/** Dome names; past the 33rd they come round again with a numeral ("First Light II", …). */
+/** Dome names; past the 100th they come round again with a numeral ("First Light II", …). */
 export function getFloorName(floorId: number): string {
   const n = Object.keys(FLOOR_NAMES).length, round = Math.floor((floorId - 1) / n)
   const name = FLOOR_NAMES[((floorId - 1) % n) + 1]
