@@ -12,7 +12,7 @@ import { useAccount } from '@/lib/account'
 import { DEFAULT_BACKDROP, DEFAULT_FRAME, FRAMES, backdropsFor, type FrameStyle } from '@/lib/decor'
 import { backdropThumb } from '@/components/3d/backdrops'
 import type { Pet } from '@/types'
-import { CATEGORIES, FREE_GIFT_COOLDOWN_DAYS, SPECIAL_GIFT_SHOWS_DAYS, giftById, giftsFor, type Gift, type GiftCategory, type LeftGift } from '@/lib/gifts'
+import { CATEGORIES, SEASONS, FREE_GIFT_COOLDOWN_DAYS, SPECIAL_GIFT_SHOWS_DAYS, giftById, giftsFor, type Gift, type GiftCategory, type LeftGift } from '@/lib/gifts'
 
 const waitKey = (petId: string) => `pm-gift-wait-${petId}`
 
@@ -65,8 +65,8 @@ export function GiftPicker({ open, onClose, pet, onLeft, onDecor }: {
   const cat = TABS.find(c => c.id === tab)!
   const isDecor = tab === 'frames' || tab === 'backdrops'
   const items = isDecor ? [] : giftsFor(tab)
-  const seasonal = items.filter(i => i.months)
-  const yearRound = items.filter(i => !i.months)
+  const seasonal = SEASONS.map(s => ({ ...s, items: items.filter(i => i.season === s.id) })).filter(s => s.items.length)
+  const yearRound = items.filter(i => !i.season)
   const waiting = nextAt !== null && Date.parse(nextAt) > Date.now()
 
   const applyDecor = async () => {
@@ -162,7 +162,7 @@ export function GiftPicker({ open, onClose, pet, onLeft, onDecor }: {
               <BackdropGrid current={currentBackdrop} picked={decor?.id}
                 onPick={b => setDecor({ kind: 'backdrop', id: b.id, name: b.name, price: b.price })} />
             )}
-            {tab === 'special' && seasonal.length > 0 && <Section title={`❄️ ${t('This season')}`} items={seasonal} picked={picked} onPick={setPicked} />}
+            {tab === 'special' && seasonal.map(s => <Section key={s.id} title={`${s.emoji} ${t(s.label)}`} items={s.items} picked={picked} onPick={setPicked} />)}
             {!isDecor && <Section title={tab === 'special' && seasonal.length ? `🌈 ${t('All year')}` : ''} items={yearRound} picked={picked} onPick={setPicked} />}
           </div>
 

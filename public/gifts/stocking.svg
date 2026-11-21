@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <!-- A Christmas stocking: red with a white fluffy cuff, a paw print, and a little hanging loop -->
+  <defs>
+    <linearGradient id="red" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#E5463C"/>
+      <stop offset="1" stop-color="#A9221D"/>
+    </linearGradient>
+  </defs>
+  <path d="M70 4 C76 4 78 12 74 16" stroke="#C9A227" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <path d="M40 30 H86 V76 L64 108 C56 120 36 124 26 114 C16 104 22 90 32 84 L40 78 Z" fill="url(#red)"/>
+  <path d="M30 98 C34 92 42 92 48 96 C50 104 46 112 38 116 C30 118 24 112 24 106 Z" fill="#F4ECE0"/>
+  <path d="M76 80 L86 76 V64 L70 72 Z" fill="#F4ECE0" opacity="0.9"/>
+  <g fill="#FCE3C2">
+    <ellipse cx="62" cy="62" rx="9" ry="7"/>
+    <circle cx="52" cy="51" r="4"/><circle cx="60" cy="47" r="4"/><circle cx="68" cy="47" r="4"/><circle cx="75" cy="52" r="4"/>
+  </g>
+  <rect x="34" y="12" width="58" height="22" rx="11" fill="#FBF7F0"/>
+  <g fill="#E7DDCD">
+    <circle cx="44" cy="20" r="3"/><circle cx="56" cy="26" r="2.6"/><circle cx="68" cy="19" r="3"/><circle cx="80" cy="25" r="2.6"/><circle cx="88" cy="18" r="2"/>
+  </g>
+  <path d="M44 40 C40 60 42 74 40 78" stroke="#F27A6E" stroke-width="2.5" fill="none" stroke-linecap="round" opacity="0.7"/>
+</svg>

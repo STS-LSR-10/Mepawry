@@ -9,11 +9,19 @@ export interface Gift {
   category: GiftCategory
   /** Special gifts cost money (THB); the rest are free, one every FREE_GIFT_COOLDOWN_DAYS. */
   price?: number
-  /** Special gifts that only show in some months (1–12). */
-  months?: number[]
+  /** Special gifts that only show in their season. */
+  season?: Season
   /** A picture (under /public) for gifts no emoji draws well; the emoji stands in where a picture can't go. */
   img?: string
 }
+
+export type Season = 'christmas' | 'newyear'
+
+/** Seasonal specials, in the order the picker lists them. `on` gets month 1–12 and day of month. */
+export const SEASONS: { id: Season; emoji: string; label: string; on: (m: number, d: number) => boolean }[] = [
+  { id: 'christmas', emoji: '🎄', label: 'Christmas', on: m => m === 11 || m === 12 },
+  { id: 'newyear', emoji: '🎆', label: 'New Year', on: (m, d) => (m === 12 && d >= 26) || (m === 1 && d <= 15) },
+]
 
 export const FREE_GIFT_COOLDOWN_DAYS = 3
 export const FREE_GIFT_SHOWS_DAYS = 7
@@ -26,10 +34,10 @@ export const CATEGORIES: { id: GiftCategory; emoji: string; label: string; hint:
   { id: 'special', emoji: '✨', label: 'Special', hint: `Stay by their shrine for ${SPECIAL_GIFT_SHOWS_DAYS} days with your name` },
 ]
 
-const g = (category: GiftCategory, list: [string, string, string, number?, number[]?][]): Gift[] =>
-  list.map(([id, emoji, name, price, months]) => ({ id, emoji, name, category, price, months }))
+const g = (category: GiftCategory, list: [string, string, string, number?, Season?, string?][]): Gift[] =>
+  list.map(([id, emoji, name, price, season, img]) => ({ id, emoji, name, category, price, season, img }))
 
-const WINTER = [11, 12]
+const XMAS = 'christmas', NY = 'newyear'
 
 export const GIFTS: Gift[] = [
   ...g('food', [
@@ -57,21 +65,30 @@ export const GIFTS: Gift[] = [
     ['clover', '🍀', 'A lucky clover'], ['shell', '🐚', 'A seashell'], ['mushroom', '🍄', 'A tiny mushroom'],
   ]),
   ...g('special', [
-    ['tree', '🎄', 'A little Christmas tree', 45, WINTER], ['snowman', '⛄', 'A snowman', 45, WINTER],
-    ['reindeer', '🦌', 'A reindeer', 45, WINTER], ['present', '🎁', 'A wrapped present', 35, WINTER],
-    ['snowflake', '❄️', 'A snowflake', 35, WINTER], ['candycane', '🍬', 'A candy cane', 35, WINTER],
+    ['tree', '🎄', 'A little Christmas tree', 45, XMAS], ['snowman', '⛄', 'A snowman', 45, XMAS],
+    ['reindeer', '🦌', 'A reindeer', 45, XMAS], ['present', '🎁', 'A wrapped present', 35, XMAS],
+    ['snowflake', '❄️', 'A snowflake', 35, XMAS], ['candycane', '🍬', 'A candy cane', 35, XMAS],
+    ['wreath', '🎄', 'A Christmas wreath', 45, XMAS, '/gifts/wreath.svg'], ['stocking', '🧦', 'A Christmas stocking', 35, XMAS, '/gifts/stocking.svg'],
+    ['bells', '🔔', 'Jingle bells', 35, XMAS], ['scarf', '🧣', 'A warm scarf', 35, XMAS],
+    ['cocoa', '☕', 'Hot cocoa', 35, XMAS], ['sleigh', '🛷', 'Santa’s sleigh', 45, XMAS],
+    ['fireworks', '🎆', 'New Year fireworks', 45, NY], ['sparklers', '🎇', 'Sparklers', 35, NY],
+    ['popper', '🎉', 'A party popper', 35, NY], ['confetti', '🎊', 'Confetti', 35, NY],
+    ['kadomatsu', '🎍', 'New Year pine', 45, NY], ['angpao', '🧧', 'A lucky red envelope', 35, NY],
     ['roses', '🌹', 'Red roses', 35], ['sunflowers', '🌻', 'Sunflowers', 35], ['tulips', '🌷', 'Pink tulips', 35],
     ['bouquet', '💐', 'A bouquet', 35], ['rainbow', '🌈', 'A rainbow bridge', 45], ['star', '⭐', 'A guiding star', 45],
     ['moon', '🌙', 'A crescent moon', 45], ['halo', '😇', 'A golden halo', 45], ['crown', '👑', 'A little crown', 45],
     ['sparkles', '✨', 'Fairy lights', 45], ['dove', '🕊️', 'A white dove', 45], ['heart', '💖', 'A glowing heart', 45],
+    ['lotus', '🪷', 'A lotus', 35], ['wings', '😇', 'Angel wings', 45, undefined, '/gifts/angel-wings.svg'],
+    ['shootingstar', '🌠', 'A shooting star', 45], ['windchime', '🎐', 'A wind chime', 35],
+    ['balloons', '🎈', 'Balloons', 35], ['daisies', '🌼', 'Daisies', 35],
   ]),
 ]
 
 export const giftById = (id: string) => GIFTS.find(x => x.id === id)
 
-/** Gifts on offer this month (seasonal specials come and go). */
-export const giftsFor = (category: GiftCategory, month = new Date().getMonth() + 1) =>
-  GIFTS.filter(x => x.category === category && (!x.months || x.months.includes(month)))
+/** Gifts on offer on this date (seasonal specials come and go). */
+export const giftsFor = (category: GiftCategory, date = new Date()) =>
+  GIFTS.filter(x => x.category === category && (!x.season || SEASONS.find(s => s.id === x.season)!.on(date.getMonth() + 1, date.getDate())))
 
 /** A gift someone left, as the API returns it. */
 export interface LeftGift {
