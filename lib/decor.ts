@@ -20,12 +20,15 @@ export interface FrameStyle {
   swatch: string
 }
 
+export type BackdropGroup = 'festival' | 'season' | 'always'
+
 export interface Backdrop {
   id: string
   name: string
   price: number
-  /** Only on offer in these months (1–12) */
-  months?: number[]
+  group: BackdropGroup
+  /** Festivals and seasons: on offer only when this is true for the date (month 1–12, day of month) */
+  on?: (m: number, d: number) => boolean
 }
 
 export const DEFAULT_FRAME = 'gold'
@@ -76,8 +79,8 @@ export const FRAMES: FrameStyle[] = [
   frame('pattern', 'pearl', 'Pearl beads', '#EFE7DA', 0.25, 0.3, '#EFE7DA radial-gradient(circle at 35% 35%,#FFFFFF 1px,#E8DDCB 3.4px,#CDBFA8 4.2px,transparent 4.6px) 0 0/9px 9px', 'pearl'),
 ]
 
-const WINTER = [11, 12, 1]
-const bd = (id: string, name: string, months?: number[]): Backdrop => ({ id, name, price: BACKDROP_PRICE, months })
+const bd = (id: string, name: string, group: BackdropGroup = 'always', on?: Backdrop['on']): Backdrop => ({ id, name, price: BACKDROP_PRICE, group, on })
+const months = (...ms: number[]) => (m: number) => ms.includes(m)
 
 /** The first one is the free default every shrine starts with. */
 export const BACKDROPS: Backdrop[] = [
@@ -99,13 +102,32 @@ export const BACKDROPS: Backdrop[] = [
   bd('hearts', 'Paper hearts'),
   bd('paws', 'Paw print paper'),
   bd('bamboo', 'Bamboo mist'),
-  bd('snownight', 'Snowy night', WINTER),
-  bd('festive', 'Festive garland', WINTER),
+  bd('mountainlake', 'Mountain lake at dawn'),
+  bd('milkyway', 'Milky Way'),
+  bd('riceterraces', 'Rice terraces'),
+  bd('fireflies', 'Firefly forest'),
+  bd('mistymountains', 'Misty mountains'),
+  bd('waterfall', 'Jungle waterfall'),
+  bd('wildflowers', 'Wildflower hills'),
+  bd('lotussunset', 'Lotus pond at sunset'),
+  bd('festive', 'Festive garland', 'festival', months(11, 12, 1)),
+  bd('songkran', 'Songkran splash', 'festival', months(4)),
+  bd('loykrathong', 'Loy Krathong night', 'festival', months(11)),
+  bd('lunarnewyear', 'Lunar New Year lanterns', 'festival', (m, d) => (m === 1 && d >= 15) || m === 2),
+  bd('midautumn', 'Mid-Autumn moon', 'festival', months(9)),
+  bd('halloween', 'Gentle Halloween', 'festival', months(10)),
+  bd('nyfireworks', 'New Year fireworks', 'festival', (m, d) => (m === 12 && d >= 26) || (m === 1 && d <= 15)),
+  bd('rosepetals', 'Rose petals', 'festival', (m, d) => m === 2 && d <= 14),
+  bd('snownight', 'Snowy night', 'season', months(11, 12, 1)),
+  bd('spring', 'Spring blossoms', 'season', months(3, 4, 5)),
+  bd('summer', 'Summer sunflowers', 'season', months(6, 7, 8)),
+  bd('rainy', 'Rainy season lotus pond', 'season', months(7, 8, 9, 10)),
+  bd('winterforest', 'Winter forest', 'season', months(12, 1, 2)),
 ]
 
 export const frameById = (id?: string | null) => FRAMES.find(f => f.id === id) ?? FRAMES[0]
 export const backdropById = (id?: string | null) => BACKDROPS.find(b => b.id === id) ?? BACKDROPS[0]
 
-/** Backdrops on offer this month (the free default isn't sold). */
-export const backdropsFor = (month = new Date().getMonth() + 1) =>
-  BACKDROPS.filter(b => b.id !== DEFAULT_BACKDROP && (!b.months || b.months.includes(month)))
+/** Backdrops on offer on this date (the free default isn't sold; festivals and seasons come and go). */
+export const backdropsFor = (date = new Date()) =>
+  BACKDROPS.filter(b => b.id !== DEFAULT_BACKDROP && (!b.on || b.on(date.getMonth() + 1, date.getDate())))

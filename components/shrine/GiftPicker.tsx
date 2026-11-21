@@ -290,11 +290,17 @@ function FrameGrid({ frames, current, picked, onPick }: { frames: FrameStyle[]; 
   })
 }
 
-/** Backdrops as painted thumbnails, the same paintings the cabinet uses. Seasonal ones first. */
+const BACKDROP_GROUPS = [['festival', '🎉 ', 'Festivals'], ['season', '🍃 ', 'Seasons'], ['always', '🌈 ', 'All year']] as const
+
+/** Backdrops as painted thumbnails, the same paintings the cabinet uses, festivals and seasons first. */
 function BackdropGrid({ current, picked, onPick }: { current: string; picked?: string; onPick: (b: { id: string; name: string; price: number }) => void }) {
   const t = useT()
-  const list = backdropsFor().sort((a, b) => Number(!!b.months) - Number(!!a.months))
-  return (
+  const all = backdropsFor()
+  return BACKDROP_GROUPS.map(([group, icon, title]) => {
+    const list = all.filter(b => b.group === group)
+    return list.length > 0 && (
+    <div key={group} className="mb-3">
+    <h3 className="mb-2 text-xs font-semibold text-[#5C5046]">{icon}{t(title)}</h3>
     <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
       {list.map(b => {
         const on = picked === b.id
@@ -304,7 +310,6 @@ function BackdropGrid({ current, picked, onPick }: { current: string; picked?: s
               on ? 'ring-2 ring-[#D9823B] shadow-md' : 'ring-1 ring-[#EFE4D4] hover:ring-[#D9823B]/50')}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={backdropThumb(b.id)} alt="" className="aspect-[5/4] w-full object-cover" />
-            {b.months && <span className="absolute left-1.5 top-1.5 rounded-full bg-white/85 px-2 py-0.5 text-[9px] font-semibold text-[#8A3A2A]">❄️ {t('Seasonal')}</span>}
             <span className="flex items-baseline justify-between gap-1 px-2.5 py-2">
               <span className="truncate text-[12px] font-medium text-[#2A1E17]">{t(b.name)}</span>
               <span className="shrink-0 text-[10px] font-semibold text-[#B8860B]">{current === b.id ? t('In use') : `฿${b.price}`}</span>
@@ -313,7 +318,9 @@ function BackdropGrid({ current, picked, onPick }: { current: string; picked?: s
         )
       })}
     </div>
-  )
+    </div>
+    )
+  })
 }
 
 /** A gift's picture, or its emoji; sized by the surrounding font size like an emoji would be. */
