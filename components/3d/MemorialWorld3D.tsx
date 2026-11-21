@@ -184,7 +184,7 @@ export default function MemorialWorld3D({ floorId, avatarName, avatarGender, ava
       <Joystick stick={stick} />
 
       {recovery.lost && (
-        <div className="fixed inset-0 z-30 grid place-items-center bg-[#17131B]/80 text-sm text-[#FAF7F2]/80">Reloading the hall…</div>
+        <div className="fixed inset-0 z-30 grid place-items-center bg-[#17131B]/80 text-sm text-[#FAF7F2]/80">{t('Reloading the hall…')}</div>
       )}
 
       {/* Standing at a shrine: offer to open it */}

@@ -209,11 +209,11 @@ export default function HallPage() {
               onClick={() => setMenu(m => (m === 'vip' ? null : 'vip'))}
               aria-expanded={menu === 'vip'}
               className="rounded-full border border-[#E8C365]/60 bg-gradient-to-r from-[#F3D99B]/90 to-[#D9B26A]/90 px-4 py-2.5 text-sm font-semibold text-[#3A2612] shadow-md hover:brightness-105"
-              aria-label="VIP pavilion: choose a dome"
+              aria-label={t('VIP pavilion')}
             >
               ✿ VIP
             </button>
-            <button onClick={() => setFloorSelectorOpen(true)} className={PILL} aria-label={`Dome ${currentFloor}. Go to another dome`}>
+            <button onClick={() => setFloorSelectorOpen(true)} className={PILL} aria-label={t('Dome {n}', { n: currentFloor })}>
               🏛️ {t('Dome {n}', { n: currentFloor })}
             </button>
           </div>
@@ -243,8 +243,8 @@ export default function HallPage() {
 
         {/* Dress your character: the panel sits at the bottom so your avatar stays in view and changes live */}
         {lookOpen && (
-          <div className="fixed inset-x-0 bottom-0 z-40 mx-auto max-h-[46dvh] max-w-md overflow-y-auto rounded-t-3xl bg-[#FFFBF5] p-4 shadow-2xl sm:bottom-4 sm:left-4 sm:right-auto sm:max-h-[80dvh] sm:rounded-3xl" role="dialog" aria-label="Dress your character">
-            <h2 className="mb-3 font-serif text-lg font-bold text-[#2A1E17]">Dress your character</h2>
+          <div className="fixed inset-x-0 bottom-0 z-40 mx-auto max-h-[46dvh] max-w-md overflow-y-auto rounded-t-3xl bg-[#FFFBF5] p-4 shadow-2xl sm:bottom-4 sm:left-4 sm:right-auto sm:max-h-[80dvh] sm:rounded-3xl" role="dialog" aria-label={t('Dress your character')}>
+            <h2 className="mb-3 font-serif text-lg font-bold text-[#2A1E17]">{t('Dress your character')}</h2>
             <LookEditor live onDone={() => setLookOpen(false)} />
           </div>
         )}

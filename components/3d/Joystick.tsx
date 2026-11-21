@@ -1,4 +1,5 @@
 'use client'
+import { useT } from '@/lib/i18n'
 // components/3d/Joystick.tsx — An on-screen stick for walking (bottom left). Push the knob: up walks the way the camera
 // faces, sideways strafes. Writes {x, y} in -1…1 (screen axes, y down) into a shared ref the avatar reads every frame.
 
@@ -9,6 +10,7 @@ export type Stick = { x: number; y: number }
 const R = 44 // how far the knob travels (px)
 
 export function Joystick({ stick }: { stick: React.RefObject<Stick> }) {
+  const t = useT()
   const pad = useRef<HTMLDivElement>(null)
   const [knob, setKnob] = useState({ x: 0, y: 0 })
   const active = useRef<number | null>(null)
@@ -33,7 +35,7 @@ export function Joystick({ stick }: { stick: React.RefObject<Stick> }) {
     <div
       ref={pad}
       role="application"
-      aria-label="Walking stick: drag to walk"
+      aria-label={t('Walking stick: drag to walk')}
       className="glass fixed bottom-[max(1rem,env(safe-area-inset-bottom))] left-4 z-20 h-32 w-32 touch-none select-none rounded-full border border-white/20 shadow-md"
       onPointerDown={e => {
         active.current = e.pointerId

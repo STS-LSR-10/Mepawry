@@ -55,9 +55,10 @@ export function SettingsSheet() {
 }
 
 function LanguagePanel() {
+  const t = useT()
   const { lang, setLang } = useLang()
   return (
-    <div className="grid grid-cols-2 gap-1.5" role="radiogroup" aria-label="Language">
+    <div className="grid grid-cols-2 gap-1.5" role="radiogroup" aria-label={t('Language')}>
       {LANGS.map(l => {
         const on = l.code === lang
         return (

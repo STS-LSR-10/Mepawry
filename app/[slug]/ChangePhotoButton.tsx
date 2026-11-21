@@ -4,8 +4,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { getEditToken, photoToDataUrl } from '@/lib/photo'
+import { useT } from '@/lib/i18n'
 
 export function ChangePhotoButton({ petId, hasPhoto }: { petId: string; hasPhoto: boolean }) {
+  const t = useT()
   const [token, setToken] = useState<string | null>(null)
   const [status, setStatus] = useState<'idle' | 'busy' | 'error'>('idle')
   const fileRef = useRef<HTMLInputElement>(null)
@@ -41,10 +43,10 @@ export function ChangePhotoButton({ petId, hasPhoto }: { petId: string; hasPhoto
         disabled={status === 'busy'}
         className="rounded-full border border-white/20 bg-white/5 px-4 py-1.5 text-xs text-[#FAF7F2]/80 transition hover:bg-white/10 disabled:opacity-60"
       >
-        {status === 'busy' ? 'Uploading…' : hasPhoto ? '📷 Change photo' : '📷 Add a photo'}
+        {status === 'busy' ? t('Uploading…') : `📷 ${hasPhoto ? t('Change photo') : t('Add a photo')}`}
       </button>
-      <input ref={fileRef} type="file" accept="image/*" className="sr-only" onChange={onPick} aria-label="Choose a new photo" />
-      {status === 'error' && <p role="alert" className="mt-2 text-xs text-[#FFB4A8]">Upload failed. Try a JPG or PNG.</p>}
+      <input ref={fileRef} type="file" accept="image/*" className="sr-only" onChange={onPick} aria-label={t('Add a photo')} />
+      {status === 'error' && <p role="alert" className="mt-2 text-xs text-[#FFB4A8]">{t('Upload failed. Try a JPG or PNG.')}</p>}
     </div>
   )
 }

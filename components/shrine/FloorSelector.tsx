@@ -5,6 +5,7 @@
 import { Modal } from '@/components/ui/Modal'
 import { cn, getFloorName, formatCount } from '@/lib/utils'
 import type { Floor } from '@/types'
+import { useT } from '@/lib/i18n'
 import { OPEN_NEXT_AT_FREE } from '@/components/3d/sanctuary/plan'
 
 interface FloorSelectorProps {
@@ -18,11 +19,12 @@ interface FloorSelectorProps {
 
 export function FloorSelector({ open, onClose, floors, openCount, currentFloorId, onSelectFloor }: FloorSelectorProps) {
   const totalPets = floors.reduce((s, f) => s + f.current_count, 0)
+  const t = useT()
 
   return (
-    <Modal open={open} onClose={onClose} title="🏛️ Which dome?">
+    <Modal open={open} onClose={onClose} title="Which dome?">
       <p className="text-center text-sm text-[#8E8278] -mt-2 mb-4">
-        {formatCount(totalPets)} {totalPets === 1 ? 'pet' : 'pets'} · {openCount} {openCount === 1 ? 'dome' : 'domes'}
+        🏛️ {t('{n} pets', { n: formatCount(totalPets) })} · {t('{n} domes', { n: openCount })}
       </p>
 
       <div
@@ -35,10 +37,10 @@ export function FloorSelector({ open, onClose, floors, openCount, currentFloorId
           if (floor.id > openCount) return (
             <div key={floor.id} role="listitem" aria-disabled="true"
               className="cursor-not-allowed rounded-xl border border-dashed border-[#E8DFD6] bg-[#F8F4EC]/60 px-2.5 py-1.5 text-left text-[#2A1E17] opacity-50"
-              aria-label={`Dome ${floor.id}: not open yet`}>
-              <div className="font-serif font-bold text-sm leading-none">Dome {floor.id}</div>
+              aria-label={`${t('Dome {n}', { n: floor.id })}: ${t('Opens soon')}`}>
+              <div className="font-serif font-bold text-sm leading-none">{t('Dome {n}', { n: floor.id })}</div>
               <div className="text-[11px] mt-0.5 leading-tight text-[#8E8278]">{getFloorName(floor.id)}</div>
-              <div className="text-[11px] mt-0.5 flex items-center gap-1 leading-tight text-[#8E8278]"><span aria-hidden>🔒</span>Opens soon</div>
+              <div className="text-[11px] mt-0.5 flex items-center gap-1 leading-tight text-[#8E8278]"><span aria-hidden>🔒</span>{t('Opens soon')}</div>
             </div>
           )
 
@@ -53,18 +55,18 @@ export function FloorSelector({ open, onClose, floors, openCount, currentFloorId
                   ? 'bg-[#D9823B] border-[#D9823B] text-white shadow-md'
                   : 'bg-[#F8F4EC] border-[#E8DFD6] text-[#2A1E17] hover:border-[#D9823B] hover:shadow-sm active:scale-[0.97]'
               )}
-              aria-label={`Dome ${floor.id}: ${getFloorName(floor.id)}, ${isFull ? 'full' : `${floor.current_count} pets`}`}
+              aria-label={`${t('Dome {n}', { n: floor.id })}: ${getFloorName(floor.id)}, ${isFull ? t('full') : t('{n} pets', { n: floor.current_count })}`}
               aria-current={isActive ? 'true' : undefined}
             >
               <div className="font-serif font-bold text-sm leading-none">
-                Dome {floor.id}
+                {t('Dome {n}', { n: floor.id })}
               </div>
               <div className={cn('text-[11px] mt-0.5 leading-tight', isActive ? 'text-white/80' : 'text-[#8E8278]')}>
                 {getFloorName(floor.id)}
               </div>
               <div className={cn('text-[11px] mt-0.5 flex items-center gap-1 leading-tight', isActive ? 'text-white/80' : 'text-[#8E8278]')}>
                 <span aria-hidden>🐾</span>
-                {isFull ? 'Full' : formatCount(floor.current_count)}
+                {isFull ? t('full') : formatCount(floor.current_count)}
               </div>
             </button>
           )
@@ -73,7 +75,7 @@ export function FloorSelector({ open, onClose, floors, openCount, currentFloorId
       </div>
       {floors.length > openCount && (
         <p className="mt-3 text-center text-xs text-[#8E8278]">
-          Dome {openCount + 1} opens when Dome {openCount} has fewer than {OPEN_NEXT_AT_FREE} shelves left.
+          {t('Dome {next} opens when Dome {n} has fewer than {free} shelves left.', { next: openCount + 1, n: openCount, free: OPEN_NEXT_AT_FREE })}
         </p>
       )}
     </Modal>

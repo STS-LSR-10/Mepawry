@@ -62,8 +62,9 @@ export function SiteNav({ solid = false, tone = 'dark' }: { solid?: boolean; ton
 }
 
 export function Logo({ className }: { className?: string }) {
+  const t = useT()
   return (
-    <Link href="/" className={cn('flex items-center gap-2.5 font-serif text-xl', className)} aria-label="Mepawry home">
+    <Link href="/" className={cn('flex items-center gap-2.5 font-serif text-xl', className)} aria-label={t('Mepawry home')}>
       <svg viewBox="0 0 32 32" className="h-[30px] w-[30px]" aria-hidden="true">
         <defs>
           <radialGradient id="pawGlow" cx=".5" cy=".6">
@@ -93,8 +94,8 @@ export function SiteFooter() {
         </div>
         <span>{t('Made with care for everyone who has loved an animal.')}</span>
         <span className="flex w-full justify-center gap-4 text-xs">
-          <Link href="/privacy" className="hover:text-[#2A1E17]">Privacy</Link>
-          <Link href="/terms" className="hover:text-[#2A1E17]">Terms</Link>
+          <Link href="/privacy" className="hover:text-[#2A1E17]">{t('Privacy')}</Link>
+          <Link href="/terms" className="hover:text-[#2A1E17]">{t('Terms')}</Link>
         </span>
       </div>
     </footer>

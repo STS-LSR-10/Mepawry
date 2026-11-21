@@ -182,7 +182,7 @@ function StoryComposer({ onPosted }: { onPosted: (p: Post) => void }) {
       {photo && (
         <div className="relative">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={photo} alt="Photo to share" className="max-h-64 w-full rounded-2xl object-cover" />
+          <img src={photo} alt={t('Photo to share')} className="max-h-64 w-full rounded-2xl object-cover" />
           <button type="button" onClick={() => setPhoto(null)} className="absolute right-2 top-2 rounded-full bg-black/55 px-2.5 py-1 text-xs text-white">{t('Remove')}</button>
         </div>
       )}
@@ -434,6 +434,7 @@ const Empty = ({ text }: { text: string }) => <p className="rounded-2xl bg-[#FFF
 
 /** The board as a full-height sheet over the 3D hall. */
 export function BoardSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const t = useT()
   useEffect(() => {
     if (!open) return
     const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
@@ -442,7 +443,7 @@ export function BoardSheet({ open, onClose }: { open: boolean; onClose: () => vo
   }, [open, onClose])
   if (!open) return null
   return (
-    <div className="fixed inset-0 z-50 flex justify-center bg-black/45 backdrop-blur-sm sm:p-4" role="dialog" aria-modal="true" aria-label="Mepawry Board" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex justify-center bg-black/45 backdrop-blur-sm sm:p-4" role="dialog" aria-modal="true" aria-label={t('Mepawry Board')} onClick={onClose}>
       <div className="h-full w-full max-w-2xl overflow-hidden sm:rounded-3xl" onClick={e => e.stopPropagation()}>
         <Board onClose={onClose} />
       </div>

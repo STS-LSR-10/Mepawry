@@ -53,7 +53,7 @@ export default async function ShrinePage({ params }: ShrinePageProps) {
         <Link
           key={label as string}
           href={`/${(p as typeof pet).slug}`}
-          aria-label={`${label} shrine: ${(p as typeof pet).name}`}
+          aria-label={`${label}: ${(p as typeof pet).name}`}
           className={`fixed top-1/2 z-20 grid h-14 w-8 -translate-y-1/2 place-items-center border border-white/15 bg-black/30 text-xl text-[#FAF7F2]/80 backdrop-blur transition hover:bg-black/50 ${pos}`}
         >
           {icon as string}
@@ -67,7 +67,7 @@ export default async function ShrinePage({ params }: ShrinePageProps) {
 
         <h1 className="font-serif text-4xl font-medium sm:text-5xl">{pet.name}</h1>
         <p className="mt-2 text-sm text-[#FAF7F2]/70">
-          {flag} {years}{age ? ` · ${age} years` : ''} · {look.label}
+          {flag} {years}{age ? <> · <T text="{n} yrs" vars={{ n: age }} /></> : null} · <T text={look.label} />
         </p>
 
         {pet.epitaph && (
@@ -78,7 +78,7 @@ export default async function ShrinePage({ params }: ShrinePageProps) {
         <ChangePhotoButton petId={pet.id} hasPhoto={!!pet.primary_photo_url} />
 
         <p className="mt-6 text-xs text-[#FAF7F2]/45">
-          Dome {pet.floor_id} · {getFloorName(pet.floor_id)} · 🐾 {formatCount(pet.visit_count)} visits
+          <T text="Dome {n}" vars={{ n: pet.floor_id }} /> · {getFloorName(pet.floor_id)} · 🐾 <T text="{n} visits" vars={{ n: formatCount(pet.visit_count) }} />
         </p>
       </main>
     </div>

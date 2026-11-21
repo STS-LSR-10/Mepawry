@@ -53,7 +53,7 @@ export function FloatingHeader({
           </Link>
 
           {/* Center: quick pills */}
-          <nav className="hidden sm:flex items-center gap-2" aria-label="Quick navigation">
+          <nav className="hidden sm:flex items-center gap-2" aria-label={t('Quick navigation')}>
             <QuickPill href="/memorials" icon="🐾" label={t('All pets')} />
             <QuickPill href="/memorials?waiting=true" icon="🕯️" label={t('Waiting')} badge />
             <button
@@ -87,7 +87,7 @@ export function FloatingHeader({
           {/* Live presence */}
           <div
             className="glass rounded-full px-3 py-1.5 flex items-center gap-2 text-sm text-[#FAF7F2] shadow-sm border border-white/10"
-            title={liveStatus === 'live' ? 'Connected: you can see other visitors in this dome' : liveStatus === 'connecting' ? 'Connecting to other visitors…' : 'Can’t reach other visitors right now — retrying'}
+            title={t(liveStatus === 'live' ? 'Connected: you can see other visitors in this dome' : liveStatus === 'connecting' ? 'Connecting to other visitors…' : 'Can’t reach other visitors right now — retrying')}
           >
             <span className={`w-2 h-2 rounded-full ${liveStatus === 'live' ? 'bg-green-400 animate-pulse' : liveStatus === 'connecting' ? 'bg-amber-400' : 'bg-red-500'}`} aria-hidden />
             <span>{t('{n} here now', { n: formatCount(visitorCount) })}</span>
@@ -96,7 +96,7 @@ export function FloatingHeader({
           {/* Avatar */}
           <button
             onClick={onOpenMyPage}
-            aria-label={`My page: ${avatarName}. Change name or sign in`}
+            aria-label={t('My page: {name}. Change name or sign in', { name: avatarName })}
             className="glass rounded-full px-3 py-1.5 flex items-center gap-2 text-sm text-[#FAF7F2] shadow-sm border border-white/10 hover:bg-white/20 transition-colors"
           >
             <span
@@ -114,7 +114,7 @@ export function FloatingHeader({
             <div
               className="glass rounded-full px-3 py-1.5 text-sm text-[#FAF7F2] shadow-sm border border-white/10 overflow-hidden max-w-xs hidden md:block"
               aria-live="polite"
-              aria-label="Recent activity"
+              aria-label={t('Recent activity')}
             >
               <span className="text-[#E5954B]">💡</span>{' '}
               {activityFeed[tickerIndex]}
@@ -139,6 +139,7 @@ function QuickPill({
   label: string
   badge?: boolean
 }) {
+  const t = useT()
   return (
     <Link
       href={href}
@@ -149,7 +150,7 @@ function QuickPill({
       {badge && (
         <span
           className="absolute -top-1 -right-1 w-4 h-4 bg-[#D9823B] rounded-full text-white text-[10px] flex items-center justify-center"
-          aria-label="Has new items"
+          aria-label={t('Has new items')}
         />
       )}
     </Link>

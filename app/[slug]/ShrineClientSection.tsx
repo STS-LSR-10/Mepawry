@@ -13,6 +13,7 @@ import { getVisitor } from '@/lib/visitor'
 import { useAccount } from '@/lib/account'
 import Link from 'next/link'
 import { timeAgo } from '@/lib/utils'
+import { k } from '@/lib/tkey'
 import { useT } from '@/lib/i18n'
 import type { Pet, GuestbookEntry } from '@/types'
 
@@ -149,7 +150,7 @@ export function ShrineClientSection({ pet: initialPet, candlesToday: initialToda
     <>
       {/* 3D shrine cabinet */}
       {/* a VIP pet's cabinet is the big one, like its niche in the VIP pavilion: give it more room */}
-      <div className={`relative -mx-4 w-[calc(100%+2rem)] max-w-[760px] ${pet.vip_position != null ? 'h-[460px] sm:h-[600px]' : 'h-[360px] sm:h-[460px]'}`} aria-label={`${pet.name}'s shrine, ${candles} candles lit`}>
+      <div className={`relative -mx-4 w-[calc(100%+2rem)] max-w-[760px] ${pet.vip_position != null ? 'h-[460px] sm:h-[600px]' : 'h-[360px] sm:h-[460px]'}`} aria-label={t("{name}'s shrine, {n} candles lit", { name: pet.name, n: candles })}>
         <ShrineCabinet pet={pet} candlesToday={candlesToday} flowers={flowers} gifts={gifts.map(g => g.item)} />
       </div>
       <p className="mt-1 rounded-full bg-black/30 px-4 py-1.5 text-sm text-[#FFE2C0]">
@@ -193,19 +194,19 @@ export function ShrineClientSection({ pet: initialPet, candlesToday: initialToda
       <Modal
         open={guestbookOpen}
         onClose={() => setGuestbookOpen(false)}
-        title={`Guestbook for ${pet.name}`}
+        title={t('Guestbook for {name}', { name: pet.name })}
       >
         <div className="space-y-6">
           {/* Form */}
           <form onSubmit={handleSignGuestbook} className="space-y-3 bg-[#FAF7F2] p-4 rounded-2xl border border-[#E8DFD6]">
             <div>
               <label htmlFor="visitor-name" className="block text-xs font-semibold text-[#2A1E17] mb-1">
-                Your Name
+                {t('Your name')}
               </label>
               <input
                 id="visitor-name"
                 type="text"
-                placeholder="e.g. Quiet Star"
+                placeholder={t('e.g. Quiet Star')}
                 value={visitorName}
                 onChange={e => setVisitorName(e.target.value)}
                 className="w-full text-sm px-3 py-2 rounded-xl border border-[#D4C9BF] bg-white text-[#2A1E17] focus:outline-none focus:ring-2 focus:ring-[#D9823B]"
@@ -213,43 +214,43 @@ export function ShrineClientSection({ pet: initialPet, candlesToday: initialToda
             </div>
             <div>
               <label htmlFor="guestbook-msg" className="block text-xs font-semibold text-[#2A1E17] mb-1">
-                A few kind words
+                {t('A few kind words')}
               </label>
               <textarea
                 id="guestbook-msg"
                 rows={3}
                 required
                 maxLength={500}
-                placeholder="Write a message of comfort or share a memory…"
+                placeholder={t('Write a message of comfort or share a memory…')}
                 value={newMsg}
                 onChange={e => setNewMsg(e.target.value)}
                 className="w-full text-sm px-3 py-2 rounded-xl border border-[#D4C9BF] bg-white text-[#2A1E17] focus:outline-none focus:ring-2 focus:ring-[#D9823B] resize-none"
               />
             </div>
             <Button type="submit" size="sm" className="w-full">
-              ✍️ Sign Guestbook
+              ✍️ {t('Sign the guestbook')}
             </Button>
           </form>
 
           {/* Upsell: Golden Lantern Banner */}
           <div className="bg-gradient-to-r from-[#FAF7F2] to-[#FEF9E7] p-3.5 rounded-2xl border border-[#C9A227]/40 flex items-center justify-between gap-3">
             <div className="text-xs">
-              <span className="font-semibold text-[#2A1E17] block">🏮 Golden Lantern</span>
-              <span className="text-[#8E8278]">Keep their light glowing on the wall forever</span>
+              <span className="font-semibold text-[#2A1E17] block">🏮 {t('Golden Lantern')}</span>
+              <span className="text-[#8E8278]">{t('Keep their light glowing on the wall forever')}</span>
             </div>
             <Button size="sm" variant="secondary" onClick={() => setKeepsakeOpen(true)} className="whitespace-nowrap text-xs">
-              ฿149 one-time
+              {t('฿{n} one-time', { n: 149 })}
             </Button>
           </div>
 
           {/* Messages Feed */}
           <div className="space-y-3">
             <h4 className="text-xs font-semibold uppercase tracking-wider text-[#8E8278]">
-              Condolences ({messages.length})
+              {t('Condolences')} ({messages.length})
             </h4>
             {messages.length === 0 ? (
               <p className="text-center text-xs text-[#8E8278] py-6">
-                Be the first to leave a gentle word for {pet.name}.
+                {t('Be the first to leave a gentle word for {name}.', { name: pet.name })}
               </p>
             ) : (
               messages.map(msg => (
@@ -280,31 +281,31 @@ export function ShrineClientSection({ pet: initialPet, candlesToday: initialToda
           setKeepsakeOpen(false)
           setOrderSubmitted(false)
         }}
-        title={`Custom Keepsake for ${pet.name}`}
+        title={t('Custom keepsake for {name}', { name: pet.name })}
       >
         {orderSubmitted ? (
           <div className="text-center py-6 space-y-3">
             <div className="text-5xl">🎁</div>
-            <h3 className="font-serif text-xl font-bold text-[#2A1E17]">Order Placed!</h3>
+            <h3 className="font-serif text-xl font-bold text-[#2A1E17]">{t('Order placed!')}</h3>
             <p className="text-sm text-[#5C5046]">
-              Thank you for ordering this memorial tribute for {pet.name}. We will prepare your keepsake with care.
+              {t('Thank you for ordering this memorial tribute for {name}. We will prepare your keepsake with care.', { name: pet.name })}
             </p>
             <Button onClick={() => setKeepsakeOpen(false)} size="md" className="w-full mt-4">
-              Close
+              {t('Close')}
             </Button>
           </div>
         ) : (
           <div className="space-y-5">
             <p className="text-xs text-[#8E8278] -mt-2">
-              Physical keepsakes crafted from high-grade materials to honor your companion forever.
+              {t('Physical keepsakes crafted from high-grade materials to honor your companion forever.')}
             </p>
 
             {/* Product Choices */}
             <div className="grid grid-cols-3 gap-2">
               {[
-                { id: 'acrylic_plaque', name: 'Acrylic Plaque', price: '฿990 (~$28)', icon: '🖼️' },
-                { id: 'keychain', name: 'Medallion Keychain', price: '฿650 (~$18)', icon: '🔑' },
-                { id: 'canvas_print', name: 'Canvas Frame', price: '฿1,250 (~$35)', icon: '🎨' },
+                { id: 'acrylic_plaque', name: k('Acrylic Plaque'), price: '฿990 (~$28)', icon: '🖼️' },
+                { id: 'keychain', name: k('Medallion Keychain'), price: '฿650 (~$18)', icon: '🔑' },
+                { id: 'canvas_print', name: k('Canvas Frame'), price: '฿1,250 (~$35)', icon: '🎨' },
               ].map(p => (
                 <button
                   key={p.id}
@@ -318,7 +319,7 @@ export function ShrineClientSection({ pet: initialPet, candlesToday: initialToda
                 >
                   <span className="text-2xl mb-1">{p.icon}</span>
                   <div>
-                    <span className="text-xs font-bold text-[#2A1E17] block leading-tight">{p.name}</span>
+                    <span className="text-xs font-bold text-[#2A1E17] block leading-tight">{t(p.name)}</span>
                     <span className="text-[10px] text-[#C67129] font-medium">{p.price}</span>
                   </div>
                 </button>
@@ -328,7 +329,7 @@ export function ShrineClientSection({ pet: initialPet, candlesToday: initialToda
             {/* Inscription text */}
             <div>
               <label htmlFor="keepsake-inscription" className="block text-xs font-semibold text-[#2A1E17] mb-1">
-                Custom Inscription
+                {t('Custom inscription')}
               </label>
               <input
                 id="keepsake-inscription"
@@ -343,7 +344,7 @@ export function ShrineClientSection({ pet: initialPet, candlesToday: initialToda
             {/* Gift wrap option */}
             <label className="flex items-center gap-2 text-xs text-[#5C5046] cursor-pointer">
               <input type="checkbox" className="rounded text-[#D9823B] focus:ring-[#D9823B]" />
-              <span>Add luxury memorial gift box & condolence card (+฿120)</span>
+              <span>{t('Add a memorial gift box and condolence card (+฿{n})', { n: 120 })}</span>
             </label>
 
             {/* Mock Checkout CTA */}
@@ -352,10 +353,10 @@ export function ShrineClientSection({ pet: initialPet, candlesToday: initialToda
               size="lg"
               className="w-full shadow-md"
             >
-              🔒 Checkout with Stripe
+              🔒 {t('Checkout with Stripe')}
             </Button>
             <p className="text-[10px] text-center text-[#8E8278]">
-              Supports Credit/Debit Card, Apple Pay, Google Pay and PayPal
+              {t('Supports credit/debit cards, Apple Pay, Google Pay and PayPal')}
             </p>
           </div>
         )}

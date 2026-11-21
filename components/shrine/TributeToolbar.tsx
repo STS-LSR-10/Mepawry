@@ -1,4 +1,5 @@
 'use client'
+import { useT } from '@/lib/i18n'
 // components/shrine/TributeToolbar.tsx — S04 Shrine action bar
 
 import { useState } from 'react'
@@ -30,6 +31,7 @@ export function TributeToolbar({
   onShare,
   onTribute,
 }: TributeToolbarProps) {
+  const t = useT()
   const [justFlowered, setJustFlowered] = useState(false)
 
   const lightCandle = () => {
@@ -46,7 +48,7 @@ export function TributeToolbar({
   return (
     <div
       role="toolbar"
-      aria-label="Shrine actions"
+      aria-label={t('Shrine actions')}
       className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none"
     >
       {/* Candle */}
@@ -57,7 +59,7 @@ export function TributeToolbar({
         active={litToday}
         glow={litToday}
         onClick={lightCandle}
-        aria-label={litToday ? `You lit today's candle. ${candles} candles lit. Come back tomorrow to light another` : `Light a candle. ${candles} candles lit`}
+        aria-label={litToday ? t("You lit today's candle. {n} candles lit. Come back tomorrow to light another", { n: candles }) : t('Light a candle. {n} candles lit', { n: candles })}
       />
 
       {/* Flower */}
@@ -67,7 +69,7 @@ export function TributeToolbar({
         count={flowers}
         active={justFlowered}
         onClick={leaveFlower}
-        aria-label={`Leave a flower. ${flowers} flowers left`}
+        aria-label={t('Leave a flower. {n} flowers left', { n: flowers })}
       />
 
       {/* Treat */}
@@ -76,7 +78,7 @@ export function TributeToolbar({
         label="Gift"
         count={giftCount}
         onClick={onGift}
-        aria-label={`Leave a gift. ${giftCount} gifts left`}
+        aria-label={t('Leave a gift. {n} gifts left', { n: giftCount })}
       />
 
       {/* Guestbook */}
@@ -85,7 +87,7 @@ export function TributeToolbar({
         label="Guestbook"
         count={guestbookCount}
         onClick={onGuestbook}
-        aria-label={`Open guestbook. ${guestbookCount} messages`}
+        aria-label={t('Open guestbook. {n} messages', { n: guestbookCount })}
       />
 
       {/* Share */}
@@ -93,7 +95,7 @@ export function TributeToolbar({
         emoji="💌"
         label="Share"
         onClick={onShare}
-        aria-label="Share this memorial"
+        aria-label={t('Share this memorial')}
       />
 
       {/* Keepsake */}
@@ -101,7 +103,7 @@ export function TributeToolbar({
         emoji="🖼️"
         label="Keepsake"
         onClick={onKeepsake}
-        aria-label="Order a keepsake"
+        aria-label={t('Order a keepsake')}
         highlight
       />
     </div>

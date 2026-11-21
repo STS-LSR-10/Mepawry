@@ -133,5 +133,10 @@ export function T({ text, vars }: { text: string; vars?: Vars }) {
   return <>{useT()(text, vars)}</>
 }
 
+/** Shows its children only when the reader has picked a language other than English. */
+export function NotEnglish({ children }: { children: React.ReactNode }) {
+  return useLang().lang === 'en' ? null : <>{children}</>
+}
+
 /** Opens the settings sheet from anywhere. */
 export const openSettings = () => window.dispatchEvent(new Event('mepawry:settings'))

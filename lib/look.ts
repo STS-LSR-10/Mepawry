@@ -5,6 +5,7 @@
 
 import { useEffect, useState } from 'react'
 import { useAccount } from '@/lib/account'
+import { k } from './tkey'
 
 export type Gender = 'male' | 'female'
 export type Top = 'hoodie' | 'tee' | 'sweater'
@@ -24,10 +25,10 @@ export const SKINS = ['#FCE4D4', '#F3CFB3', '#E0AC86', '#C68863', '#8D5A3B']
 export const HAIRS = ['#6B4430', '#2B1D17', '#A0672F', '#E2B866', '#B5B0AC']
 export const CLOTHES = ['#F8B98F', '#F6B4C6', '#C7B3EA', '#A9D3F2', '#B9DFB2', '#FFE08A', '#F2F0EA', '#4A5A7A', '#D9654F', '#2F3A36']
 export const TOPS: { id: Top; label: string; emoji: string }[] = [
-  { id: 'hoodie', label: 'Hoodie', emoji: '🧥' }, { id: 'tee', label: 'T-shirt', emoji: '👕' }, { id: 'sweater', label: 'Sweater', emoji: '🧶' },
+  { id: 'hoodie', label: k('Hoodie'), emoji: '🧥' }, { id: 'tee', label: k('T-shirt'), emoji: '👕' }, { id: 'sweater', label: k('Sweater'), emoji: '🧶' },
 ]
 export const BOTTOMS: { id: Bottom; label: string; emoji: string }[] = [
-  { id: 'pants', label: 'Trousers', emoji: '👖' }, { id: 'shorts', label: 'Shorts', emoji: '🩳' }, { id: 'skirt', label: 'Skirt', emoji: '👗' },
+  { id: 'pants', label: k('Trousers'), emoji: '👖' }, { id: 'shorts', label: k('Shorts'), emoji: '🩳' }, { id: 'skirt', label: k('Skirt'), emoji: '👗' },
 ]
 
 export const defaultLook = (gender: Gender = 'male'): AvatarLook => gender === 'female'

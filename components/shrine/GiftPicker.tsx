@@ -113,7 +113,7 @@ export function GiftPicker({ open, onClose, pet, onLeft, onDecor }: {
           <div className="mx-auto mb-4 grid h-28 w-28 place-items-center rounded-full bg-gradient-to-b from-[#FFE9CF] to-[#FFF6EA] text-6xl shadow-[0_0_40px_rgba(217,130,59,0.35)] float-anim" aria-hidden>
             <GiftIcon gift={sent} />
           </div>
-          <h2 className="font-serif text-2xl font-bold text-[#2A1E17]">{sent.name} · {t('for {name}', { name: petName })}</h2>
+          <h2 className="font-serif text-2xl font-bold text-[#2A1E17]">{t(sent.name)} · {t('for {name}', { name: petName })}</h2>
           <p className="mt-2 text-sm text-[#8E8278]">{t('It’s waiting by their shrine now. Visitors will see it’s from you.')}</p>
           <button onClick={onClose} className="mt-6 w-full rounded-2xl bg-[#2A1E17] py-3 text-sm font-semibold text-[#FFF6EA] hover:bg-[#3B2B21]">
             {t('Back to {name}', { name: petName })}
@@ -127,13 +127,13 @@ export function GiftPicker({ open, onClose, pet, onLeft, onDecor }: {
               <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#D9823B]">{t('A little gift')}</p>
               <h2 id="modal-title" className="font-serif text-2xl font-bold leading-tight text-[#2A1E17]">{t('for {name}', { name: petName })}</h2>
             </div>
-            <button onClick={onClose} aria-label="Close" className="rounded-full bg-[#F4EBDD] p-2.5 text-[#8E8278] hover:text-[#2A1E17]">
+            <button onClick={onClose} aria-label={t('Close')} className="rounded-full bg-[#F4EBDD] p-2.5 text-[#8E8278] hover:text-[#2A1E17]">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 6L6 18M6 6l12 12" /></svg>
             </button>
           </div>
 
           {/* Categories: one segmented control, two rows of three */}
-          <div role="tablist" aria-label="Gift types" className="mt-4 grid grid-cols-3 gap-1 rounded-2xl bg-[#F4EBDD] p-1">
+          <div role="tablist" aria-label={t('Gift types')} className="mt-4 grid grid-cols-3 gap-1 rounded-2xl bg-[#F4EBDD] p-1">
             {TABS.map(c => (
               <button
                 key={c.id}
@@ -176,7 +176,7 @@ export function GiftPicker({ open, onClose, pet, onLeft, onDecor }: {
                     // eslint-disable-next-line @next/next/no-img-element
                     ? <img src={backdropThumb(decor.id)} alt="" className="h-full w-full object-cover" />
                     : <span className="block h-full w-full rounded-xl p-1.5" style={{ background: FRAMES.find(f => f.id === decor.id)?.swatch }}><span className="block h-full w-full rounded-md bg-[#FBF6EC]" /></span>}
-                  title={decor.name} sub={`฿${decor.price} · ${t('stays for good')}`}
+                  title={t(decor.name)} sub={`฿${decor.price} · ${t('stays for good')}`}
                 >
                   {admin ? (
                     <button onClick={applyDecor} disabled={sending} className="rounded-2xl bg-[#D9823B] px-4 py-3 text-xs font-semibold text-white shadow-md hover:bg-[#C67129] disabled:opacity-60">
@@ -190,7 +190,7 @@ export function GiftPicker({ open, onClose, pet, onLeft, onDecor }: {
                 <p className="py-3 text-center text-sm text-[#8E8278]">{t('Tap one to see it up close')}</p>
               )
             ) : picked?.price ? (
-              <FooterRow icon={<GiftIcon gift={picked} />} title={picked.name} sub={`฿${picked.price} · ${t('stays {n} days with your name', { n: SPECIAL_GIFT_SHOWS_DAYS })}`}>
+              <FooterRow icon={<GiftIcon gift={picked} />} title={t(picked.name)} sub={`฿${picked.price} · ${t('stays {n} days with your name', { n: SPECIAL_GIFT_SHOWS_DAYS })}`}>
                 <button disabled className="rounded-2xl bg-[#E8DFD6] px-4 py-3 text-xs font-semibold text-[#8E8278]">{t('Opening soon')}</button>
               </FooterRow>
             ) : waiting ? (
@@ -198,7 +198,7 @@ export function GiftPicker({ open, onClose, pet, onLeft, onDecor }: {
                 🎁 {t('You’ve left a gift for {name}. Your next free gift is ready in {t}.', { name: petName, t: waitText(nextAt!, t) })}
               </p>
             ) : picked ? (
-              <FooterRow icon={<GiftIcon gift={picked} />} title={picked.name} sub={t('Free · one every {n} days', { n: FREE_GIFT_COOLDOWN_DAYS })}>
+              <FooterRow icon={<GiftIcon gift={picked} />} title={t(picked.name)} sub={t('Free · one every {n} days', { n: FREE_GIFT_COOLDOWN_DAYS })}>
                 <button onClick={send} disabled={sending} className="rounded-2xl bg-[#D9823B] px-5 py-3 text-sm font-semibold text-white shadow-md hover:bg-[#C67129] disabled:opacity-60">
                   {sending ? t('Leaving…') : t('Leave it')}
                 </button>
@@ -214,6 +214,7 @@ export function GiftPicker({ open, onClose, pet, onLeft, onDecor }: {
 }
 
 function Section({ title, items, picked, onPick }: { title: string; items: Gift[]; picked: Gift | null; onPick: (g: Gift) => void }) {
+  const t = useT()
   return (
     <div className="mb-3">
       {title && <h3 className="mb-2 text-xs font-semibold text-[#5C5046]">{title}</h3>}
@@ -234,7 +235,7 @@ function Section({ title, items, picked, onPick }: { title: string; items: Gift[
               <span className={cn('grid h-11 w-11 place-items-center rounded-full text-[26px] transition-transform', on ? 'scale-110 bg-[#FFE9CF]' : 'bg-[#FAF3E8]')} aria-hidden>
                 <GiftIcon gift={item} />
               </span>
-              <span className="text-[11px] font-medium leading-tight text-[#2A1E17]">{item.name}</span>
+              <span className="text-[11px] font-medium leading-tight text-[#2A1E17]">{t(item.name)}</span>
               {item.price && <span className="text-[10px] font-semibold text-[#B8860B]">฿{item.price}</span>}
               {on && <span className="absolute right-1.5 top-1.5 grid h-4 w-4 place-items-center rounded-full bg-[#D9823B] text-[9px] text-white" aria-hidden>✓</span>}
             </button>
@@ -272,7 +273,7 @@ function FrameGrid({ frames, current, picked, onPick }: { frames: FrameStyle[]; 
             <span className="block aspect-[5/6] w-full rounded-lg p-[9%] shadow-inner" style={{ background: f.swatch }} aria-hidden>
               <span className="grid h-full w-full place-items-center rounded-[4px] bg-[#FBF6EC] text-xl shadow-[inset_0_1px_3px_rgba(0,0,0,.25)]">🐾</span>
             </span>
-            <span className="text-[11px] font-medium leading-tight text-[#2A1E17]">{f.name}</span>
+            <span className="text-[11px] font-medium leading-tight text-[#2A1E17]">{t(f.name)}</span>
             <span className="text-[10px] font-semibold text-[#B8860B]">{current === f.id ? t('In use') : `฿${f.price}`}</span>
           </button>
         )
@@ -297,7 +298,7 @@ function BackdropGrid({ current, picked, onPick }: { current: string; picked?: s
             <img src={backdropThumb(b.id)} alt="" className="aspect-[5/4] w-full object-cover" />
             {b.months && <span className="absolute left-1.5 top-1.5 rounded-full bg-white/85 px-2 py-0.5 text-[9px] font-semibold text-[#8A3A2A]">❄️ {t('Seasonal')}</span>}
             <span className="flex items-baseline justify-between gap-1 px-2.5 py-2">
-              <span className="truncate text-[12px] font-medium text-[#2A1E17]">{b.name}</span>
+              <span className="truncate text-[12px] font-medium text-[#2A1E17]">{t(b.name)}</span>
               <span className="shrink-0 text-[10px] font-semibold text-[#B8860B]">{current === b.id ? t('In use') : `฿${b.price}`}</span>
             </span>
           </button>
@@ -319,11 +320,11 @@ export function GiftShelf({ gifts, petName }: { gifts: LeftGift[]; petName: stri
   if (!gifts.length) return null
   const shown = gifts.slice(0, 14)
   return (
-    <div className="mt-3 flex max-w-full items-center gap-2 rounded-full bg-black/30 px-4 py-2 text-[#FFE2C0]" aria-label={`${gifts.length} gifts left for ${petName}`}>
+    <div className="mt-3 flex max-w-full items-center gap-2 rounded-full bg-black/30 px-4 py-2 text-[#FFE2C0]" aria-label={t('{n} gifts left for {name}', { n: gifts.length, name: petName })}>
       <span className="text-xs">{t('Gifts')}</span>
       <div className="flex -space-x-1 overflow-hidden">
         {shown.map(g => (
-          <span key={g.id} title={`From ${g.visitor_name}`} className="grid h-7 w-7 place-items-center rounded-full bg-[#FFF6EA]/15 text-base">
+          <span key={g.id} title={t('From {name}', { name: g.visitor_name })} className="grid h-7 w-7 place-items-center rounded-full bg-[#FFF6EA]/15 text-base">
             <GiftIcon gift={giftById(g.item)} />
           </span>
         ))}
