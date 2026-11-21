@@ -20,12 +20,18 @@ export const RINGS = [
   { r: 21, from: FRONT + 0.42, to: FRONT - 0.42 + Math.PI * 2 },  // inner: open at the front, you walk in from the garden
 ] as const
 export const DOME = { x: 0, z: 33, r: 5.6, wall: 4.4 }             // reception, door facing the front
-export const SIDE_DOORS = [FRONT + 0.5, FRONT - 0.5]               // extra doors in the outer gallery's outer wall
-export const DOOR_HALF = 0.95                                       // half-width of a doorway (m)
+// Extra doors in the outer gallery's outer wall, each filling a whole bay (centred on it, jambs against its posts)
+const OUTER = bays(RINGS[0])
+const bayCentre = (a: number) => RINGS[0].from + (Math.floor((((a - RINGS[0].from) % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI) / OUTER.step) + 0.5) * OUTER.step
+export const SIDE_DOORS = [FRONT + 0.5, FRONT - 0.5].map(bayCentre)
+export const DOOR_HALF = (RINGS[0].r + W / 2) * Math.sin(OUTER.step / 2) - 0.2   // half-width of a side doorway (m)
+/** A domed hall's doorway fills its whole wall: the jambs (0.2 thick) sit right against the corner posts (0.22). */
+export const domeDoorHalf = (r: number) => r * Math.sin(Math.PI / 8) - 0.21
 export const VIP = { z: -9, y: 1.3 }                               // the raised terrace (centre, height)
 export const VIP_BACK = 0.8                                         // the VIP hall sits this far behind the terrace centre
 export const VIP_DOME = { r: 5.3, wall: 4.6 }
 export const VIP_WING = { w: 5.2, d: 4.4, x: 7.7 }
+export const WING_DOOR = VIP_WING.d / 2 - 0.19                     // half-width of a wing's doorway into the hall
 export const VIP_CENTER: P = { x: 0, z: VIP.z - VIP_BACK }
 export const VIP_PLANTER_R = 2.05                                  // the marble medallion in the middle of the VIP hall
 export const TERRACE = { x0: -11.2, x1: 11.2, z0: VIP.z - 0.8 - 6, z1: VIP.z - 0.8 + 6 }   // its footprint

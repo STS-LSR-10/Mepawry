@@ -4,7 +4,7 @@
 // sides), the reception dome and its four doorways, the garden, and the VIP terrace you climb by its stairs.
 
 import {
-  CAB_D, DOME, DOOR_HALF, PATH_END, FOUNTAIN, RINGS, SIDE_DOORS, STAIRS, TERRACE, VIP, VIP_CENTER, VIP_DOME, VIP_WING, W, type P,
+  CAB_D, DOME, domeDoorHalf, DOOR_HALF, PATH_END, FOUNTAIN, RINGS, SIDE_DOORS, STAIRS, TERRACE, VIP, VIP_CENTER, VIP_DOME, VIP_WING, W, WING_DOOR, type P,
 } from './sanctuary/plan'
 
 export type { P }
@@ -55,7 +55,7 @@ function domeBlocked(p: P, cx: number, cz: number, r: number, doors: { at: numbe
 const Q = Math.PI / 2
 /** Reception: four doorways (front to the path, back to the garden, left and right into the outer gallery). */
 const receptionBlocked = (p: P) =>
-  domeBlocked(p, DOME.x, DOME.z, DOME.r, [0, Q, Math.PI, -Q].map(at => ({ at, half: 1.05 }))) ||
+  domeBlocked(p, DOME.x, DOME.z, DOME.r, [0, Q, Math.PI, -Q].map(at => ({ at, half: domeDoorHalf(DOME.r) }))) ||
   near(p, DOME.x, DOME.z - 0.6, 1.75) ||               // the curved desk
   near(p, -3.3, DOME.z + 3.0, 1.0) ||                  // lounge: armchairs round a coffee table (in the front-left corner, clear of the doorway and the desk)
   near(p, -3.3, DOME.z - 2.4, 0.95) ||                 // the sofa
@@ -78,7 +78,7 @@ const stairSides = (p: P) => p.z > STAIRS.z0 && p.z < STAIRS.z1 && Math.abs(p.x)
 function vipBlocked(p: P): boolean {
   const { x: cx, z: cz } = VIP_CENTER
   // hall walls: the door at the front, arched doorways into the wings left and right
-  if (domeBlocked(p, cx, cz, VIP_DOME.r, [{ at: Q, half: 1.05 }, { at: 0, half: 1.05 }, { at: Math.PI, half: 1.05 }])) return true
+  if (domeBlocked(p, cx, cz, VIP_DOME.r, [Q, 0, Math.PI].map(at => ({ at, half: domeDoorHalf(VIP_DOME.r) })))) return true
   if ([-1, 1].some(s => near(p, s * 1.25, cz + VIP_DOME.r * 0.86, 0.3))) return true // urns by the door
   for (const s of [-1, 1]) {
     const wx = s * VIP_WING.x, hw = VIP_WING.w / 2, hd = VIP_WING.d / 2
@@ -87,7 +87,7 @@ function vipBlocked(p: P): boolean {
     if (!inWing) continue
     // the wing's own walls: back, front (glass) and the far end; its near end has a doorway into the hall
     if (local.z < -hd + 0.25 + RADIUS || local.z > hd - 0.25 - RADIUS || local.x > hw - 0.25 - RADIUS) return true // walls and the alcoves along them
-    if (Math.abs(local.x + hw) < 0.1 + RADIUS && Math.abs(local.z) > 1.05 - RADIUS) return true
+    if (Math.abs(local.x + hw) < 0.1 + RADIUS && Math.abs(local.z) > WING_DOOR - RADIUS) return true
   }
   return false
 }

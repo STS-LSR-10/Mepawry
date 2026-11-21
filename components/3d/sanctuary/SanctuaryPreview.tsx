@@ -24,7 +24,7 @@ import { GalleryInterior } from './GalleryInterior'
 import { VipInterior, type VipPets } from './VipInterior'
 import { EntranceHall } from './EntranceHall'
 
-import { DOME, FOUNTAIN, FRONT, PATH_END, PLINTH, RINGS, SIDE_DOORS, SILL, STAIRS, VIP, VIP_BACK, VIP_DOME, VIP_WING } from './plan'
+import { DOME, domeDoorHalf, DOOR_HALF, FOUNTAIN, isDoorBay, WING_DOOR, FRONT, PATH_END, PLINTH, RINGS, SIDE_DOORS, SILL, STAIRS, VIP, VIP_BACK, VIP_DOME, VIP_WING } from './plan'
 
 /** Glass lets taps through to whatever is behind it. */
 const noRay = () => null
@@ -57,7 +57,8 @@ function useMaterials(low: boolean) {
       photoFrame: new MeshStandardMaterial({ color: '#E8D2A6', roughness: 0.4, metalness: 0.3 }),
       glass,
       stone: new MeshStandardMaterial({ color: '#B39876', roughness: 0.85, bumpMap: microMap('stone'), bumpScale: 1 }),
-      white: new MeshStandardMaterial({ color: '#F1ECE2', roughness: 0.5 }),
+      white: new MeshStandardMaterial({ color: '#D2C6B3', roughness: 0.8 }), // warm stone, not paper-white: it sits in full sun
+      fountain: new MeshStandardMaterial({ color: '#A89A85', roughness: 0.9 }), // a shade darker still: the fountain's curves catch the sun
       plinth: new MeshStandardMaterial({ color: '#C4A57E', roughness: 0.9, bumpMap: microMap('stone'), bumpScale: 1.4 }),
       frameCard: new MeshStandardMaterial({ color: '#ffffff', roughness: 0.55 }),
     }
@@ -78,16 +79,18 @@ function Gallery({ r, from, to, m, demo }: { r: number; from: number; to: number
   const posts = useMemo(() => angles.flatMap(a => [ri, ro].map(rr => ({ p: polar(a, rr, H / 2), ry: -a }))), [angles, ri, ro])
   const ribs = useMemo(() => angles.slice(0, -1).flatMap(a0 => [0, 1 / 3, 2 / 3].map(f => ({ p: polar(a0 + step * f, r, H + 0.28), ry: -(a0 + step * f), s: [1, 1, f ? 0.6 : 1] as V3 }))).concat([{ p: polar(to, r, H + 0.28), ry: -to, s: [1, 1, 1] }]), [angles, r, step, to])
   // Glass panes and wooden sills between posts, on both walls
-  const panes = useMemo(() => angles.slice(0, -1).flatMap(a0 => [ri, ro].map(rr => {
+  const bayPanes = useMemo(() => angles.slice(0, -1).flatMap(a0 => [ri, ro].map(rr => {
     const a = a0 + step / 2, w = 2 * rr * Math.sin(step / 2)
-    return { a, w, p: polar(a, rr, SILL + (H - SILL) / 2), ry: -a + Math.PI / 2, s: [w, H - SILL, 1] as V3 }
+    return { a, w, rr, p: polar(a, rr, SILL + (H - SILL) / 2), ry: -a + Math.PI / 2, s: [w, H - SILL, 1] as V3 }
   })), [angles, ri, ro, step])
+  // a side door's bay is left open below the beam (no glass, sill or stone base)
+  const panes = useMemo(() => bayPanes.filter(pn => !(pn.rr === ro && isDoorBay(r, pn.a, step))), [bayPanes, r, ro, step])
   // Along a pane: a point `off` metres sideways from its centre, at height y
   const along = (pn: { a: number; p: V3 }, off: number, y: number): V3 => [pn.p[0] + Math.sin(pn.a) * off, y, pn.p[2] - Math.cos(pn.a) * off]
   // Stone base wall, a wooden sill on it, and a heavy timber beam along the top of every bay
   const plinths = useMemo(() => panes.map(pn => ({ p: [pn.p[0], PLINTH / 2, pn.p[2]] as V3, ry: pn.ry, s: [pn.w + 0.24, PLINTH, 0.55] as V3 })), [panes])
   const sills = useMemo(() => panes.map(pn => ({ p: [pn.p[0], PLINTH + 0.06, pn.p[2]] as V3, ry: pn.ry, s: [pn.w + 0.1, 0.12, 0.34] as V3 })), [panes])
-  const beams = useMemo(() => panes.map(pn => ({ p: [pn.p[0], H + 0.12, pn.p[2]] as V3, ry: pn.ry, s: [pn.w + 0.24, 0.34, 0.42] as V3 })), [panes])
+  const beams = useMemo(() => bayPanes.map(pn => ({ p: [pn.p[0], H + 0.12, pn.p[2]] as V3, ry: pn.ry, s: [pn.w + 0.24, 0.34, 0.42] as V3 })), [bayPanes])
   // Glazing bars: three uprights and two rails per window, small panes like a real conservatory
   const mullions = useMemo(() => panes.flatMap(pn => [-1, 0, 1].map(k => ({ p: along(pn, k * pn.w / 4, (SILL + H) / 2), ry: pn.ry, s: [0.055, H - SILL, 0.07] as V3 }))), [panes])
   const transoms = useMemo(() => panes.flatMap(pn => [SILL + 0.75, SILL + 1.45].map(y => ({ p: along(pn, 0, y), ry: pn.ry, s: [pn.w, 0.05, 0.07] as V3 }))), [panes])
@@ -205,7 +208,7 @@ function FlattenTori({ children }: { children: React.ReactNode }) {
 // ── Entrance pavilion: octagonal glasshouse with a lattice dome and a cupola ──
 
 function DomePavilion({ m, sign, at, r, wall, y = 0, doors = [2], floor = true }: { m: Mats; sign?: Texture; at: [number, number]; r: number; wall: number; y?: number; doors?: number[]; floor?: boolean }) {
-  const sides = 8
+  const sides = 8, dh = domeDoorHalf(r)
   return (
     <group position={[at[0], y, at[1]]} rotation-y={Math.PI / 8}> {/* turns side 2 (the door) to face straight down the path */}
       {/* a plain stone floor, unless the room inside lays its own (two floors at one height flicker) */}
@@ -233,8 +236,9 @@ function DomePavilion({ m, sign, at, r, wall, y = 0, doors = [2], floor = true }
               {isDoor && (
                 <group position-z={0.05}>
                   {/* arched doorway and the sign above it */}
-                  <mesh position-y={2.3} material={m.frame} castShadow><torusGeometry args={[1.05, 0.1, 8, 24, Math.PI]} /></mesh>
-                  {[-1, 1].map(s => <mesh key={s} position={[s * 1.05, 1.15, 0]} material={m.frame} castShadow><boxGeometry args={[0.2, 2.3, 0.2]} /></mesh>)}
+                  {/* a wide, low arch from post to post, its crown meeting the beam above */}
+                  <mesh position-y={2.3} scale-y={(wall - 3.4) / dh} material={m.frame} castShadow><torusGeometry args={[dh, 0.12, 8, 32, Math.PI]} /></mesh>
+                  {[-1, 1].map(s => <mesh key={s} position={[s * dh, 1.15, 0]} material={m.frame} castShadow><boxGeometry args={[0.2, 2.3, 0.2]} /></mesh>)}
                   {sign && i === 2 && (
                     <mesh position={[0, 3.55, 0.12]}>
                       <planeGeometry args={[3.4, 0.62]} />
@@ -365,14 +369,14 @@ function Fountain({ m, low }: { m: Mats; low: boolean }) {
   useFrame(({ clock }) => { if (water.current) water.current.position.y = 0.48 + Math.sin(clock.elapsedTime * 2) * 0.01 })
   return (
     <group>
-      <mesh geometry={basin} material={m.white} castShadow receiveShadow />
+      <mesh geometry={basin} material={m.fountain} castShadow receiveShadow />
       <mesh ref={water} rotation-x={-Math.PI / 2} position-y={0.48}>
         <circleGeometry args={[2.95, 48]} />
-        <meshPhysicalMaterial color="#6FB3C9" roughness={0.05} metalness={0.1} transparent opacity={0.85} clearcoat={1} />
+        <meshPhysicalMaterial color="#1E566B" roughness={0.15} metalness={0.1} transparent opacity={0.95} clearcoat={0.2} envMapIntensity={0.3} />
       </mesh>
-      <mesh geometry={bowl} material={m.white} castShadow />
-      <mesh position-y={1.72} rotation-x={-Math.PI / 2}><circleGeometry args={[1.25, 32]} /><meshPhysicalMaterial color="#7FC0D2" roughness={0.05} transparent opacity={0.85} /></mesh>
-      <mesh position-y={2.1} material={m.white}><sphereGeometry args={[0.25, 16, 12]} /></mesh>
+      <mesh geometry={bowl} material={m.fountain} castShadow />
+      <mesh position-y={1.72} rotation-x={-Math.PI / 2}><circleGeometry args={[1.25, 32]} /><meshPhysicalMaterial color="#23607A" roughness={0.15} transparent opacity={0.95} envMapIntensity={0.3} /></mesh>
+      <mesh position-y={2.1} material={m.fountain}><sphereGeometry args={[0.25, 16, 12]} /></mesh>
       <FountainWater low={low} />
     </group>
   )
@@ -645,16 +649,17 @@ function SideDoor({ a, m }: { a: number; m: Mats }) {
   const ro = 33 + W / 2
   return (
     <group position={polar(a, ro + 0.05, 0)} rotation-y={-a + Math.PI / 2}>
-      <mesh position-y={2.15} material={m.frame} castShadow><torusGeometry args={[0.95, 0.09, 8, 24, Math.PI]} /></mesh>
-      {[-1, 1].map(s => <mesh key={s} position={[s * 0.95, 1.08, 0]} material={m.frame} castShadow><boxGeometry args={[0.16, 2.16, 0.18]} /></mesh>)}
+      {/* fills the bay: jambs against its posts, a low arch up to the beam */}
+      <mesh position-y={2.15} scale-y={(H - 2.25) / DOOR_HALF} material={m.frame} castShadow><torusGeometry args={[DOOR_HALF, 0.11, 8, 32, Math.PI]} /></mesh>
+      {[-1, 1].map(s => <mesh key={s} position={[s * DOOR_HALF, 1.08, 0]} material={m.frame} castShadow><boxGeometry args={[0.16, 2.16, 0.18]} /></mesh>)}
       {[0, 1, 2].map(k => (
         <mesh key={k} position={[0, 0.1 + k * 0.17 - 0.34, 0.5 + (2 - k) * 0.38]} material={m.stone} castShadow receiveShadow>
-          <boxGeometry args={[2.6, 0.34, 0.4]} />
+          <boxGeometry args={[DOOR_HALF * 2 + 0.6, 0.34, 0.4]} />
         </mesh>
       ))}
       {/* little hedges and lamp posts either side */}
       {[-1, 1].map(s => (
-        <group key={s} position={[s * 2.1, 0, 1.2]}>
+        <group key={s} position={[s * (DOOR_HALF + 1.15), 0, 1.2]}>
           <mesh position-y={0.55} castShadow><coneGeometry args={[0.35, 1.3, 10]} /><meshStandardMaterial color="#3D6B33" roughness={0.95} /></mesh>
         </group>
       ))}
@@ -740,11 +745,9 @@ function Wing({ m, open }: { m: Mats; open: 1 | -1 }) {
       ))}
       {/* the end towards the hall: an arched doorway with glass above it */}
       <group position={[(open * w) / 2, 0, 0]} rotation-y={Math.PI / 2}>
-        {[-1, 1].map(k => <mesh key={k} position={[k * (d / 4 + 0.53), SILL / 2, 0]} material={m.frame} castShadow><boxGeometry args={[d / 2 - 1.06, SILL, 0.2]} /></mesh>)}
-        {[-1, 1].map(k => <mesh key={k} position={[k * (d / 4 + 0.53), (SILL + h) / 2, 0]} material={m.glass} raycast={noRay} renderOrder={2}><planeGeometry args={[d / 2 - 1.06, h - SILL]} /></mesh>)}
-        <mesh position-y={(2.3 + h) / 2} material={m.glass} raycast={noRay} renderOrder={2}><planeGeometry args={[2.1, h - 2.3]} /></mesh>
-        <mesh position-y={2.3} material={m.frame} castShadow><torusGeometry args={[1.05, 0.1, 8, 24, Math.PI]} /></mesh>
-        {[-1, 1].map(k => <mesh key={k} position={[k * 1.05, 1.15, 0]} material={m.frame} castShadow><boxGeometry args={[0.2, 2.3, 0.2]} /></mesh>)}
+        {/* the whole end is the doorway: jambs against the corner posts, a low arch up to the roof beam */}
+        <mesh position-y={2.3} scale-y={(h - 2.4) / WING_DOOR} material={m.frame} castShadow><torusGeometry args={[WING_DOOR, 0.12, 8, 32, Math.PI]} /></mesh>
+        {[-1, 1].map(k => <mesh key={k} position={[k * WING_DOOR, 1.15, 0]} material={m.frame} castShadow><boxGeometry args={[0.2, 2.3, 0.2]} /></mesh>)}
       </group>
       <mesh position-y={h} material={m.frame} castShadow><boxGeometry args={[w + 0.3, 0.22, d + 0.3]} /></mesh>
       <Roof><mesh position-y={h + 0.1} rotation-x={-Math.PI / 2} material={m.glass} raycast={noRay}><planeGeometry args={[w, d]} /></mesh></Roof>
