@@ -34,7 +34,7 @@ export function Joystick({ stick }: { stick: React.RefObject<Stick> }) {
       ref={pad}
       role="application"
       aria-label="Walking stick: drag to walk"
-      className="glass fixed bottom-20 left-4 z-20 h-32 w-32 touch-none select-none rounded-full border border-white/20 shadow-md"
+      className="glass fixed bottom-[max(1rem,env(safe-area-inset-bottom))] left-4 z-20 h-32 w-32 touch-none select-none rounded-full border border-white/20 shadow-md"
       onPointerDown={e => {
         active.current = e.pointerId
         try { e.currentTarget.setPointerCapture(e.pointerId) } catch {}

@@ -40,6 +40,13 @@ export default function HallPage() {
   }, [])
   const [arrival, setArrival] = useState<{ at: P } | null>(null)
   const [worldReady, setWorldReady] = useState(false)
+  const [hintOn, setHintOn] = useState(false)
+  useEffect(() => {
+    if (!worldReady) return
+    setHintOn(true)
+    const id = setTimeout(() => setHintOn(false), 6000)
+    return () => clearTimeout(id)
+  }, [worldReady])
   const [fading, setFading] = useState(false)
   // The visitor's own saved name; only on the client, or SSR and hydration disagree
   const [avatarName, setAvatarName] = useState('Visitor')
@@ -191,7 +198,7 @@ export default function HallPage() {
       )}
 
       {/* My look, Board, My pet, VIP and Floor in one column that folds away */}
-      <div className="fixed bottom-20 right-4 z-20 flex flex-col items-end gap-2">
+      <div className="fixed bottom-[max(1rem,env(safe-area-inset-bottom))] right-4 z-20 flex flex-col items-end gap-2">
         {toolsOpen && (
           <div id="hall-tools" className="pop-in flex flex-col items-end gap-2">
             <button onClick={() => setLookOpen(true)} className={PILL}>👕 {t('My look')}</button>
@@ -245,8 +252,8 @@ export default function HallPage() {
         {menu === 'pets' && <MyPetsMenu onPick={pet => { setMenu(null); findPet(pet) }} onClose={() => setMenu(null)} />}
       </div>
 
-      {/* Nav hint */}
-      <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-20">
+      {/* Nav hint: shows once the hall has drawn, then fades away */}
+      <div aria-hidden={!hintOn} className={`pointer-events-none fixed bottom-40 left-1/2 -translate-x-1/2 z-20 transition-opacity duration-700 ${hintOn ? 'opacity-100' : 'opacity-0'}`}>
         <div className="glass whitespace-nowrap rounded-full px-4 py-2 text-xs text-[#FAF7F2]/70 border border-white/10">
           {t('Tap to walk · Drag to look around')}
         </div>
@@ -254,7 +261,7 @@ export default function HallPage() {
 
       {/* Candles in the last 24 hours, counted from real tributes */}
       {today && showToday && (
-        <div role="status" className="pop-in fixed bottom-16 left-1/2 -translate-x-1/2 z-20 w-full max-w-sm px-4">
+        <div role="status" className="pop-in fixed bottom-52 left-1/2 -translate-x-1/2 z-20 w-full max-w-sm px-4">
           <div className="glass border border-[#D9823B]/30 rounded-full px-5 py-3 text-center text-sm text-[#FAF7F2] shadow-md">
             🕯️ {today.candles
               ? lang === 'en'
