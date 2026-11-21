@@ -2,7 +2,7 @@
 // components/account/AuthGate.tsx — Sign in with Google, then a one-time profile: name and male/female.
 // Shows its children only once both are done.
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useAccount } from '@/lib/account'
 import { cn, flagEmoji } from '@/lib/utils'
 import type { Gender } from '@/types'
@@ -19,32 +19,88 @@ export function AuthGate({ children, title = 'Sign in to continue', allowGuest =
 const input = 'w-full rounded-xl border border-[#D4C9BF] bg-white px-4 py-2.5 text-[#2A1E17] placeholder:text-[#B5A99F] focus:outline-none focus:ring-2 focus:ring-[#D9823B]'
 const inApp = () => typeof navigator !== 'undefined' && /Line\/|FBAN|FBAV|Instagram/i.test(navigator.userAgent)
 
-/** Sign in with Google (the only way in). compact: no icon/heading (when the surrounding card already explains). */
+/** Google's sign-in script, loaded once for the whole page. */
+let gsi: Promise<void> | null = null
+const loadGsi = () => gsi ??= new Promise<void>((ok, fail) => {
+  const s = document.createElement('script')
+  s.src = 'https://accounts.google.com/gsi/client'; s.async = true
+  s.onload = () => ok(); s.onerror = () => { gsi = null; fail(new Error('gsi')) }
+  document.head.appendChild(s)
+})
+type Gsi = { accounts: { id: {
+  initialize: (o: { client_id: string; callback: (r: { credential: string }) => void; nonce: string; ux_mode?: string; use_fedcm_for_button?: boolean }) => void
+  renderButton: (el: HTMLElement, o: Record<string, unknown>) => void
+} } }
+
+async function sha256(text: string) {
+  const d = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text))
+  return [...new Uint8Array(d)].map(b => b.toString(16).padStart(2, '0')).join('')
+}
+
+/**
+ * Sign in with Google (the only way in). Google's own button runs on our page and hands back a signed ID token,
+ * which Supabase checks, so people only ever see mepawry.com (not Supabase's address). Without a Google client
+ * id configured it falls back to the redirect flow through Supabase.
+ * compact: no icon/heading (when the surrounding card already explains).
+ */
 export function LoginPanel({ title, compact = false }: { title: string; compact?: boolean }) {
-  const { supabase } = useAccount()
+  const { supabase, refresh } = useAccount()
   const [error, setError] = useState('')
+  const [busy, setBusy] = useState(false)
   const [embedded, setEmbedded] = useState(false)
   const [copied, setCopied] = useState(false)
+  const box = useRef<HTMLDivElement>(null)
   useEffect(() => setEmbedded(inApp()), [])
-  // Back from Google with a sign-in that didn't go through
+  // Back from Google (redirect flow) with a sign-in that didn't go through
   useEffect(() => {
     if (new URLSearchParams(window.location.search).get('login') === 'failed') setError('Signing in didn’t go through. Please try again.')
   }, [])
-  // Is Google switched on in Supabase yet? (until it is, the button would lead to an error page)
+  // Is Google switched on in Supabase, and do we have our own Google client? (the Supabase address and the
+  // client id come from the server at runtime, like the account client, not from the build)
   const [googleOn, setGoogleOn] = useState<boolean | null>(null)
+  const [clientId, setClientId] = useState('')
   useEffect(() => {
-    // the Supabase address comes from the server at runtime (like the account client), not from the build
     fetch('/api/me', { cache: 'no-store' }).then(r => r.json())
-      .then(d => d?.config?.url ? fetch(`${d.config.url}/auth/v1/settings`, { headers: { apikey: d.config.anonKey }, cache: 'no-store' }).then(r => r.json()) : null)
+      .then(d => {
+        setClientId(d?.config?.googleClientId ?? '')
+        return d?.config?.url ? fetch(`${d.config.url}/auth/v1/settings`, { headers: { apikey: d.config.anonKey }, cache: 'no-store' }).then(r => r.json()) : null
+      })
       .then(s => setGoogleOn(!!s?.external?.google))
       .catch(() => setGoogleOn(true)) // can't tell: let them try
   }, [])
 
+  // Google's button, drawn into our box once we know the client id
+  useEffect(() => {
+    if (!googleOn || !clientId || embedded || !box.current) return
+    let gone = false
+    ;(async () => {
+      const raw = Array.from(crypto.getRandomValues(new Uint8Array(16)), b => b.toString(16).padStart(2, '0')).join('')
+      const hashed = await sha256(raw) // Google puts the hash in the token; Supabase checks it against the raw one
+      try { await loadGsi() } catch { if (!gone) setClientId(''); return } // script blocked: use the redirect button
+      if (gone || !box.current) return
+      const g = (window as unknown as { google: Gsi }).google
+      g.accounts.id.initialize({
+        client_id: clientId, nonce: hashed, use_fedcm_for_button: true,
+        callback: async ({ credential }) => {
+          const sb = supabase()
+          if (!sb) return setError('Sign-in isn’t available right now.')
+          setBusy(true); setError('')
+          const { error } = await sb.auth.signInWithIdToken({ provider: 'google', token: credential, nonce: raw })
+          setBusy(false)
+          if (error) return setError('Signing in didn’t go through. Please try again.')
+          await refresh()
+        },
+      })
+      g.accounts.id.renderButton(box.current, { theme: 'outline', size: 'large', shape: 'pill', text: 'continue_with', width: Math.min(400, box.current.clientWidth || 320) })
+    })()
+    return () => { gone = true }
+  }, [googleOn, clientId, embedded, supabase, refresh])
+
+  // Fallback: the redirect flow through Supabase's address
   const google = async () => {
     setError('')
     const sb = supabase()
     if (!sb) return setError('Sign-in isn’t available right now.')
-    // Google sends them to the callback, which swaps its one-time code for a session, then back to this page
     const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent(window.location.pathname + window.location.search.replace(/[?&]login=failed/, ''))}`
     const { error } = await sb.auth.signInWithOAuth({ provider: 'google', options: { redirectTo } })
     if (error) setError(error.message)
@@ -67,6 +123,10 @@ export function LoginPanel({ title, compact = false }: { title: string; compact?
             {copied ? '✓ Link copied' : 'Copy this page’s link'}
           </button>
         </div>
+      ) : googleOn && clientId ? (
+        <div className="flex min-h-[44px] justify-center">
+          <div ref={box} className={cn('w-full max-w-[400px]', busy && 'pointer-events-none opacity-50')} />
+        </div>
       ) : (
         <button onClick={google} disabled={!googleOn} className="flex w-full items-center justify-center gap-3 rounded-xl border border-[#D4C9BF] bg-white py-3 text-sm font-semibold text-[#2A1E17] hover:bg-[#FAF7F2] disabled:opacity-50">
           <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden>
@@ -78,6 +138,7 @@ export function LoginPanel({ title, compact = false }: { title: string; compact?
           Continue with Google
         </button>
       )}
+      {busy && <p className="text-center text-xs text-[#8E8278]">Signing you in…</p>}
       {googleOn === false && !embedded && <p className="text-center text-xs text-[#8E8278]">Sign-in is being set up. Please check back soon.</p>}
       {error && <p role="alert" className="text-center text-sm text-[#C0392B]">{error}</p>}
     </div>

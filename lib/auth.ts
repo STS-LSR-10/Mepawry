@@ -8,6 +8,8 @@ type CookieList = { name: string; value: string; options: CookieOptions }[]
 export const authConfig = () => ({
   url: process.env.NEXT_PUBLIC_SUPABASE_URL ?? '',
   anonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '',
+  /** The Google sign-in client (public): Google's own button on our page signs people in, no hop via Supabase's address */
+  googleClientId: process.env.GOOGLE_CLIENT_ID ?? '',
 })
 
 export async function supabaseServer() {
