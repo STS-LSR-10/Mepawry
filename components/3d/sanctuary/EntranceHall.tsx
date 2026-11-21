@@ -3,7 +3,7 @@
 // A curved reception desk ("Welcome to Mepawry") with marble panels faces the front door. Openings left and right
 // lead into the outer gallery; the doorway behind the desk leads on to the inner gallery, the garden and the VIP
 // pavilion — each has a sign above it. Behind the desk to the right, a slatted oak wall with the MEPAWRY SANCTUARY
-// lettering and a screen showing the site; to the left, a mirror and a plant shelf. A directory map stands near the
+// lettering and a screen showing the latest community-board stories (tap it to open the board); to the left, a mirror and a plant shelf. A directory map stands near the
 // door. Lounge corners with armchairs, a sofa and coffee tables, hanging ferns, potted palms, a wooden chandelier.
 
 import { useEffect, useMemo } from 'react'
@@ -50,13 +50,63 @@ function sitePlan(g: CanvasRenderingContext2D, cx: number, cy: number, s: number
   g.fillStyle = '#C9A15A'; g.beginPath(); g.arc(cx, cy + s * 0.82, s * 0.12, 0, Math.PI * 2); g.fill()
 }
 
-const screenTexture = () => tex(512, 288, g => {
-  g.fillStyle = '#DCE6D4'; g.fillRect(0, 0, 512, 288)
-  sitePlan(g, 170, 144, 118)
-  g.fillStyle = '#2E4A2A'; g.font = '700 26px Georgia, serif'; g.fillText('Mepawry Sanctuary', 310, 60)
-  g.font = '18px sans-serif'
-  ;['🕯️ Light a candle', '🎁 Leave a gift', '✿ VIP Garden', '📖 Guestbook'].forEach((t, i) => g.fillText(t, 320, 110 + i * 34))
-})
+type BoardPost = { author_name: string; body: string; like_count: number; comment_count: number; pet: { name: string } | null }
+
+/** The screen on the slat wall: the latest stories from the community board. */
+function drawBoard(g: CanvasRenderingContext2D, posts: BoardPost[] | null) {
+  const W = 1024, H = 576
+  g.fillStyle = '#F6F0E4'; g.fillRect(0, 0, W, H)
+  g.fillStyle = '#3E5A36'; g.fillRect(0, 0, W, 86)
+  g.fillStyle = '#FFFFFF'; g.textBaseline = 'middle'; g.textAlign = 'left'
+  g.font = '700 44px Georgia, serif'; g.fillText('📖 Community Board', 34, 45)
+  g.textAlign = 'right'; g.font = '24px sans-serif'; g.fillStyle = '#DDE8D2'; g.fillText('Latest stories', W - 34, 47)
+  g.textAlign = 'left'
+  if (!posts) { g.fillStyle = '#8A7A66'; g.font = 'italic 30px Georgia, serif'; g.fillText('Loading stories…', 34, 300) }
+  else if (!posts.length) { g.fillStyle = '#8A7A66'; g.font = 'italic 30px Georgia, serif'; g.fillText('No stories yet — be the first to share one.', 34, 300) }
+  posts?.slice(0, 3).forEach((p, i) => {
+    const y = 106 + i * 132
+    g.fillStyle = i % 2 ? '#EFE6D6' : '#FBF7EF'; g.beginPath(); g.roundRect(22, y, W - 44, 120, 14); g.fill()
+    g.fillStyle = '#5A3A22'; g.font = '700 28px sans-serif'
+    g.fillText(`${p.author_name}${p.pet ? ` · 🐾 ${p.pet.name}` : ''}`.slice(0, 48), 44, y + 32)
+    g.fillStyle = '#3A2A1A'; g.font = '26px sans-serif'
+    // fit the story to two lines, breaking between words (Intl.Segmenter also splits Thai, which has no spaces)
+    const words = [...new Intl.Segmenter(undefined, { granularity: 'word' }).segment(p.body.replace(/\s+/g, ' ').trim())].map(w => w.segment); const lines = ['']
+    for (const ch of words) {
+      if (!lines[lines.length - 1] && ch === ' ') continue
+      if (g.measureText(lines[lines.length - 1] + ch).width > W - 220) { if (lines.length === 2) { lines[1] = lines[1].slice(0, -1) + '…'; break } lines.push('') }
+      lines[lines.length - 1] += ch
+    }
+    lines.forEach((l, k) => g.fillText(l, 44, y + 70 + k * 32))
+    g.textAlign = 'right'; g.fillStyle = '#B0603A'; g.font = '24px sans-serif'
+    g.fillText(`❤ ${p.like_count}  💬 ${p.comment_count}`, W - 44, y + 32); g.textAlign = 'left'
+  })
+  g.fillStyle = '#3E5A36'; g.font = '600 26px sans-serif'; g.textAlign = 'center'
+  g.fillText('Tap the board to read and share stories →', W / 2, H - 28)
+}
+
+function BoardScreen({ m }: { m: DMats }) {
+  const t = useMemo(() => tex(1024, 576, g => drawBoard(g, null)), [])
+  useEffect(() => {
+    let off = false
+    const load = () => fetch('/api/board/posts?kind=story&sort=latest').then(r => r.json()).then(d => {
+      if (off) return
+      drawBoard((t.image as HTMLCanvasElement).getContext('2d')!, d.posts ?? [])
+      t.needsUpdate = true
+    }).catch(() => {})
+    load()
+    const id = setInterval(load, 60_000)
+    return () => { off = true; clearInterval(id); t.dispose() }
+  }, [t])
+  const cursor = (c: string) => () => { document.body.style.cursor = c }
+  return (
+    <group position={[0, 1.6, 0]}
+      onClick={e => { e.stopPropagation(); if (e.delta < 6) window.dispatchEvent(new Event('mepawry:board')) }}
+      onPointerOver={cursor('pointer')} onPointerOut={cursor('')}>
+      <mesh position-z={0.06} material={m.panelDark}><boxGeometry args={[2.05, 1.2, 0.05]} /></mesh>
+      <mesh position-z={0.09}><planeGeometry args={[1.95, 1.1]} /><meshStandardMaterial map={t} emissiveMap={t} emissive="#FFFFFF" emissiveIntensity={0.3} /></mesh>
+    </group>
+  )
+}
 
 const directoryTexture = () => tex(384, 512, g => {
   g.fillStyle = '#F4EDE0'; g.fillRect(0, 0, 384, 512)
@@ -174,7 +224,6 @@ export function EntranceHall({ at, r }: { at: [number, number]; r: number }) {
   const floor = useMemo(() => { const t = herringboneTexture(); t.repeat.set(4, 4); return t }, [])
   const welcome = useMemo(welcomeTexture, [])
   const letters = useMemo(lettersTexture, [])
-  const screen = useMemo(screenTexture, [])
   const directory = useMemo(directoryTexture, [])
   const signs = useMemo(() => ({
     left: passageSign('← Outer Gallery · Zones A–D'),
@@ -230,8 +279,7 @@ export function EntranceHall({ at, r }: { at: [number, number]; r: number }) {
           <group position={pos} rotation-y={ry}>
             <SlatWall w={3.6} h={3.4} m={m} />
             <mesh position={[0, 2.85, 0.05]}><planeGeometry args={[2.4, 0.75]} /><meshStandardMaterial map={letters} transparent alphaTest={0.3} /></mesh>
-            <mesh position={[0, 1.65, 0.06]} material={m.panelDark}><boxGeometry args={[1.55, 0.9, 0.05]} /></mesh>
-            <mesh position={[0, 1.65, 0.09]}><planeGeometry args={[1.45, 0.82]} /><meshStandardMaterial map={screen} emissiveMap={screen} emissive="#FFFFFF" emissiveIntensity={0.3} /></mesh>
+            <BoardScreen m={m} />
           </group>
         )
       })()}
