@@ -6,7 +6,7 @@ import dynamic from 'next/dynamic'
 import { TributeToolbar } from '@/components/shrine/TributeToolbar'
 import { GiftPicker, GiftShelf } from '@/components/shrine/GiftPicker'
 import { VipUpgrade } from '@/components/shrine/VipUpgrade'
-import { giftById, type LeftGift } from '@/lib/gifts'
+import type { LeftGift } from '@/lib/gifts'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { getVisitor } from '@/lib/visitor'
@@ -162,7 +162,7 @@ export function ShrineClientSection({ pet: initialPet, candlesToday: initialToda
         </Link>
       )}
       <VipUpgrade pet={pet} isOwner={isOwner} onChange={setPet} />
-      <GiftShelf gifts={gifts} emojiOf={id => giftById(id)?.emoji} petName={pet.name} />
+      <GiftShelf gifts={gifts} petName={pet.name} />
 
       {/* Floating Action Toolbar */}
       <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-20 w-full max-w-lg px-4 flex flex-col items-center gap-2">

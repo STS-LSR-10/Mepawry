@@ -28,7 +28,7 @@ export default function CabinetPreviewPage() {
         ))}
       </div>
       <div className={`relative w-full max-w-[760px] ${mode === 'vip' ? 'h-[460px] sm:h-[600px]' : 'h-[360px] sm:h-[460px]'}`}>
-        <Cabinet key={mode} pet={mode === 'vip' ? { ...SAMPLE, vip_position: 0 } : SAMPLE} candlesToday={3} flowers={4} gifts={mode === 'vip' ? ['food', 'toys', 'little', 'special', 'food', 'little', 'toys', 'special', 'little', 'food', 'toys', 'little'] : ['food', 'toys', 'little', 'special']} />
+        <Cabinet key={mode} pet={mode === 'vip' ? { ...SAMPLE, vip_position: 0 } : SAMPLE} candlesToday={3} flowers={4} gifts={mode === 'vip' ? ['food', 'toys', 'little', 'special', 'food', 'little', 'toys', 'special', 'little', 'food', 'toys', 'little'] : ['sweetfish', 'toys', 'little', 'special']} />
       </div>
       <p className="mt-2 text-xs text-[#FFE2C0]/60">Tap a door to close or open it · drag to look around</p>
     </main>

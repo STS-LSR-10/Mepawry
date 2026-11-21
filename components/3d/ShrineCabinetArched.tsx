@@ -249,7 +249,7 @@ function Cabinet({ d, pet, candlesToday, flowers, gifts, low }: { d: Dims; pet: 
           <mesh position={[0, 0, 0.212]} material={look.trim}><boxGeometry args={[d.SHELF_W, 0.012, 0.006]} /></mesh>
         </group>
       )))}
-      {gifts.slice(0, giftSpots.length).map((id, i) => <GiftSprite key={`${i}${id}`} emoji={giftById(id)?.emoji ?? '🎁'} at={giftSpots[i]} />)}
+      {gifts.slice(0, giftSpots.length).map((id, i) => <GiftSprite key={`${i}${id}`} emoji={giftById(id)?.emoji ?? '🎁'} img={giftById(id)?.img} at={giftSpots[i]} />)}
       <BabysBreath at={[-d.ITEM_X, FLOOR + 0.024, 0.02]} stems={5 + Math.min(flowers, 7)} m={m} />
       <PillarCandle at={[d.ITEM_X, FLOOR + 0.024, 0.02]} today={candlesToday} glow={glow} m={m} low={low} />
       <group position={[0, FLOOR + 0.024, 0.1]}>

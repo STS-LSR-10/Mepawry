@@ -11,6 +11,8 @@ export interface Gift {
   price?: number
   /** Special gifts that only show in some months (1–12). */
   months?: number[]
+  /** A picture (under /public) for gifts no emoji draws well; the emoji stands in where a picture can't go. */
+  img?: string
 }
 
 export const FREE_GIFT_COOLDOWN_DAYS = 3
@@ -32,6 +34,9 @@ const WINTER = [11, 12]
 export const GIFTS: Gift[] = [
   ...g('food', [
     ['treat', '🦴', 'A crunchy treat'], ['bowl', '🥣', 'A full bowl'], ['fish', '🐟', 'A little fish'],
+  ]),
+  { id: 'sweetfish', emoji: '🐟', name: 'Sweet dried fish', category: 'food', img: '/gifts/sweet-fish.svg' }, // ปลาหวาน
+  ...g('food', [
     ['cheese', '🧀', 'A bit of cheese'], ['cookie', '🍪', 'A cookie'], ['carrot', '🥕', 'A carrot'],
     ['milk', '🥛', 'Warm milk'], ['cupcake', '🧁', 'A cupcake'], ['icecream', '🍦', 'An ice cream'],
     ['apple', '🍎', 'An apple'], ['strawberry', '🍓', 'Strawberries'], ['chicken', '🍗', 'Roast chicken'],

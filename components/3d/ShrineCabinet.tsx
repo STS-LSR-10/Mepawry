@@ -321,9 +321,9 @@ export function PillarCandle({ at, today, glow, m, low }: { at: V3; today: numbe
 const GIFT_SPOTS: V3[] = [0, -0.17, 0.17].flatMap(dx => [-1, 1].flatMap(s => SHELF_Y.map(y => [s * 0.82 + dx, y + 0.018 + 0.11, BACK + 0.2] as V3)))
 function GiftDecor({ gifts }: { gifts: string[] }) {
   const shown = gifts.slice(0, GIFT_SPOTS.length)
-  return <>{shown.map((id, i) => <GiftSprite key={`${i}${id}`} emoji={giftById(id)?.emoji ?? '🎁'} at={GIFT_SPOTS[i]} />)}</>
+  return <>{shown.map((id, i) => <GiftSprite key={`${i}${id}`} emoji={giftById(id)?.emoji ?? '🎁'} img={giftById(id)?.img} at={GIFT_SPOTS[i]} />)}</>
 }
-export function GiftSprite({ emoji, at }: { emoji: string; at: V3 }) {
+export function GiftSprite({ emoji, img, at }: { emoji: string; img?: string; at: V3 }) {
   const map = useTex(() => {
     const c = document.createElement('canvas')
     c.width = c.height = 128
@@ -331,11 +331,16 @@ export function GiftSprite({ emoji, at }: { emoji: string; at: V3 }) {
     g.font = '104px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif'
     g.textAlign = 'center'
     g.textBaseline = 'middle'
-    g.fillText(emoji, 64, 70)
+    if (!img) g.fillText(emoji, 64, 70)
     const t = new CanvasTexture(c)
     t.colorSpace = SRGBColorSpace
+    if (img) { // a picture: draw it in once it has loaded
+      const pic = new Image()
+      pic.onload = () => { g.drawImage(pic, 8, 8, 112, 112); t.needsUpdate = true }
+      pic.src = img
+    }
     return t
-  }, [emoji])
+  }, [emoji, img])
   return (
     <sprite position={at} scale={[0.22, 0.22, 1]}>
       <spriteMaterial map={map} transparent alphaTest={0.1} />

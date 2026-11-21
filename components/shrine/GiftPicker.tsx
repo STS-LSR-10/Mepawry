@@ -12,7 +12,7 @@ import { useAccount } from '@/lib/account'
 import { DEFAULT_BACKDROP, DEFAULT_FRAME, FRAMES, backdropsFor, type FrameStyle } from '@/lib/decor'
 import { backdropThumb } from '@/components/3d/backdrops'
 import type { Pet } from '@/types'
-import { CATEGORIES, FREE_GIFT_COOLDOWN_DAYS, SPECIAL_GIFT_SHOWS_DAYS, giftsFor, type Gift, type GiftCategory, type LeftGift } from '@/lib/gifts'
+import { CATEGORIES, FREE_GIFT_COOLDOWN_DAYS, SPECIAL_GIFT_SHOWS_DAYS, giftById, giftsFor, type Gift, type GiftCategory, type LeftGift } from '@/lib/gifts'
 
 const waitKey = (petId: string) => `pm-gift-wait-${petId}`
 
@@ -111,7 +111,7 @@ export function GiftPicker({ open, onClose, pet, onLeft, onDecor }: {
       {sent ? (
         <div className="py-8 text-center">
           <div className="mx-auto mb-4 grid h-28 w-28 place-items-center rounded-full bg-gradient-to-b from-[#FFE9CF] to-[#FFF6EA] text-6xl shadow-[0_0_40px_rgba(217,130,59,0.35)] float-anim" aria-hidden>
-            {sent.emoji}
+            <GiftIcon gift={sent} />
           </div>
           <h2 className="font-serif text-2xl font-bold text-[#2A1E17]">{sent.name} · {t('for {name}', { name: petName })}</h2>
           <p className="mt-2 text-sm text-[#8E8278]">{t('It’s waiting by their shrine now. Visitors will see it’s from you.')}</p>
@@ -190,7 +190,7 @@ export function GiftPicker({ open, onClose, pet, onLeft, onDecor }: {
                 <p className="py-3 text-center text-sm text-[#8E8278]">{t('Tap one to see it up close')}</p>
               )
             ) : picked?.price ? (
-              <FooterRow icon={picked.emoji} title={picked.name} sub={`฿${picked.price} · ${t('stays {n} days with your name', { n: SPECIAL_GIFT_SHOWS_DAYS })}`}>
+              <FooterRow icon={<GiftIcon gift={picked} />} title={picked.name} sub={`฿${picked.price} · ${t('stays {n} days with your name', { n: SPECIAL_GIFT_SHOWS_DAYS })}`}>
                 <button disabled className="rounded-2xl bg-[#E8DFD6] px-4 py-3 text-xs font-semibold text-[#8E8278]">{t('Opening soon')}</button>
               </FooterRow>
             ) : waiting ? (
@@ -198,7 +198,7 @@ export function GiftPicker({ open, onClose, pet, onLeft, onDecor }: {
                 🎁 {t('You’ve left a gift for {name}. Your next free gift is ready in {t}.', { name: petName, t: waitText(nextAt!, t) })}
               </p>
             ) : picked ? (
-              <FooterRow icon={picked.emoji} title={picked.name} sub={t('Free · one every {n} days', { n: FREE_GIFT_COOLDOWN_DAYS })}>
+              <FooterRow icon={<GiftIcon gift={picked} />} title={picked.name} sub={t('Free · one every {n} days', { n: FREE_GIFT_COOLDOWN_DAYS })}>
                 <button onClick={send} disabled={sending} className="rounded-2xl bg-[#D9823B] px-5 py-3 text-sm font-semibold text-white shadow-md hover:bg-[#C67129] disabled:opacity-60">
                   {sending ? t('Leaving…') : t('Leave it')}
                 </button>
@@ -232,7 +232,7 @@ function Section({ title, items, picked, onPick }: { title: string; items: Gift[
               )}
             >
               <span className={cn('grid h-11 w-11 place-items-center rounded-full text-[26px] transition-transform', on ? 'scale-110 bg-[#FFE9CF]' : 'bg-[#FAF3E8]')} aria-hidden>
-                {item.emoji}
+                <GiftIcon gift={item} />
               </span>
               <span className="text-[11px] font-medium leading-tight text-[#2A1E17]">{item.name}</span>
               {item.price && <span className="text-[10px] font-semibold text-[#B8860B]">฿{item.price}</span>}
@@ -307,8 +307,14 @@ function BackdropGrid({ current, picked, onPick }: { current: string; picked?: s
   )
 }
 
+/** A gift's picture, or its emoji; sized by the surrounding font size like an emoji would be. */
+export function GiftIcon({ gift }: { gift: Gift | undefined }) {
+  // eslint-disable-next-line @next/next/no-img-element
+  return gift?.img ? <img src={gift.img} alt="" className="h-[1.1em] w-[1.1em] object-contain" /> : <>{gift?.emoji ?? '🎁'}</>
+}
+
 /** The gifts left recently, shown under the shrine. */
-export function GiftShelf({ gifts, emojiOf, petName }: { gifts: LeftGift[]; emojiOf: (id: string) => string | undefined; petName: string }) {
+export function GiftShelf({ gifts, petName }: { gifts: LeftGift[]; petName: string }) {
   const t = useT()
   if (!gifts.length) return null
   const shown = gifts.slice(0, 14)
@@ -318,7 +324,7 @@ export function GiftShelf({ gifts, emojiOf, petName }: { gifts: LeftGift[]; emoj
       <div className="flex -space-x-1 overflow-hidden">
         {shown.map(g => (
           <span key={g.id} title={`From ${g.visitor_name}`} className="grid h-7 w-7 place-items-center rounded-full bg-[#FFF6EA]/15 text-base">
-            {emojiOf(g.item) ?? '🎁'}
+            <GiftIcon gift={giftById(g.item)} />
           </span>
         ))}
       </div>
