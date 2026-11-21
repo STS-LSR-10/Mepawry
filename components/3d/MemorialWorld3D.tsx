@@ -176,7 +176,7 @@ export default function MemorialWorld3D({ floorId, avatarName, avatarGender, ava
             {WEATHER[sky.season] && <Weather {...WEATHER[sky.season]!} count={Math.round(WEATHER[sky.season]!.count / (low ? 3 : 1))} />}
             <Player name={avatarName} gender={avatarGender} look={avatarLook} pos={pos} route={route} onInsideChange={setInside} stick={stick} walkSpeed={walkSpeed} turnSpeed={turnSpeed} />
             <CrowdAvatars list={crowd.list} myPos={pos} radius={low ? 16 : 24} />
-            <OrbitControls makeDefault enablePan={false} enableZoom rotateSpeed={turnSpeed} minDistance={inside ? 3 : 3} maxDistance={inside ? 18 : 30} minPolarAngle={0.35} maxPolarAngle={Math.PI / 2.1} />
+            <OrbitControls makeDefault enablePan={false} enableZoom rotateSpeed={turnSpeed} minDistance={1.2} /* zooming stops at 3 m (Player); closer is only for the camera ducking in front of a wall */ maxDistance={inside ? 18 : 30} minPolarAngle={0.35} maxPolarAngle={Math.PI / 2.1} />
           </SanctuaryWorld>
         </Suspense>
       </Canvas>

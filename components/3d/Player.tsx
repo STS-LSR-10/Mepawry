@@ -3,7 +3,8 @@
 
 import { useEffect, useRef } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
-import type * as THREE from 'three'
+import * as THREE from 'three'
+import { clearView } from './cameraClear'
 import { CuteAvatar } from './CuteAvatar'
 import type { AvatarLook } from '@/lib/look'
 import { heightAt, isFree, isInside, type P } from './walk'
@@ -11,6 +12,7 @@ import type { Stick } from './Joystick'
 import { DOME, VIP_CENTER } from './sanctuary/plan'
 
 const SPEED = 3.2 // world units per second
+const aim = new THREE.Vector3()
 const MIN_INDOOR_TILT = 0.87 // radians above the horizon (~50°): indoors the camera looks down over the cabinets
 
 export interface Route { points: P[]; onArrive?: () => void; face?: P }
@@ -63,7 +65,7 @@ export function Player({ name, gender, look, pos, route, onInsideChange, stick, 
     if (end) marker.current.position.set(end.x, heightAt(end) + 0.02, end.z)
   }, [route])
 
-  useFrame(({ camera, controls }, dt) => {
+  useFrame(({ camera, controls, scene }, dt) => {
     const p = pos.current
     const q = queue.current
     // The walking stick: up walks the way the camera looks, sideways steps across; it overrides any tap-to-walk route
@@ -163,7 +165,7 @@ export function Player({ name, gender, look, pos, route, onInsideChange, stick, 
       }
       const dx = c.x - t.x, dy = c.y - t.y, dz = c.z - t.z, len = Math.hypot(dx, dy, dz), flat = Math.hypot(dx, dz)
       // A distance we didn't set means you zoomed: that's the distance you want now
-      if (armSet.current == null || Math.abs(len - armSet.current) > 0.01) want.current = len
+      if (armSet.current == null || Math.abs(len - armSet.current) > 0.01) want.current = Math.max(3, len)
       let next = want.current
       // Indoors the roofs are off (a dollhouse cutaway). On walking in, the camera eases up to look down into the room
       // (~50°, over the cabinets); after that it stays wherever you put it, and touching the screen stops the easing.
@@ -178,6 +180,8 @@ export function Player({ name, gender, look, pos, route, onInsideChange, stick, 
       }
       // Ease to your chosen distance (after a zoom it's already there)
       if (next !== len) next = len + (next - len) * (1 - Math.exp(-Math.min(dt, 0.25) * 3))
+      // Something in the way: small things fade, a wall brings the camera in front of it (and it eases back out after)
+      next = Math.min(next, clearView(scene, camera, t, aim.set(ux, uy, uz), next, group.current))
       c.set(t.x + ux * next, t.y + uy * next, t.z + uz * next)
       armSet.current = next
       last.current = { ...p }
