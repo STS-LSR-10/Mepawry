@@ -1,4 +1,5 @@
-// middleware.ts — Keeps the Supabase login fresh: refreshes the session cookie before it expires.
+// middleware.ts — Sends other addresses to mepawry.com, and keeps the Supabase login fresh (refreshes the session
+// cookie before it expires).
 
 import { NextResponse, type NextRequest } from 'next/server'
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
@@ -6,6 +7,12 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr'
 type CookieList = { name: string; value: string; options: CookieOptions }[]
 
 export async function middleware(request: NextRequest) {
+  // One address for the site: www and the old workers.dev address move to mepawry.com (search engines see one site)
+  const host = request.nextUrl.hostname
+  if (host === 'www.mepawry.com' || host.endsWith('.workers.dev')) {
+    const to = new URL(request.nextUrl.pathname + request.nextUrl.search, 'https://mepawry.com')
+    return NextResponse.redirect(to, 301)
+  }
   let response = NextResponse.next({ request })
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL, key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   // Not signed in (no Supabase cookie): nothing to refresh, skip the round trip

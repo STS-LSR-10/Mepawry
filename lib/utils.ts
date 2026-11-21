@@ -144,3 +144,6 @@ export function startOfToday(): string {
   d.setHours(0, 0, 0, 0)
   return d.toISOString()
 }
+
+/** The site's one public address (search engines, sitemap, share links in metadata). */
+export const SITE = 'https://mepawry.com'

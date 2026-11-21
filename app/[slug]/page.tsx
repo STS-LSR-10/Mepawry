@@ -20,6 +20,7 @@ export async function generateMetadata({ params }: ShrinePageProps) {
   return {
     title: `${pet.name}'s Memorial — Mepawry`,
     description: pet.epitaph ?? `A memorial for ${pet.name}, loved and remembered.`,
+    alternates: { canonical: `/${pet.slug}` },
     openGraph: {
       title: `${pet.name}'s Memorial`,
       description: pet.epitaph ?? '',
