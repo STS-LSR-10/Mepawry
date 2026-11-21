@@ -2,6 +2,7 @@
 
 import { SiteNav, SiteFooter } from '@/components/site/SiteNav'
 import { ARTICLES } from '@/lib/articles'
+import { T } from '@/lib/i18n'
 
 export const metadata = {
   title: 'Pet Loss Guides & Support — Mepawry',
@@ -18,10 +19,10 @@ export default function GuidesPage() {
         <div className="mb-10 text-center space-y-2">
           <span className="text-4xl">📖</span>
           <h1 className="font-serif text-3xl font-bold text-[#2A1E17]">
-            Guides & Compassionate Support
+            <T text="Guides & Compassionate Support" />
           </h1>
           <p className="text-[#8E8278] text-sm max-w-md mx-auto">
-            Thoughtful articles written to comfort, guide, and walk beside you through every stage of pet bereavement.
+            <T text="Thoughtful articles written to comfort, guide, and walk beside you through every stage of pet bereavement." />
           </p>
         </div>
 
@@ -34,18 +35,18 @@ export default function GuidesPage() {
             >
               <div className="space-y-2">
                 <span className="text-[11px] font-semibold tracking-wide uppercase text-[#D9823B] bg-[#FDF0E5] px-2.5 py-1 rounded-full inline-block">
-                  {art.category}
+                  <T text={art.category} />
                 </span>
                 <h2 className="font-serif text-lg font-bold text-[#2A1E17] leading-snug">
-                  {art.title}
+                  <T text={art.title} />
                 </h2>
                 <p className="text-xs text-[#5C5046] leading-relaxed">
-                  {art.excerpt}
+                  <T text={art.excerpt} />
                 </p>
               </div>
               <div className="pt-4 mt-4 border-t border-[#F4EFE6] flex items-center justify-between text-xs text-[#8E8278]">
-                <span>{art.readTime}</span>
-                <span className="text-[#C67129] font-medium">Read article →</span>
+                <span><T text="{n} min read" vars={{ n: art.mins }} /></span>
+                <span className="text-[#C67129] font-medium"><T text="Read article" /> →</span>
               </div>
             </article>
           ))}

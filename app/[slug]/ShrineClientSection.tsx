@@ -261,7 +261,7 @@ export function ShrineClientSection({ pet: initialPet, candlesToday: initialToda
                       </span>
                       {msg.visitor_name}
                     </span>
-                    <span className="text-[#8E8278]">{timeAgo(msg.created_at)}</span>
+                    <span className="text-[#8E8278]">{timeAgo(msg.created_at, t)}</span>
                   </div>
                   <p className="text-sm text-[#5C5046] leading-relaxed pt-1">
                     {msg.message}

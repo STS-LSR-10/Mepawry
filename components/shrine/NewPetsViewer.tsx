@@ -61,7 +61,7 @@ export function NewPetsViewer({ open, onClose }: { open: boolean; onClose: () =>
           </div>
           <div className="mt-3 text-center">
             <h3 className="font-serif text-xl font-semibold text-[#3A2A1A]">{look.emoji} {p.name} {flagEmoji(p.country_code)}</h3>
-            <p className="mt-0.5 text-sm text-[#8A6A52]">{[formatYears(p.birth_year, p.death_year), timeAgo(p.created_at)].filter(Boolean).join(' · ')}</p>
+            <p className="mt-0.5 text-sm text-[#8A6A52]">{[formatYears(p.birth_year, p.death_year), timeAgo(p.created_at, t)].filter(Boolean).join(' · ')}</p>
             {p.epitaph && <p className="mt-2 max-h-32 overflow-y-auto whitespace-pre-line text-sm italic text-[#5A4636]">“{p.epitaph}”</p>}
             <Link href={`/${p.slug}`} className="mt-3 inline-block rounded-full bg-[#B07A4F] px-5 py-2 text-sm font-semibold text-white hover:bg-[#9A673F]">
               {t('Visit {name}', { name: p.name })}

@@ -3,7 +3,8 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { flagEmoji, timeAgo } from '@/lib/utils'
-import { useActivity, useOnlineCount } from '@/lib/visitor'
+import { splitIcon, useActivity, useOnlineCount } from '@/lib/visitor'
+import { useT } from '@/lib/i18n'
 
 const reducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
@@ -51,6 +52,7 @@ export function OnlineCount() {
 /** Rotating line of real recent activity; a gentle invitation when nothing has happened yet. */
 export function Ticker() {
   const items = useActivity()
+  const t = useT()
   const [i, setI] = useState(0)
   const [show, setShow] = useState(true)
   useEffect(() => {
@@ -63,11 +65,15 @@ export function Ticker() {
     <span className="min-w-0 flex-1 truncate transition-opacity duration-300" style={{ opacity: show ? 1 : 0 }}>
       {it ? (
         <a href={`/${it.slug}`} className="hover:underline">
-          {it.who && <><b className="font-semibold text-[#2A1E17]">{it.who}</b> </>}
-          {it.who ? <>{it.act} <b className="font-semibold text-[#2A1E17]">{it.pet}</b></> : <><b className="font-semibold text-[#2A1E17]">{it.pet}</b> {it.act}</>}
-          {' '}{flagEmoji(it.cc)} · {timeAgo(it.at)}
+          {(() => { // the sentence in the visitor's language, names in bold where that language puts them
+            const [lead, key] = splitIcon(it.act)
+            return <>{lead}{t(key).split(/(\{who\}|\{pet\})/).map((part, k) =>
+              part === '{who}' ? <b key={k} className="font-semibold text-[#2A1E17]">{it.who}</b>
+                : part === '{pet}' ? <b key={k} className="font-semibold text-[#2A1E17]">{it.pet}</b> : part)}</>
+          })()}
+          {' '}{flagEmoji(it.cc)} · {timeAgo(it.at, t)}
         </a>
-      ) : 'The hall is quiet tonight. Be the first to light a candle.'}
+      ) : t('The hall is quiet tonight. Be the first to light a candle.')}
     </span>
   )
 }

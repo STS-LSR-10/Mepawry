@@ -52,6 +52,11 @@ export function useActivity(): ActivityItem[] {
   return items
 }
 
-export function describe(it: ActivityItem): string {
-  return it.who ? `${it.who} ${it.act} ${it.pet}` : `${it.pet} ${it.act}`
+/** One line of activity: its template ({who}, {pet}) in the visitor's language (pass the page's t()). */
+export function describe(it: ActivityItem, t: (s: string, v?: Record<string, string>) => string = (s, v) => s.replace('{who}', v?.who ?? '').replace('{pet}', v?.pet ?? '')): string {
+  const [lead, key] = splitIcon(it.act)
+  return lead + t(key, { who: it.who, pet: it.pet })
 }
+
+/** A gift's emoji leads its line; the rest is the template to translate. */
+export const splitIcon = (act: string): [string, string] => { const m = act.match(/^(\S+ )(\{who\}.*)$/u); return m && !/^\{/.test(m[1]) ? [m[1], m[2]] : ['', act] }

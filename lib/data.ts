@@ -3,6 +3,7 @@
 // which bypasses Row Level Security, so it must never be imported into a client component.
 // Tables and SQL functions live in supabase/ (000_full_schema.sql has them all; numbered files are the changes in order).
 
+import { k } from './tkey'
 import { randomUUID } from 'node:crypto'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { BACKDROPS, FRAMES } from '@/lib/decor'
@@ -414,13 +415,14 @@ export async function getActivity(limit = 20): Promise<{ who: string; act: strin
     (P & { created_at: string })[],
     { visitor_name: string; item: string; created_at: string; pets: P }[],
   ]
-  const verb: Record<string, string> = { candle: 'lit a candle for', flower: 'left a flower for', treat_bone: 'left a treat for', treat_icecream: 'left a treat for', treat_ball: 'left a toy for' }
+  // whole-sentence templates ({who}, {pet}), so each language can put the names where they belong
+  const verb: Record<string, string> = { candle: k('{who} lit a candle for {pet}'), flower: k('{who} left a flower for {pet}'), treat_bone: k('{who} left a treat for {pet}'), treat_icecream: k('{who} left a treat for {pet}'), treat_ball: k('{who} left a toy for {pet}') }
   const row = (who: string, act: string, p: P, at: string) => ({ who, act, pet: p.name, slug: p.slug, cc: p.show_flag === false ? 'XX' : p.country_code, at })
   return [
     ...tributes.map(t => row(t.visitor_name, verb[t.type], t.pets, t.created_at)),
-    ...guestbook.map(e => row(e.visitor_name, 'wrote in the guestbook of', e.pets, e.created_at)),
-    ...pets.map(p => row('', 'was given a place in the hall', p, p.created_at)),
-    ...gifts.map(x => row(x.visitor_name, `left ${giftById(x.item)?.name.toLowerCase() ?? 'a gift'} for`, x.pets, x.created_at)),
+    ...guestbook.map(e => row(e.visitor_name, k('{who} wrote in the guestbook of {pet}'), e.pets, e.created_at)),
+    ...pets.map(p => row('', k('{pet} was given a place in the hall'), p, p.created_at)),
+    ...gifts.map(x => row(x.visitor_name, `${giftById(x.item)?.emoji ?? '🎁'} ${k('{who} left a gift for {pet}')}`, x.pets, x.created_at)),
   ].sort((a, b) => Date.parse(b.at) - Date.parse(a.at)).slice(0, limit)
 }
 

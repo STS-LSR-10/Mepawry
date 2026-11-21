@@ -69,15 +69,19 @@ export function tributeLabel(type: string): { emoji: string; label: string } {
 }
 
 /** Time ago (simple) */
-export function timeAgo(dateStr: string): string {
+type Tr = (text: string, vars?: Record<string, string | number>) => string
+const plain: Tr = (s, v) => (v ? Object.entries(v).reduce((a, [k, x]) => a.split(`{${k}}`).join(String(x)), s) : s)
+
+/** "5m ago" — pass the page's t() (useT) to say it in the visitor's language. */
+export function timeAgo(dateStr: string, t: Tr = plain): string {
   const diff = Date.now() - new Date(dateStr).getTime()
   const mins = Math.floor(diff / 60_000)
-  if (mins < 1) return 'just now'
-  if (mins < 60) return `${mins}m ago`
+  if (mins < 1) return t('just now')
+  if (mins < 60) return t('{n}m ago', { n: mins })
   const hrs = Math.floor(mins / 60)
-  if (hrs < 24) return `${hrs}h ago`
+  if (hrs < 24) return t('{n}h ago', { n: hrs })
   const days = Math.floor(hrs / 24)
-  if (days < 7) return `${days}d ago`
+  if (days < 7) return t('{n}d ago', { n: days })
   return new Date(dateStr).toLocaleDateString()
 }
 

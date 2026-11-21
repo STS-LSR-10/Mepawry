@@ -126,6 +126,8 @@ export function useT() {
   return useCallback((text: string, vars?: Vars) => translate(table, text, vars), [table])
 }
 
+export { k } from './tkey'
+
 /** For server components: <T text="Back to the hall" />. */
 export function T({ text, vars }: { text: string; vars?: Vars }) {
   return <>{useT()(text, vars)}</>

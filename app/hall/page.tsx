@@ -166,7 +166,7 @@ export default function HallPage() {
         liveStatus={live}
         avatarName={avatarName}
         currentFloor={currentFloor}
-        activityFeed={activity.map(it => `${describe(it)} · ${timeAgo(it.at)}`)}
+        activityFeed={activity.map(it => `${describe(it, t)} · ${timeAgo(it.at, t)}`)}
         onOpenMyPage={() => setMyPageOpen(true)}
       />
 
