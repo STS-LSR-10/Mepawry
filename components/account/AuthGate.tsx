@@ -33,9 +33,11 @@ export function LoginPanel({ title, compact = false }: { title: string; compact?
   // Is Google switched on in Supabase yet? (until it is, the button would lead to an error page)
   const [googleOn, setGoogleOn] = useState<boolean | null>(null)
   useEffect(() => {
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL, key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-    if (!url || !key) return setGoogleOn(false)
-    fetch(`${url}/auth/v1/settings`, { headers: { apikey: key } }).then(r => r.json()).then(s => setGoogleOn(!!s?.external?.google)).catch(() => setGoogleOn(true))
+    // the Supabase address comes from the server at runtime (like the account client), not from the build
+    fetch('/api/me', { cache: 'no-store' }).then(r => r.json())
+      .then(d => d?.config?.url ? fetch(`${d.config.url}/auth/v1/settings`, { headers: { apikey: d.config.anonKey }, cache: 'no-store' }).then(r => r.json()) : null)
+      .then(s => setGoogleOn(!!s?.external?.google))
+      .catch(() => setGoogleOn(true)) // can't tell: let them try
   }, [])
 
   const google = async () => {
