@@ -26,8 +26,7 @@ export function FloorSelector({ open, onClose, floors, openCount, currentFloorId
       </p>
 
       <div
-        className="grid gap-2"
-        style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))' }}
+        className="flex flex-wrap justify-center gap-1.5"
         role="list"
       >
         {floors.map(floor => {
@@ -35,11 +34,11 @@ export function FloorSelector({ open, onClose, floors, openCount, currentFloorId
           const isFull = floor.current_count >= floor.capacity
           if (floor.id > openCount) return (
             <div key={floor.id} role="listitem" aria-disabled="true"
-              className="cursor-not-allowed rounded-2xl border border-dashed border-[#E8DFD6] bg-[#F8F4EC]/60 p-3 text-left text-[#2A1E17] opacity-50"
+              className="cursor-not-allowed rounded-xl border border-dashed border-[#E8DFD6] bg-[#F8F4EC]/60 px-2.5 py-1.5 text-left text-[#2A1E17] opacity-50"
               aria-label={`Dome ${floor.id}: not open yet`}>
-              <div className="font-serif font-bold text-lg leading-none">Dome {floor.id}</div>
-              <div className="text-xs mt-0.5 text-[#8E8278]">{getFloorName(floor.id)}</div>
-              <div className="text-xs mt-1 flex items-center gap-1 text-[#8E8278]"><span aria-hidden>🔒</span>Opens soon</div>
+              <div className="font-serif font-bold text-sm leading-none">Dome {floor.id}</div>
+              <div className="text-[11px] mt-0.5 leading-tight text-[#8E8278]">{getFloorName(floor.id)}</div>
+              <div className="text-[11px] mt-0.5 flex items-center gap-1 leading-tight text-[#8E8278]"><span aria-hidden>🔒</span>Opens soon</div>
             </div>
           )
 
@@ -49,21 +48,21 @@ export function FloorSelector({ open, onClose, floors, openCount, currentFloorId
               role="listitem"
               onClick={() => { onSelectFloor(floor.id); onClose() }}
               className={cn(
-                'rounded-2xl p-3 text-left transition-all duration-150 border',
+                'rounded-xl px-2.5 py-1.5 text-left transition-all duration-150 border',
                 isActive
-                  ? 'bg-[#D9823B] border-[#D9823B] text-white scale-[1.03] shadow-md'
+                  ? 'bg-[#D9823B] border-[#D9823B] text-white shadow-md'
                   : 'bg-[#F8F4EC] border-[#E8DFD6] text-[#2A1E17] hover:border-[#D9823B] hover:shadow-sm active:scale-[0.97]'
               )}
               aria-label={`Dome ${floor.id}: ${getFloorName(floor.id)}, ${isFull ? 'full' : `${floor.current_count} pets`}`}
               aria-current={isActive ? 'true' : undefined}
             >
-              <div className="font-serif font-bold text-lg leading-none">
+              <div className="font-serif font-bold text-sm leading-none">
                 Dome {floor.id}
               </div>
-              <div className={cn('text-xs mt-0.5', isActive ? 'text-white/80' : 'text-[#8E8278]')}>
+              <div className={cn('text-[11px] mt-0.5 leading-tight', isActive ? 'text-white/80' : 'text-[#8E8278]')}>
                 {getFloorName(floor.id)}
               </div>
-              <div className={cn('text-xs mt-1 flex items-center gap-1', isActive ? 'text-white/80' : 'text-[#8E8278]')}>
+              <div className={cn('text-[11px] mt-0.5 flex items-center gap-1 leading-tight', isActive ? 'text-white/80' : 'text-[#8E8278]')}>
                 <span aria-hidden>🐾</span>
                 {isFull ? 'Full' : formatCount(floor.current_count)}
               </div>
