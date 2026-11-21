@@ -17,6 +17,9 @@ import { k } from '@/lib/tkey'
 import { useT } from '@/lib/i18n'
 import type { Pet, GuestbookEntry } from '@/types'
 
+// shortcut: the keepsake shop has no real checkout yet, so its buttons stay hidden; set true once Stripe orders work.
+const SHOP_OPEN = false
+
 // WebGL only runs in the browser
 const ShrineCabinet = dynamic(() => import('@/components/3d/ShrineCabinetArched'), {
   ssr: false,
@@ -180,7 +183,7 @@ export function ShrineClientSection({ pet: initialPet, candlesToday: initialToda
             guestbookCount={messages.length}
             litToday={litToday}
             onGuestbook={() => setGuestbookOpen(true)}
-            onKeepsake={() => setKeepsakeOpen(true)}
+            onKeepsake={SHOP_OPEN ? () => setKeepsakeOpen(true) : undefined}
             onGift={() => setGiftOpen(true)}
             onShare={handleShare}
             onTribute={leaveTribute}
@@ -233,7 +236,7 @@ export function ShrineClientSection({ pet: initialPet, candlesToday: initialToda
           </form>
 
           {/* Upsell: Golden Lantern Banner */}
-          <div className="bg-gradient-to-r from-[#FAF7F2] to-[#FEF9E7] p-3.5 rounded-2xl border border-[#C9A227]/40 flex items-center justify-between gap-3">
+          {SHOP_OPEN && <div className="bg-gradient-to-r from-[#FAF7F2] to-[#FEF9E7] p-3.5 rounded-2xl border border-[#C9A227]/40 flex items-center justify-between gap-3">
             <div className="text-xs">
               <span className="font-semibold text-[#2A1E17] block">🏮 {t('Golden Lantern')}</span>
               <span className="text-[#8E8278]">{t('Keep their light glowing on the wall forever')}</span>
@@ -241,7 +244,7 @@ export function ShrineClientSection({ pet: initialPet, candlesToday: initialToda
             <Button size="sm" variant="secondary" onClick={() => setKeepsakeOpen(true)} className="whitespace-nowrap text-xs">
               {t('฿{n} one-time', { n: 149 })}
             </Button>
-          </div>
+          </div>}
 
           {/* Messages Feed */}
           <div className="space-y-3">

@@ -13,7 +13,8 @@ interface TributeToolbarProps {
   /** This visitor already lit today's candle (one a day, new one after midnight). */
   litToday: boolean
   onGuestbook: () => void
-  onKeepsake: () => void
+  /** Leave out to hide the keepsake button. */
+  onKeepsake?: () => void
   onGift: () => void
   onShare: () => void
   onTribute?: (type: 'candle' | 'flower') => void
@@ -99,13 +100,13 @@ export function TributeToolbar({
       />
 
       {/* Keepsake */}
-      <TributeButton
+      {onKeepsake && <TributeButton
         emoji="🖼️"
         label="Keepsake"
         onClick={onKeepsake}
         aria-label={t('Order a keepsake')}
         highlight
-      />
+      />}
     </div>
   )
 }
