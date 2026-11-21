@@ -465,7 +465,8 @@ function GardenLamps({ low }: { low: boolean }) {
   const spots = useMemo(() => {
     const out: V3[] = []
     // the central path, entrance to terrace stairs, either side (clear of the fountain walkway)
-    for (const z of [11, 15, 19, 23]) for (const s of [-1, 1]) out.push([s * 2.15, 0, z]) // the reception dome starts at z ≈ 27
+    // (on the grass either side of the inner gallery's floor ring, r 18–24, which runs on across its open front)
+    for (const z of [11, 15, 17, 25.3]) for (const s of [-1, 1]) out.push([s * 2.15, 0, z]) // the reception dome starts at z ≈ 27
     for (const s of [-1, 1]) out.push([s * 2.15, 0, STAIRS.z1 + 0.7])                  // at the foot of the terrace stairs
     for (const s of [-1, 1]) out.push([s * 2.15, 0, 45.5], [s * 2.6, 0, PATH_END + 0.6]) // the entrance path and the bay at its end
     // round the fountain walkway, leaving the path ends open
