@@ -4,13 +4,15 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { useAccount } from '@/lib/account'
+import { useT } from '@/lib/i18n'
 import { cn, flagEmoji } from '@/lib/utils'
 import type { Gender } from '@/types'
 
 /** allowGuest: a guest (added a pet without signing in) may see the children, without a profile. */
 export function AuthGate({ children, title = 'Sign in to continue', allowGuest = false }: { children: React.ReactNode; title?: string; allowGuest?: boolean }) {
   const { loading, user, profile } = useAccount()
-  if (loading) return <p className="py-10 text-center text-sm text-[#8E8278]">Loading…</p>
+  const t = useT()
+  if (loading) return <p className="py-10 text-center text-sm text-[#8E8278]">{t('Loading…')}</p>
   if (!user || (user.isAnonymous && !allowGuest)) return <LoginPanel title={title} />
   if (!profile && !user.isAnonymous) return <ProfileSetup />
   return <>{children}</>
@@ -45,7 +47,8 @@ async function sha256(text: string) {
  */
 export function LoginPanel({ title, compact = false }: { title: string; compact?: boolean }) {
   const { supabase, refresh } = useAccount()
-  const [error, setError] = useState('')
+  const t = useT()
+  const [error, setError] = useState('') // in English; shown translated
   const [busy, setBusy] = useState(false)
   const [embedded, setEmbedded] = useState(false)
   const [copied, setCopied] = useState(false)
@@ -98,16 +101,16 @@ export function LoginPanel({ title, compact = false }: { title: string; compact?
     <div className="space-y-5">
       {!compact && <div className="text-center">
         <div className="text-4xl" aria-hidden>🐾</div>
-        <h3 className="mt-2 font-serif text-xl font-bold text-[#2A1E17]">{title}</h3>
-        <p className="mt-1 text-sm text-[#8E8278]">So we remember you, and you can edit your memorials from any device.</p>
+        <h3 className="mt-2 font-serif text-xl font-bold text-[#2A1E17]">{t(title)}</h3>
+        <p className="mt-1 text-sm text-[#8E8278]">{t('So we remember you, and you can edit your memorials from any device.')}</p>
       </div>}
 
       {embedded ? (
         // Google refuses to sign in inside LINE / Facebook / Instagram: send them to a real browser
         <div className="space-y-3 rounded-xl bg-[#FDF0E5] px-4 py-3 text-sm text-[#8A5A2B]">
-          <p>Google sign-in doesn’t work inside LINE or Facebook. Open this page in Safari or Chrome to sign in (tap ⋯ then “Open in browser”).</p>
+          <p>{t('Google sign-in doesn’t work inside LINE or Facebook. Open this page in Safari or Chrome to sign in (tap ⋯ then “Open in browser”).')}</p>
           <button onClick={copyLink} className="w-full rounded-xl bg-white py-2.5 text-sm font-semibold text-[#2A1E17] ring-1 ring-[#E8D5BF]">
-            {copied ? '✓ Link copied' : 'Copy this page’s link'}
+            {copied ? `✓ ${t('Link copied')}` : t('Copy this page’s link')}
           </button>
         </div>
       ) : (
@@ -116,9 +119,9 @@ export function LoginPanel({ title, compact = false }: { title: string; compact?
           <div ref={box} className={cn('w-full max-w-[400px]', busy && 'pointer-events-none opacity-50')} />
         </div>
       )}
-      {busy && <p className="text-center text-xs text-[#8E8278]">Signing you in…</p>}
-      {(googleOn === false || (googleOn && !clientId)) && !embedded && <p className="text-center text-xs text-[#8E8278]">Sign-in is being set up. Please check back soon.</p>}
-      {error && <p role="alert" className="text-center text-sm text-[#C0392B]">{error}</p>}
+      {busy && <p className="text-center text-xs text-[#8E8278]">{t('Signing you in…')}</p>}
+      {(googleOn === false || (googleOn && !clientId)) && !embedded && <p className="text-center text-xs text-[#8E8278]">{t('Sign-in is being set up. Please check back soon.')}</p>}
+      {error && <p role="alert" className="text-center text-sm text-[#C0392B]">{t(error)}</p>}
     </div>
   )
 }
@@ -126,6 +129,7 @@ export function LoginPanel({ title, compact = false }: { title: string; compact?
 /** First sign-in: pick a name and male/female (for your character in the hall). Country is set by the server and locked. */
 export function ProfileSetup({ onSaved }: { onSaved?: () => void }) {
   const { profile, refresh } = useAccount()
+  const t = useT()
   const [name, setName] = useState(profile?.display_name ?? '')
   const [gender, setGender] = useState<Gender | null>(profile?.gender ?? null)
   const [busy, setBusy] = useState(false)
@@ -151,17 +155,17 @@ export function ProfileSetup({ onSaved }: { onSaved?: () => void }) {
     <form onSubmit={save} className="space-y-5">
       {!profile && (
         <div className="text-center">
-          <h3 className="font-serif text-xl font-bold text-[#2A1E17]">Welcome to Mepawry</h3>
-          <p className="mt-1 text-sm text-[#8E8278]">How should we show you in the hall?</p>
+          <h3 className="font-serif text-xl font-bold text-[#2A1E17]">{t('Welcome to Mepawry')}</h3>
+          <p className="mt-1 text-sm text-[#8E8278]">{t('How should we show you in the hall?')}</p>
         </div>
       )}
       <div>
-        <label htmlFor="profile-name" className="mb-1.5 block text-sm font-medium text-[#2A1E17]">Your name</label>
-        <input id="profile-name" required maxLength={40} placeholder="e.g. Nok" value={name} onChange={e => setName(e.target.value)} className={input} />
+        <label htmlFor="profile-name" className="mb-1.5 block text-sm font-medium text-[#2A1E17]">{t('Your name')}</label>
+        <input id="profile-name" required maxLength={40} placeholder={t('e.g. Nok')} value={name} onChange={e => setName(e.target.value)} className={input} />
       </div>
       <div>
-        <span className="mb-1.5 block text-sm font-medium text-[#2A1E17]">Your character</span>
-        <div role="radiogroup" aria-label="Character" className="grid grid-cols-2 gap-3">
+        <span className="mb-1.5 block text-sm font-medium text-[#2A1E17]">{t('Your character')}</span>
+        <div role="radiogroup" aria-label={t('Your character')} className="grid grid-cols-2 gap-3">
           {([['male', '👦', 'Male'], ['female', '👧', 'Female']] as const).map(([g, emoji, label]) => (
             <button
               key={g} type="button" role="radio" aria-checked={gender === g} onClick={() => setGender(g)}
@@ -169,23 +173,23 @@ export function ProfileSetup({ onSaved }: { onSaved?: () => void }) {
                 gender === g ? 'border-[#D9823B] bg-[#FDF0E5]' : 'border-[#E8DFD6] bg-white hover:border-[#D9823B]/50')}
             >
               <span className="text-4xl" aria-hidden>{emoji}</span>
-              <span className="text-sm font-semibold text-[#2A1E17]">{label}</span>
+              <span className="text-sm font-semibold text-[#2A1E17]">{t(label)}</span>
             </button>
           ))}
         </div>
       </div>
       {profile ? (
         <p className="rounded-xl bg-[#F4EFE6] px-3 py-2 text-xs text-[#5C5046]">
-          {flagEmoji(profile.country_code)} Country: <b>{profile.country_code === 'XX' ? 'Unknown' : profile.country_code}</b> 🔒 set when you joined and can’t be changed
+          {flagEmoji(profile.country_code)} {t('Country:')} <b>{profile.country_code === 'XX' ? t('Unknown') : profile.country_code}</b> 🔒 {t('set when you joined and can’t be changed')}
         </p>
       ) : (
         <p className="rounded-xl bg-[#F4EFE6] px-3 py-2 text-xs text-[#5C5046]">
-          🔒 Your country is set from where you are now and can’t be changed later. Your pets’ memorials will show it.
+          🔒 {t('Your country is set from where you are now and can’t be changed later. Your pets’ memorials will show it.')}
         </p>
       )}
-      {error && <p role="alert" className="text-sm text-[#C0392B]">{error}</p>}
+      {error && <p role="alert" className="text-sm text-[#C0392B]">{t(error)}</p>}
       <button disabled={busy || !name.trim() || !gender} className="w-full rounded-xl bg-[#D9823B] py-3 text-sm font-semibold text-white hover:bg-[#C67129] disabled:opacity-60">
-        {busy ? 'Saving…' : profile ? 'Save' : 'Continue'}
+        {busy ? t('Saving…') : profile ? t('Save') : t('Continue')}
       </button>
     </form>
   )

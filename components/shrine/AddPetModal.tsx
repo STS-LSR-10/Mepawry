@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button'
 import { cn } from '@/lib/utils'
 import { photoToDataUrl, saveEditToken } from '@/lib/photo'
 import { useAccount } from '@/lib/account'
+import { useT } from '@/lib/i18n'
 import { LoginPanel } from '@/components/account/AuthGate'
 import { CountryPicker } from '@/components/shrine/CountryPicker'
 import { SlotPicker, type SlotChoice } from '@/components/shrine/SlotPicker'
@@ -46,6 +47,7 @@ export function AddPetModal({ open, onClose }: AddPetModalProps) {
   const [vipNiche, setVipNiche] = useState<number | null>(null) // admins only, until payments open
   const [slotsVersion, setSlotsVersion] = useState(0)
   const account = useAccount()
+  const t = useT()
   const [country, setCountry] = useState('XX')
   const [showFlag, setShowFlag] = useState(true)
   const [needLogin, setNeedLogin] = useState(false) // guest sign-in unavailable: fall back to a real sign-in
@@ -142,7 +144,7 @@ export function AddPetModal({ open, onClose }: AddPetModalProps) {
       ) : needLogin && !account.user ? (
         <div className="space-y-3">
           <LoginPanel title="Sign in to place their shrine" />
-          <button onClick={() => setNeedLogin(false)} className="w-full text-xs text-[#C67129] underline">Back to the form</button>
+          <button onClick={() => setNeedLogin(false)} className="w-full text-xs text-[#C67129] underline">{t('Back to the form')}</button>
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-5">
@@ -157,18 +159,18 @@ export function AddPetModal({ open, onClose }: AddPetModalProps) {
                 'hover:border-[#D9823B] hover:bg-[#FDF0E5]',
                 photoPreview ? 'border-[#D9823B] p-0 overflow-hidden' : 'border-[#D4C9BF] bg-[#F4EFE6]'
               )}
-              aria-label="Upload pet photo"
+              aria-label={t('Upload pet photo')}
             >
               {photoBusy ? (
-                <span className="text-sm text-[#8E8278]">Preparing photo…</span>
+                <span className="text-sm text-[#8E8278]">{t('Preparing photo…')}</span>
               ) : photoPreview ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={photoPreview} alt="Preview" className="w-full h-full object-cover" />
+                <img src={photoPreview} alt={t('Preview')} className="w-full h-full object-cover" />
               ) : (
                 <>
                   <span className="text-3xl">🐾</span>
-                  <span className="text-sm text-[#8E8278]">Drop a photo here, or tap to choose</span>
-                  <span className="text-xs text-[#B5A99F]">JPG, PNG or HEIC · max 10MB</span>
+                  <span className="text-sm text-[#8E8278]">{t('Drop a photo here, or tap to choose')}</span>
+                  <span className="text-xs text-[#B5A99F]">{t('JPG, PNG or HEIC · max 10MB')}</span>
                 </>
               )}
             </button>
@@ -178,11 +180,11 @@ export function AddPetModal({ open, onClose }: AddPetModalProps) {
               accept="image/*"
               className="sr-only"
               onChange={handlePhoto}
-              aria-label="Choose pet photo"
+              aria-label={t('Choose pet photo')}
             />
             {photoPreview && !photoBusy && (
               <button type="button" onClick={() => fileRef.current?.click()} className="mt-1.5 text-xs font-medium text-[#C67129] hover:underline">
-                Change photo
+                {t('Change photo')}
               </button>
             )}
           </div>
@@ -190,14 +192,14 @@ export function AddPetModal({ open, onClose }: AddPetModalProps) {
           {/* Pet Name */}
           <div>
             <label htmlFor="pet-name" className="block text-sm font-medium text-[#2A1E17] mb-1.5">
-              Your pet&apos;s name <span className="text-[#E74C3C]" aria-hidden>*</span>
+              {t('Your pet’s name')} <span className="text-[#E74C3C]" aria-hidden>*</span>
             </label>
             <input
               id="pet-name"
               type="text"
               required
               maxLength={80}
-              placeholder="e.g. Luna, Max, Coco"
+              placeholder={t('e.g. Luna, Max, Coco')}
               value={form.name}
               onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
               className="w-full rounded-xl border border-[#D4C9BF] bg-white px-4 py-2.5 text-[#2A1E17] placeholder:text-[#B5A99F] focus:outline-none focus:ring-2 focus:ring-[#D9823B] text-base"
@@ -206,8 +208,8 @@ export function AddPetModal({ open, onClose }: AddPetModalProps) {
 
           {/* Species */}
           <div>
-            <span className="block text-sm font-medium text-[#2A1E17] mb-1.5">They were a…</span>
-            <div role="group" aria-label="Pet species" className="flex gap-2">
+            <span className="block text-sm font-medium text-[#2A1E17] mb-1.5">{t('They were a…')}</span>
+            <div role="group" aria-label={t('They were a…')} className="flex gap-2">
               {SPECIES_OPTIONS.map(opt => (
                 <button
                   key={opt.value}
@@ -221,7 +223,7 @@ export function AddPetModal({ open, onClose }: AddPetModalProps) {
                   )}
                   aria-pressed={form.species === opt.value}
                 >
-                  {opt.emoji} {opt.label}
+                  {opt.emoji} {t(opt.label)}
                 </button>
               ))}
             </div>
@@ -240,7 +242,7 @@ export function AddPetModal({ open, onClose }: AddPetModalProps) {
               aria-expanded={expanded}
             >
               <span>{expanded ? '−' : '+'}</span>
-              Dates, a few words, more photos <span className="text-[#8E8278] font-normal">(optional)</span>
+              {t('Dates and a few words')} <span className="text-[#8E8278] font-normal">({t('optional')})</span>
             </button>
 
             {expanded && (
@@ -248,7 +250,7 @@ export function AddPetModal({ open, onClose }: AddPetModalProps) {
                 {/* Years */}
                 <div className="flex gap-3">
                   <div className="flex-1">
-                    <label htmlFor="born-year" className="block text-xs font-medium text-[#2A1E17] mb-1">Born</label>
+                    <label htmlFor="born-year" className="block text-xs font-medium text-[#2A1E17] mb-1">{t('Born')}</label>
                     <input
                       id="born-year"
                       type="number"
@@ -261,7 +263,7 @@ export function AddPetModal({ open, onClose }: AddPetModalProps) {
                     />
                   </div>
                   <div className="flex-1">
-                    <label htmlFor="died-year" className="block text-xs font-medium text-[#2A1E17] mb-1">Passed</label>
+                    <label htmlFor="died-year" className="block text-xs font-medium text-[#2A1E17] mb-1">{t('Passed')}</label>
                     <input
                       id="died-year"
                       type="number"
@@ -278,13 +280,13 @@ export function AddPetModal({ open, onClose }: AddPetModalProps) {
                 {/* Epitaph */}
                 <div>
                   <label htmlFor="epitaph" className="block text-xs font-medium text-[#2A1E17] mb-1">
-                    A few words about them
+                    {t('A few words about them')}
                   </label>
                   <textarea
                     id="epitaph"
                     rows={3}
                     maxLength={500}
-                    placeholder="They were the gentlest soul…"
+                    placeholder={t('They were the gentlest soul…')}
                     value={form.epitaph}
                     onChange={e => setForm(f => ({ ...f, epitaph: e.target.value }))}
                     className="w-full rounded-xl border border-[#D4C9BF] bg-white px-3 py-2 text-sm text-[#2A1E17] placeholder:text-[#B5A99F] focus:outline-none focus:ring-2 focus:ring-[#D9823B] resize-none"
@@ -298,14 +300,14 @@ export function AddPetModal({ open, onClose }: AddPetModalProps) {
           {/* Shelf */}
           <SlotPicker value={slot} onChange={setSlot} reloadKey={slotsVersion + (open ? 1 : 0)} vip={vipNiche} onVip={setVipNiche} />
 
-          {error && <p role="alert" className="text-sm text-[#C0392B]">{error}</p>}
+          {error && <p role="alert" className="text-sm text-[#C0392B]">{t(error)}</p>}
 
           {/* Submit */}
           <Button type="submit" size="lg" loading={loading} className="w-full">
-            🕯️ Place their shrine
+            🕯️ {t('Place their shrine')}
           </Button>
           <p className="text-center text-xs text-[#8E8278]">
-            Free · {account.user && !account.user.isAnonymous ? 'Saved to your account' : 'No sign-up'} · You can change it anytime
+            {t('Free')} · {account.user && !account.user.isAnonymous ? t('Saved to your account') : t('No sign-up')} · {t('You can change it anytime')}
           </p>
         </form>
       )}
@@ -314,18 +316,18 @@ export function AddPetModal({ open, onClose }: AddPetModalProps) {
 }
 
 function SuccessView({ name, note, onClose }: { name: string; note: string; onClose: () => void }) {
+  const t = useT()
   return (
     <div className="text-center space-y-4 py-4">
       <div className="text-6xl float-anim">🕯️</div>
       <h3 className="font-serif text-2xl font-bold text-[#2A1E17]">
-        {name}&apos;s shrine is ready
+        {t('{name}’s shrine is ready', { name })}
       </h3>
       <p className="text-[#5C5046] text-sm leading-relaxed">
-        They now have a place in the memorial hall, forever.
-        {note}
+        {t('They now have a place in the memorial hall, forever.')} {t(note)}
       </p>
       <Button onClick={onClose} variant="secondary" size="lg" className="w-full">
-        Visit their shrine →
+        {t('Visit their shrine')} →
       </Button>
     </div>
   )

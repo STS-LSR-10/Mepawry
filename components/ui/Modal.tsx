@@ -4,6 +4,7 @@
 import { useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { cn } from '@/lib/utils'
+import { useT } from '@/lib/i18n'
 
 interface ModalProps {
   open: boolean
@@ -15,6 +16,7 @@ interface ModalProps {
 
 export function Modal({ open, onClose, title, children, className }: ModalProps) {
   const dialogRef = useRef<HTMLDivElement>(null)
+  const t = useT() // titles are English keys, shown in the visitor's language
 
   // Callers often pass a new onClose every render; keep the latest in a ref so the effect below runs only when
   // the dialog opens or closes. (Re-running it on every keystroke stole focus from the input being typed in.)
@@ -73,12 +75,12 @@ export function Modal({ open, onClose, title, children, className }: ModalProps)
         {title && (
           <div className="flex items-center justify-between p-6 pb-0">
             <h2 id="modal-title" className="text-xl font-bold text-[#2A1E17] font-serif">
-              {title}
+              {t(title)}
             </h2>
             <button
               onClick={onClose}
               className="rounded-full p-2 hover:bg-[#F4EFE6] text-[#8E8278] hover:text-[#2A1E17] transition-colors"
-              aria-label="Close"
+              aria-label={t('Close')}
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M18 6L6 18M6 6l12 12" />
