@@ -120,7 +120,7 @@ type NewPet = { name: string; primary_photo_url: string | null; species: 'dog' |
 const SPECIES_EMOJI = { dog: '🐶', cat: '🐱', other: '🐰' }
 const SHOW_MS = 6000 // how long each pet stays on the board (time to read their words)
 
-/** The board by the door: the friends who joined today, one at a time — the photo fills the board, with the title
+/** The board by the door: the pets who joined today, one at a time — the photo fills the board, with the title
  * across the top and their name, years and the words their family wrote across the bottom. */
 function drawToday(g: CanvasRenderingContext2D, pets: NewPet[] | null, i: number, img: HTMLImageElement | null) {
   const W = 384, H = 512
@@ -147,7 +147,7 @@ function drawToday(g: CanvasRenderingContext2D, pets: NewPet[] | null, i: number
   if (!p) {
     g.fillStyle = '#5A4636'; g.shadowBlur = 0; g.font = 'italic 22px Georgia, serif'
     if (!pets) g.fillText('Loading…', W / 2, 260)
-    else { g.fillText('No new friends have', W / 2, 240); g.fillText('joined yet today.', W / 2, 270); g.font = 'italic 16px Georgia, serif'; g.fillText('Every friend here is remembered, always.', W / 2, 320) }
+    else { g.fillText('No new pets have', W / 2, 240); g.fillText('joined yet today.', W / 2, 270); g.font = 'italic 16px Georgia, serif'; g.fillText('Every pet here is remembered, always.', W / 2, 320) }
     return
   }
   // name, years and their words over a dark fade at the bottom
@@ -167,7 +167,7 @@ function drawToday(g: CanvasRenderingContext2D, pets: NewPet[] | null, i: number
   g.shadowBlur = 0
 }
 
-/** The board by the front door, cycling through today's new friends; tapping it opens the new-friends viewer in the hall page. */
+/** The board by the front door, cycling through today's new pets; tapping it opens the new-pets viewer in the hall page. */
 function NewPetsBoard({ m }: { m: DMats }) {
   const t = useMemo(() => tex(384, 512, g => drawToday(g, null, 0, null)), [])
   useEffect(() => {
@@ -389,7 +389,7 @@ export function EntranceHall({ at, r }: { at: [number, number]; r: number }) {
       {signOver(0, signs.right)}
       {signOver(6, signs.back)}
 
-      {/* the new-friends board near the front right */}
+      {/* the new-pets board near the front right */}
       <group position={[3.2, 0, 2.2]} rotation-y={-0.75}>
         <NewPetsBoard m={m} />
       </group>

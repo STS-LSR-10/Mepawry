@@ -37,12 +37,12 @@ export function NewPetsViewer({ open, onClose }: { open: boolean; onClose: () =>
 
   return (
     <Modal open={open} onClose={onClose} title={`🕯️ ${t('Today we remember')}`} className="max-w-md">
-      <p className="-mt-1 mb-3 text-sm text-[#8A6A52]">{t('Friends who joined the sanctuary today')}</p>
+      <p className="-mt-1 mb-3 text-sm text-[#8A6A52]">{t('Pets who joined the sanctuary today')}</p>
       {!pets ? (
         <div className="flex aspect-square items-center justify-center rounded-2xl bg-[#F4EDE0] text-sm text-[#8A6A52]">{t('Loading…')}</div>
       ) : !p || !look ? (
         <div className="flex aspect-square flex-col items-center justify-center gap-1 rounded-2xl bg-[#F4EDE0] px-6 text-center text-sm text-[#8A6A52]">
-          <span className="text-3xl">🕯️</span>{t('No new friends have joined yet today.')}
+          <span className="text-3xl">🕯️</span>{t('No new pets have joined yet today.')}
         </div>
       ) : (
         <>

@@ -110,9 +110,9 @@ const t: string[] = [
   "Normal",
   "Schnell",
   "Heute gedenken wir",
-  "Freunde, die heute ins Heiligtum gekommen sind",
+  "Tiere, die heute ins Heiligtum gekommen sind",
   "Zurück",
   "Weiter",
-  "Heute ist noch kein neuer Freund dazugekommen.",
+  "Heute ist noch kein neues Tier dazugekommen.",
 ]
 export default t

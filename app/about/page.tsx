@@ -33,7 +33,7 @@ export default async function AboutPage() {
         <section className="bg-white p-8 rounded-3xl border border-[#E8DFD6] shadow-sm space-y-4">
           <h2 className="font-serif text-2xl font-bold text-[#2A1E17]">Our Mission</h2>
           <p className="text-[#5C5046] leading-relaxed">
-            Grief over the loss of a pet is deep and sacred, yet all too often unacknowledged in modern society. We created Mepawry so no companion has to be forgotten. In our 3D halls, strangers from around the world cross paths, light candles for each other’s beloved friends, and hold space together.
+            Grief over the loss of a pet is deep and sacred, yet all too often unacknowledged in modern society. We created Mepawry so no companion has to be forgotten. In our 3D halls, strangers from around the world cross paths, light candles for each other’s beloved pets, and hold space together.
           </p>
           <div className="grid grid-cols-3 gap-4 pt-4 border-t border-[#E8DFD6] text-center">
             <div>

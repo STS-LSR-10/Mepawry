@@ -110,9 +110,9 @@ const t: string[] = [
   "Normálně",
   "Rychle",
   "Dnes vzpomínáme",
-  "Přátelé, kteří dnes přibyli do svatyně",
+  "Mazlíčci, kteří dnes přibyli do svatyně",
   "Předchozí",
   "Další",
-  "Dnes zatím nepřibyl žádný nový přítel.",
+  "Dnes zatím nepřibyl žádný nový mazlíček.",
 ]
 export default t

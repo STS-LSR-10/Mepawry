@@ -110,9 +110,9 @@ const t: string[] = [
   "Kawaida",
   "Haraka",
   "Leo tunawakumbuka",
-  "Marafiki waliojiunga patakatifuni leo",
+  "Wanyama waliojiunga patakatifuni leo",
   "Iliyotangulia",
   "Inayofuata",
-  "Bado hakuna rafiki mpya leo.",
+  "Bado hakuna mnyama mpya leo.",
 ]
 export default t

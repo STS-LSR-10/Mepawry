@@ -22,7 +22,7 @@ export function FloorSelector({ open, onClose, floors, openCount, currentFloorId
   return (
     <Modal open={open} onClose={onClose} title="🏛️ Which dome?">
       <p className="text-center text-sm text-[#8E8278] -mt-2 mb-4">
-        {formatCount(totalPets)} {totalPets === 1 ? 'friend' : 'friends'} · {openCount} {openCount === 1 ? 'dome' : 'domes'}
+        {formatCount(totalPets)} {totalPets === 1 ? 'pet' : 'pets'} · {openCount} {openCount === 1 ? 'dome' : 'domes'}
       </p>
 
       <div

@@ -112,8 +112,8 @@ export const KEYS = [
   "Normal",
   "Fast",
   "Today we remember",
-  "Friends who joined the sanctuary today",
+  "Pets who joined the sanctuary today",
   "Previous",
   "Next",
-  "No new friends have joined yet today.",
+  "No new pets have joined yet today.",
 ] as const

@@ -110,9 +110,9 @@ const t: string[] = [
   "Karaniwan",
   "Mabilis",
   "Ngayon ay ating inaalala",
-  "Mga kaibigang sumali sa santuwaryo ngayong araw",
+  "Mga alagang sumali sa santuwaryo ngayong araw",
   "Nakaraan",
   "Susunod",
-  "Wala pang bagong kaibigan ngayong araw.",
+  "Wala pang bagong alaga ngayong araw.",
 ]
 export default t
