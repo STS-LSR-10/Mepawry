@@ -692,5 +692,15 @@ const t: string[] = [
   "Ten prezent nie jest teraz w sprzedaży",
   "Czegoś brakuje. Spróbuj ponownie.",
   "Nie znaleziono miejsca pamięci",
+  "Zapłać ฿{n} i ustaw ołtarzyk",
+  "Nisza VIP {n} · ฿{p}. Najpierw zaloguj się i zapłać, potem ołtarzyk stanie tutaj.",
+  "Stuknij wolną niszę, aby ją wybrać. Przed ustawieniem ołtarzyka trzeba się zalogować i zapłacić ฿{p}.",
+  "Zaloguj się, aby wybrać niszę VIP",
+  "Zaloguj się, aby wybrać niszę VIP",
+  "Ta nisza VIP jest zajęta",
+  "Płatność jeszcze nie przeszła. Spróbuj za chwilę.",
+  "Z tej niszy VIP może skorzystać tylko osoba, która zapłaciła",
+  "Ta nisza VIP została już wykorzystana",
+  "Zdjęcie jest za duże, by je zachować podczas płatności. Spróbuj mniejszego.",
 ]
 export default t

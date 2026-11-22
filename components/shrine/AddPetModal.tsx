@@ -12,6 +12,11 @@ import { useT } from '@/lib/i18n'
 import { LoginPanel } from '@/components/account/AuthGate'
 import { CountryPicker } from '@/components/shrine/CountryPicker'
 import { SlotPicker, type SlotChoice } from '@/components/shrine/SlotPicker'
+import { startCheckout } from '@/lib/checkout'
+import { VIP_PRICE_THB } from '@/lib/decor'
+
+// The form, kept while they pay for a VIP niche on Stripe, so the shrine is made when they come back
+const DRAFT = 'pm-vip-draft'
 import type { Species } from '@/types'
 
 interface AddPetModalProps {
@@ -44,9 +49,12 @@ export function AddPetModal({ open, onClose }: AddPetModalProps) {
     epitaph: '',
   })
   const [slot, setSlot] = useState<SlotChoice>(null)
-  const [vipNiche, setVipNiche] = useState<number | null>(null) // admins only, until payments open
+  const [vipNiche, setVipNiche] = useState<number | null>(null)
+  const [vipFloor, setVipFloor] = useState(1)
   const [slotsVersion, setSlotsVersion] = useState(0)
   const account = useAccount()
+  const admin = !!account.user?.isAdmin
+  const paysForVip = vipNiche != null && !admin // admins place for free; everyone else pays first
   const t = useT()
   const [country, setCountry] = useState('XX')
   const [showFlag, setShowFlag] = useState(true)
@@ -76,9 +84,38 @@ export function AddPetModal({ open, onClose }: AddPetModalProps) {
     }
   }
 
+  // Back from paying for a VIP niche (?vipsession=…): put the form back and, if it was paid, make the shrine
+  useEffect(() => {
+    if (!open) return
+    const session = new URLSearchParams(window.location.search).get('vipsession')
+    if (!session) return
+    let d: { form: typeof form; slot: SlotChoice; country: string; showFlag: boolean; photo: string | null; vipNiche: number; vipFloor: number } | null = null
+    try { d = JSON.parse(localStorage.getItem(DRAFT) ?? 'null') } catch {}
+    window.history.replaceState(null, '', window.location.pathname)
+    if (!d) return
+    setForm(d.form); setSlot(d.slot); setCountry(d.country); setShowFlag(d.showFlag); setPhotoPreview(d.photo); setVipNiche(d.vipNiche); setVipFloor(d.vipFloor)
+    if (session.startsWith('cs_')) void create(d, session)
+  }, [open]) // eslint-disable-line react-hooks/exhaustive-deps
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!form.name.trim() || photoBusy) return
+    if (paysForVip) {
+      // a VIP niche: signed in with Google, then pay, then the shrine is made (see the effect above)
+      if (!account.user || account.user.isAnonymous) { setNeedLogin(true); return }
+      setLoading(true); setError(null)
+      try { localStorage.setItem(DRAFT, JSON.stringify({ form, slot, country, showFlag, photo: photoPreview, vipNiche, vipFloor })) }
+      catch { setLoading(false); return setError('That photo is too big to keep while you pay. Try a smaller one.') }
+      const err = await startCheckout({ kind: 'niche', floor: vipFloor, position: vipNiche! })
+      if (err) { setError(err); setLoading(false) }
+      return
+    }
+    await create({ form, slot, country, showFlag, photo: photoPreview, vipNiche, vipFloor })
+  }
+
+  const create = async (d: { form: typeof form; slot: SlotChoice; country: string; showFlag: boolean; photo: string | null; vipNiche: number | null; vipFloor: number }, vipSession?: string) => {
+    const { form, slot, country, showFlag } = d
+    const photoPreview = d.photo, vipNiche = vipSession ? null : d.vipNiche
     setLoading(true)
     setError(null)
     try {
@@ -98,6 +135,7 @@ export function AddPetModal({ open, onClose }: AddPetModalProps) {
           death_year: form.death_year ? Number(form.death_year) : null,
           epitaph: form.epitaph.trim() || null,
           primary_photo_url: photoPreview,
+          vipSession,
         }),
       })
       const data = await res.json()
@@ -109,6 +147,7 @@ export function AddPetModal({ open, onClose }: AddPetModalProps) {
         const v = await fetch(`/api/pets/${data.pet.id}/vip`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'place', position: vipNiche }) }).catch(() => null)
         if (!v?.ok) setError('Their shrine is placed, but the VIP niche couldn’t be set. Try again from their shrine page.')
       }
+      if (vipSession) try { localStorage.removeItem(DRAFT) } catch {}
       setCreatedSlug(data.pet.slug)
       setStep('success')
     } catch (err) {
@@ -141,9 +180,9 @@ export function AddPetModal({ open, onClose }: AddPetModalProps) {
             : 'You can edit it anytime from My memorials.'}
           onClose={() => { const slug = createdSlug; handleClose(); if (slug) router.push(`/${slug}`) }}
         />
-      ) : needLogin && !account.user ? (
+      ) : needLogin && (!account.user || (paysForVip && account.user.isAnonymous)) ? (
         <div className="space-y-3">
-          <LoginPanel title="Sign in to place their shrine" />
+          <LoginPanel title={paysForVip ? 'Sign in to choose a VIP niche' : 'Sign in to place their shrine'} />
           <button onClick={() => setNeedLogin(false)} className="w-full text-xs text-[#C67129] underline">{t('Back to the form')}</button>
         </div>
       ) : (
@@ -298,16 +337,16 @@ export function AddPetModal({ open, onClose }: AddPetModalProps) {
           </div>
 
           {/* Shelf */}
-          <SlotPicker value={slot} onChange={setSlot} reloadKey={slotsVersion + (open ? 1 : 0)} vip={vipNiche} onVip={setVipNiche} />
+          <SlotPicker value={slot} onChange={setSlot} reloadKey={slotsVersion + (open ? 1 : 0)} vip={vipNiche} onVip={(v, f) => { setVipNiche(v); setVipFloor(f) }} />
 
           {error && <p role="alert" className="text-sm text-[#C0392B]">{t(error)}</p>}
 
           {/* Submit */}
           <Button type="submit" size="lg" loading={loading} className="w-full">
-            🕯️ {t('Place their shrine')}
+            {paysForVip ? <>✿ {t('Pay ฿{n} and place their shrine', { n: VIP_PRICE_THB })}</> : <>🕯️ {t('Place their shrine')}</>}
           </Button>
           <p className="text-center text-xs text-[#8E8278]">
-            {t('Free')} · {account.user && !account.user.isAnonymous ? t('Saved to your account') : t('No sign-up')} · {t('You can change it anytime')}
+            {paysForVip ? t('VIP niche {n}', { n: vipNiche! + 1 }) : t('Free')} · {account.user && !account.user.isAnonymous ? t('Saved to your account') : t('No sign-up')} · {t('You can change it anytime')}
           </p>
         </form>
       )}

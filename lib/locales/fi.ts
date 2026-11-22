@@ -692,5 +692,15 @@ const t: string[] = [
   "Tämä lahja ei ole nyt myynnissä",
   "Jotain puuttuu. Yritä uudelleen.",
   "Muistosivua ei löytynyt",
+  "Maksa ฿{n} ja aseta alttari",
+  "VIP-syvennys {n} · ฿{p}. Kirjaudu ja maksa ensin, sitten alttari asetetaan tähän.",
+  "Valitse vapaa syvennys napauttamalla. Ennen alttarin asettamista sinun pitää kirjautua ja maksaa ฿{p}.",
+  "Kirjaudu valitaksesi VIP-syvennyksen",
+  "Kirjaudu valitaksesi VIP-syvennyksen",
+  "Tämä VIP-syvennys on varattu",
+  "Maksu ei ole vielä mennyt läpi. Yritä hetken päästä uudelleen.",
+  "Vain maksaja voi käyttää tätä VIP-syvennystä",
+  "Tämä VIP-syvennys on jo käytetty",
+  "Kuva on liian suuri säilytettäväksi maksun ajan. Kokeile pienempää.",
 ]
 export default t

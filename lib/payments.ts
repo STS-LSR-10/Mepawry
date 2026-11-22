@@ -11,6 +11,8 @@ export type Purchase =
   | { kind: 'vip'; petId: string }
   | { kind: 'frame' | 'backdrop'; petId: string; item: string }
   | { kind: 'gift'; petId: string; item: string; name: string }
+  /** a VIP niche bought before the shrine exists: the shrine is made after paying (POST /api/pets with vipSession) */
+  | { kind: 'niche'; userId: string; floor: string; position: string }
 
 export function stripe() {
   const key = process.env.STRIPE_SECRET_KEY
@@ -22,6 +24,7 @@ export function stripe() {
 /** What a purchase is called and costs (THB), or why it can't be bought. Prices come only from lib/decor and lib/gifts. */
 export function priceOf(p: Purchase, pet: Pet): { name: string; thb: number } | { error: string } {
   switch (p.kind) {
+    case 'niche': return { error: 'Something’s missing. Please try again.' } // priced in /api/checkout, there's no pet yet
     case 'vip':
       if (pet.vip_position != null) return { error: 'Already in the VIP pavilion' }
       return { name: `VIP pavilion · ${pet.name}`, thb: VIP_PRICE_THB }
@@ -43,7 +46,8 @@ export function priceOf(p: Purchase, pet: Pet): { name: string; thb: number } | 
 
 /** Reads a purchase back from a Checkout Session's metadata (set by /api/checkout). */
 export function purchaseFrom(meta: Stripe.Metadata | null): Purchase | null {
-  const { kind, petId, item = '', name = '' } = meta ?? {}
+  const { kind, petId, item = '', name = '', userId, floor, position } = meta ?? {}
+  if (kind === 'niche' && userId && floor && position) return { kind, userId, floor, position }
   if (!petId) return null
   if (kind === 'vip') return { kind, petId }
   if (kind === 'frame' || kind === 'backdrop') return { kind, petId, item }
@@ -57,6 +61,7 @@ export function purchaseFrom(meta: Stripe.Metadata | null): Purchase | null {
  */
 export async function fulfil(p: Purchase, sessionId: string): Promise<void> {
   switch (p.kind) {
+    case 'niche': return // the shrine is made when they come back from paying (POST /api/pets checks this session)
     case 'vip': {
       const r = await placeInVip(p.petId)
       // shortcut: if the pavilion filled up between paying and now, this needs a manual refund; checkout checks for room first
@@ -79,3 +84,20 @@ export async function fulfil(p: Purchase, sessionId: string): Promise<void> {
 }
 
 export { getPetById }
+
+/** A paid VIP-niche session this user hasn't used yet: where the new shrine's niche is. */
+export async function paidNiche(sessionId: string, userId: string): Promise<{ floor: number; position: number; sessionId: string } | { error: string }> {
+  if (!/^cs_(test|live)_\w+$/.test(sessionId)) return { error: 'Something’s missing. Please try again.' }
+  const s = await stripe().checkout.sessions.retrieve(sessionId)
+  const p = purchaseFrom(s.metadata)
+  if (s.payment_status !== 'paid' || p?.kind !== 'niche') return { error: 'That payment hasn’t gone through yet. Please try again in a moment.' }
+  if (p.userId !== userId) return { error: 'Only the person who paid can use this VIP niche' }
+  if (s.metadata?.usedBy) return { error: 'This VIP niche has already been used' }
+  return { floor: Number(p.floor), position: Number(p.position), sessionId }
+}
+
+/** Marks a niche session as used, so one payment makes one shrine. */
+export async function markNicheUsed(sessionId: string, petId: string) {
+  // shortcut: two submits at the same instant could both pass paidNiche; fine for a once-per-purchase button
+  await stripe().checkout.sessions.update(sessionId, { metadata: { usedBy: petId } })
+}

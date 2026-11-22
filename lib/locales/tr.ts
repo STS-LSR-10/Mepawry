@@ -692,5 +692,15 @@ const t: string[] = [
   "Bu hediye şu an satışta değil",
   "Bir şey eksik. Lütfen tekrar deneyin.",
   "Anma sayfası bulunamadı",
+  "฿{n} öde ve sunağı yerleştir",
+  "VIP niş {n} · ฿{p}. Önce giriş yapıp ödeyin, sonra sunak buraya yerleştirilir.",
+  "Seçmek için boş bir nişe dokunun. Sunak yerleştirilmeden önce giriş yapıp ฿{p} ödemeniz gerekir.",
+  "VIP niş seçmek için giriş yap",
+  "VIP niş seçmek için lütfen giriş yapın",
+  "Bu VIP niş dolu",
+  "Ödeme henüz tamamlanmadı. Lütfen biraz sonra tekrar deneyin.",
+  "Bu VIP nişi yalnızca ödeme yapan kişi kullanabilir",
+  "Bu VIP niş zaten kullanıldı",
+  "Fotoğraf ödeme sırasında saklanamayacak kadar büyük. Daha küçük bir fotoğraf deneyin.",
 ]
 export default t

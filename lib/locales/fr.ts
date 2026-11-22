@@ -692,5 +692,15 @@ const t: string[] = [
   "Ce cadeau n’est pas en vente pour le moment",
   "Il manque quelque chose. Réessayez.",
   "Mémorial introuvable",
+  "Payer ฿{n} et placer l’autel",
+  "Niche VIP {n} · ฿{p}. Connectez-vous et payez d’abord, puis l’autel sera placé ici.",
+  "Touchez une niche libre pour la choisir. Il faut vous connecter et payer ฿{p} avant de placer l’autel.",
+  "Connectez-vous pour choisir une niche VIP",
+  "Veuillez vous connecter pour choisir une niche VIP",
+  "Cette niche VIP est prise",
+  "Le paiement n’est pas encore passé. Réessayez dans un instant.",
+  "Seule la personne qui a payé peut utiliser cette niche VIP",
+  "Cette niche VIP a déjà été utilisée",
+  "La photo est trop lourde pour être gardée pendant le paiement. Essayez-en une plus petite.",
 ]
 export default t

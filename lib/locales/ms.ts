@@ -692,5 +692,15 @@ const t: string[] = [
   "Hadiah ini tidak dijual sekarang",
   "Ada yang tertinggal. Sila cuba lagi.",
   "Memorial tidak dijumpai",
+  "Bayar ฿{n} dan letak altar",
+  "Ceruk VIP {n} · ฿{p}. Log masuk dan bayar dahulu, kemudian altar diletakkan di sini.",
+  "Ketik ceruk kosong untuk memilih. Anda perlu log masuk dan bayar ฿{p} sebelum altar diletakkan.",
+  "Log masuk untuk memilih ceruk VIP",
+  "Sila log masuk untuk memilih ceruk VIP",
+  "Ceruk VIP ini sudah diambil",
+  "Bayaran belum selesai. Sila cuba lagi sebentar lagi.",
+  "Hanya orang yang membayar boleh menggunakan ceruk VIP ini",
+  "Ceruk VIP ini sudah digunakan",
+  "Foto terlalu besar untuk disimpan semasa membayar. Cuba foto yang lebih kecil.",
 ]
 export default t

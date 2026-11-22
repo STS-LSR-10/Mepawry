@@ -692,5 +692,15 @@ const t: string[] = [
   "Dieses Geschenk ist gerade nicht erhältlich",
   "Etwas fehlt. Bitte erneut versuchen.",
   "Gedenkstätte nicht gefunden",
+  "฿{n} bezahlen und Schrein aufstellen",
+  "VIP-Nische {n} · ฿{p}. Erst anmelden und bezahlen, dann wird der Schrein hier aufgestellt.",
+  "Tippe auf eine freie Nische, um sie zu wählen. Vor dem Aufstellen musst du dich anmelden und ฿{p} bezahlen.",
+  "Anmelden, um eine VIP-Nische zu wählen",
+  "Bitte melde dich an, um eine VIP-Nische zu wählen",
+  "Diese VIP-Nische ist vergeben",
+  "Die Zahlung ist noch nicht durch. Bitte versuch es gleich noch einmal.",
+  "Nur wer bezahlt hat, kann diese VIP-Nische nutzen",
+  "Diese VIP-Nische wurde bereits genutzt",
+  "Das Foto ist zu groß, um es während der Zahlung zu behalten. Versuch ein kleineres.",
 ]
 export default t

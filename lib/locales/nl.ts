@@ -692,5 +692,15 @@ const t: string[] = [
   "Dit cadeau is nu niet te koop",
   "Er ontbreekt iets. Probeer het opnieuw.",
   "Gedenkplek niet gevonden",
+  "Betaal ฿{n} en plaats het altaar",
+  "VIP-nis {n} · ฿{p}. Eerst inloggen en betalen, daarna wordt het altaar hier geplaatst.",
+  "Tik op een vrije nis om die te kiezen. Je moet inloggen en ฿{p} betalen voordat het altaar geplaatst wordt.",
+  "Log in om een VIP-nis te kiezen",
+  "Log in om een VIP-nis te kiezen",
+  "Deze VIP-nis is bezet",
+  "De betaling is nog niet rond. Probeer het zo opnieuw.",
+  "Alleen wie betaald heeft kan deze VIP-nis gebruiken",
+  "Deze VIP-nis is al gebruikt",
+  "De foto is te groot om te bewaren tijdens het betalen. Probeer een kleinere.",
 ]
 export default t

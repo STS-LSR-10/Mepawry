@@ -692,5 +692,15 @@ const t: string[] = [
   "Món quà này hiện không bán",
   "Thiếu thông tin. Vui lòng thử lại.",
   "Không tìm thấy trang tưởng niệm",
+  "Thanh toán ฿{n} và đặt bàn thờ",
+  "Hốc VIP {n} · ฿{p}. Đăng nhập và thanh toán trước, sau đó bàn thờ sẽ được đặt tại đây.",
+  "Chạm vào hốc trống để chọn. Bạn cần đăng nhập và thanh toán ฿{p} trước khi đặt bàn thờ.",
+  "Đăng nhập để chọn hốc VIP",
+  "Vui lòng đăng nhập để chọn hốc VIP",
+  "Hốc VIP này đã có người dùng",
+  "Thanh toán chưa hoàn tất. Vui lòng thử lại sau giây lát.",
+  "Chỉ người đã thanh toán mới dùng được hốc VIP này",
+  "Hốc VIP này đã được sử dụng",
+  "Ảnh quá lớn để lưu trong lúc thanh toán. Hãy thử ảnh nhỏ hơn.",
 ]
 export default t

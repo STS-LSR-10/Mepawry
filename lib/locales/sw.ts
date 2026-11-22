@@ -692,5 +692,15 @@ const t: string[] = [
   "Zawadi hii haiuzwi sasa",
   "Kuna kitu kinakosekana. Jaribu tena.",
   "Kumbukumbu haikupatikana",
+  "Lipa ฿{n} na uweke madhabahu",
+  "Kibanda cha VIP {n} · ฿{p}. Ingia na ulipe kwanza, kisha madhabahu itawekwa hapa.",
+  "Gusa kibanda kilicho wazi kukichagua. Unahitaji kuingia na kulipa ฿{p} kabla madhabahu haijawekwa.",
+  "Ingia ili kuchagua kibanda cha VIP",
+  "Tafadhali ingia ili kuchagua kibanda cha VIP",
+  "Kibanda hiki cha VIP kimechukuliwa",
+  "Malipo bado hayajakamilika. Jaribu tena baada ya muda mfupi.",
+  "Aliyelipa pekee ndiye anayeweza kutumia kibanda hiki cha VIP",
+  "Kibanda hiki cha VIP kimeshatumika",
+  "Picha ni kubwa mno kuhifadhiwa wakati wa kulipa. Jaribu ndogo zaidi.",
 ]
 export default t

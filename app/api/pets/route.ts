@@ -1,7 +1,8 @@
 // app/api/pets/route.ts — List pets (by floor for the 3D hall, or filtered for the directory) and add a new one (signed in)
 
 import { NextRequest, NextResponse } from 'next/server'
-import { createPet, getMemorials, getPetsOnFloor, getProfile, SlotTakenError } from '@/lib/data'
+import { createPet, getMemorials, getPetsOnFloor, getProfile, placeInVip, SlotTakenError } from '@/lib/data'
+import { paidNiche, markNicheUsed } from '@/lib/payments'
 import { getUser } from '@/lib/auth'
 import { isPhotoDataUrl } from '@/lib/utils'
 
@@ -34,10 +35,18 @@ export async function POST(req: NextRequest) {
     if (body.primary_photo_url != null && !isPhotoDataUrl(body.primary_photo_url)) {
       return NextResponse.json({ error: 'Photo must be a JPG, PNG or WebP under 1.5 MB' }, { status: 400 })
     }
-    const pick = body.slot && Number.isInteger(body.slot.floor) && Number.isInteger(body.slot.position) ? body.slot : undefined
+    // A VIP niche must be paid for first (Stripe Checkout); the session proves it, and is used once
+    const niche = body.vipSession ? await paidNiche(String(body.vipSession), user.id) : null
+    if (niche && 'error' in niche) return NextResponse.json(niche, { status: 402 })
+    let pick = body.slot && Number.isInteger(body.slot.floor) && Number.isInteger(body.slot.position) ? body.slot : undefined
+    if (niche && pick?.floor !== niche.floor) pick = undefined // their shelf goes in the same dome as the niche
     // The form's country wins; without one, the owner's profile country
     const { pet, editToken } = await createPet(body, { id: user.id, country: profile?.country_code ?? 'XX' }, pick)
-    return NextResponse.json({ pet, editToken }, { status: 201 })
+    if (!niche) return NextResponse.json({ pet, editToken }, { status: 201 })
+    await markNicheUsed(niche.sessionId, pet.id)
+    let placed = await placeInVip(pet.id, niche.position)
+    if ('error' in placed) placed = await placeInVip(pet.id) // their niche was taken meanwhile: the next free one
+    return NextResponse.json({ pet: 'error' in placed ? pet : placed, editToken }, { status: 201 })
   } catch (err) {
     if (err instanceof SlotTakenError) return NextResponse.json({ error: err.message }, { status: 409 })
     return NextResponse.json({ error: err instanceof Error ? err.message : 'Failed to create pet' }, { status: 500 })

@@ -692,5 +692,15 @@ const t: string[] = [
   "Den här gåvan säljs inte just nu",
   "Något saknas. Försök igen.",
   "Minnessidan hittades inte",
+  "Betala ฿{n} och ställ altaret",
+  "VIP-nisch {n} · ฿{p}. Logga in och betala först, sedan ställs altaret här.",
+  "Tryck på en ledig nisch för att välja den. Du behöver logga in och betala ฿{p} innan altaret ställs.",
+  "Logga in för att välja en VIP-nisch",
+  "Logga in för att välja en VIP-nisch",
+  "Den här VIP-nischen är tagen",
+  "Betalningen har inte gått igenom än. Försök igen om en stund.",
+  "Bara den som betalade kan använda den här VIP-nischen",
+  "Den här VIP-nischen har redan använts",
+  "Fotot är för stort för att sparas medan du betalar. Prova ett mindre.",
 ]
 export default t

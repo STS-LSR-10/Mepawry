@@ -692,5 +692,15 @@ const t: string[] = [
   "Acest cadou nu se vinde acum",
   "Lipsește ceva. Încearcă din nou.",
   "Memorialul nu a fost găsit",
+  "Plătește ฿{n} și așază altarul",
+  "Nișa VIP {n} · ฿{p}. Conectează-te și plătește mai întâi, apoi altarul va fi așezat aici.",
+  "Atinge o nișă liberă ca s-o alegi. Trebuie să te conectezi și să plătești ฿{p} înainte să fie așezat altarul.",
+  "Conectează-te ca să alegi o nișă VIP",
+  "Te rugăm să te conectezi ca să alegi o nișă VIP",
+  "Această nișă VIP e ocupată",
+  "Plata nu s-a finalizat încă. Încearcă din nou peste puțin timp.",
+  "Doar persoana care a plătit poate folosi această nișă VIP",
+  "Această nișă VIP a fost deja folosită",
+  "Fotografia e prea mare pentru a fi păstrată cât plătești. Încearcă una mai mică.",
 ]
 export default t

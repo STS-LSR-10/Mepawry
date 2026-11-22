@@ -692,5 +692,15 @@ const t: string[] = [
   "Tento dárek se teď neprodává",
   "Něco chybí. Zkuste to znovu.",
   "Památník nenalezen",
+  "Zaplatit ฿{n} a umístit oltářík",
+  "VIP výklenek {n} · ฿{p}. Nejprve se přihlaste a zaplaťte, pak bude oltářík umístěn sem.",
+  "Klepnutím vyberte volný výklenek. Před umístěním oltáříku se musíte přihlásit a zaplatit ฿{p}.",
+  "Přihlaste se a vyberte VIP výklenek",
+  "Pro výběr VIP výklenku se prosím přihlaste",
+  "Tento VIP výklenek je obsazený",
+  "Platba ještě neproběhla. Zkuste to prosím za chvíli.",
+  "Tento VIP výklenek může použít jen ten, kdo zaplatil",
+  "Tento VIP výklenek už byl použit",
+  "Fotka je příliš velká na uložení během platby. Zkuste menší.",
 ]
 export default t

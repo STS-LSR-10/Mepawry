@@ -15,7 +15,7 @@ export type SlotChoice = { floor: number; position: number } | null
 export function SlotPicker({ value, onChange, reloadKey, vip, onVip }: {
   value: SlotChoice; onChange: (v: SlotChoice) => void; reloadKey?: number
   /** A VIP niche (0–23) on the same floor, or null. Only admins can pick one until payments open. */
-  vip?: number | null; onVip?: (v: number | null) => void
+  vip?: number | null; onVip?: (v: number | null, floor: number) => void
 }) {
   const [data, setData] = useState<{ floor: number; openFloors?: number[]; taken: number[]; vipTaken?: number[] } | null>(null)
   const [floor, setFloor] = useState<number | null>(null)
@@ -55,7 +55,7 @@ export function SlotPicker({ value, onChange, reloadKey, vip, onVip }: {
         <div role="tablist" aria-label={t('Choose their shelf')} className="grid grid-cols-2 gap-1 rounded-xl bg-[#F4EBDD] p-1">
           {data.openFloors!.map((f, i) => (
             <button key={f} type="button" role="tab" aria-selected={data.floor === f}
-              onClick={() => { setFloor(f); onChange(null); onVip?.(null) }}
+              onClick={() => { setFloor(f); onChange(null); onVip?.(null, f) }}
               className={cn('rounded-lg py-1.5 text-xs font-semibold', data.floor === f ? 'bg-white text-[#2A1E17] shadow-sm' : 'text-[#8E8278]')}>
               {t('Dome {n}', { n: f })} · {i === 0 ? t('almost full') : t('just opened')}
             </button>
@@ -105,7 +105,7 @@ export function SlotPicker({ value, onChange, reloadKey, vip, onVip }: {
       <VipSection
         floor={data.floor} taken={new Set(data.vipTaken ?? [])} admin={admin}
         open={openRoom === 'vip'} onToggle={() => setOpenRoom(r => (r === 'vip' ? null : 'vip'))}
-        value={vip ?? null} onPick={v => onVip?.(v)}
+        value={vip ?? null} onPick={v => onVip?.(v, data.floor)}
       />
 
       <p className="text-xs text-[#8E8278]">
@@ -135,7 +135,7 @@ function VipSection({ floor, taken, admin, open, onToggle, value, onPick }: {
               const isFree = !taken.has(i), on = value === i
               return (
                 <button
-                  key={i} type="button" disabled={!isFree || !admin}
+                  key={i} type="button" disabled={!isFree}
                   onClick={() => onPick(on ? null : i)}
                   aria-label={`${t('VIP niche {n}', { n: i + 1 })}${isFree ? '' : `, ${t('Taken')}`}`} aria-pressed={on}
                   title={isFree ? `${t('VIP niche {n}', { n: i + 1 })}, ${t('Dome {n}', { n: floor })}` : t('Taken')}
@@ -151,7 +151,8 @@ function VipSection({ floor, taken, admin, open, onToggle, value, onPick }: {
           <p className="mt-2 text-[11px] text-[#8A6418]">
             {admin
               ? value != null ? <>{t('Admin: they’ll be placed in VIP niche {n} as well as their shelf.', { n: value + 1 })}</> : <>{t('Admin: tap a niche to place them in the VIP pavilion too.')}</>
-              : <>{t('VIP niches open with payments soon. You can upgrade later from their shrine page.')}</>}
+              : value != null ? <>{t('VIP niche {n} · ฿{p}. You’ll sign in and pay first, then their shrine is placed there.', { n: value + 1, p: VIP_PRICE_THB })}</>
+              : <>{t('Tap a free niche to choose it. You’ll sign in and pay ฿{p} before their shrine is placed.', { p: VIP_PRICE_THB })}</>}
           </p>
         </div>
       )}

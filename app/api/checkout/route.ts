@@ -6,12 +6,14 @@ import { getUser } from '@/lib/auth'
 import { getPetById, priceOf, stripe, type Purchase } from '@/lib/payments'
 import { db } from '@/lib/data'
 import { VIP_CAPACITY } from '@/components/3d/sanctuary/plan'
+import { VIP_PRICE_THB } from '@/lib/decor'
 
 export async function POST(req: NextRequest) {
   // no key on this server yet (or a placeholder): say so instead of failing at Stripe
   if (!/^(sk|rk)_(test|live)_\w{20,}/.test(process.env.STRIPE_SECRET_KEY ?? '')) return NextResponse.json({ error: 'Payments opening soon' }, { status: 503 })
   const body = await req.json().catch(() => null)
   const kind = body?.kind, petId = String(body?.petId ?? ''), item = String(body?.item ?? '')
+  if (kind === 'niche') return nicheCheckout(req, body)
   if (!['vip', 'frame', 'backdrop', 'gift'].includes(kind) || !/^[0-9a-f-]{36}$/i.test(petId)) {
     return NextResponse.json({ error: 'Something’s missing. Please try again.' }, { status: 400 })
   }
@@ -41,6 +43,29 @@ export async function POST(req: NextRequest) {
     customer_email: user?.email || undefined,
     success_url: `${origin}/${pet.slug}?paid=${kind}`,
     cancel_url: `${origin}/${pet.slug}`,
+  })
+  return NextResponse.json({ url: session.url })
+}
+
+/** A VIP niche for a shrine that doesn't exist yet: signed-in (Google) users only; pay first, make the shrine after. */
+async function nicheCheckout(req: NextRequest, body: { floor?: unknown; position?: unknown } | null) {
+  const user = await getUser()
+  if (!user || user.is_anonymous) return NextResponse.json({ error: 'Please sign in to choose a VIP niche' }, { status: 401 })
+  const floor = Number(body?.floor), position = Number(body?.position)
+  if (!Number.isInteger(floor) || floor < 1 || !Number.isInteger(position) || position < 0 || position >= VIP_CAPACITY) {
+    return NextResponse.json({ error: 'Something’s missing. Please try again.' }, { status: 400 })
+  }
+  const { count } = await db().from('pets').select('id', { count: 'exact', head: true }).eq('floor_id', floor).eq('vip_position', position)
+  if (count) return NextResponse.json({ error: 'That VIP niche is taken' }, { status: 409 })
+  const origin = new URL(req.url).origin
+  const session = await stripe().checkout.sessions.create({
+    mode: 'payment',
+    line_items: [{ quantity: 1, price_data: { currency: 'thb', unit_amount: VIP_PRICE_THB * 100, product_data: { name: `VIP pavilion · Dome ${floor}, niche ${position + 1}` } } }],
+    metadata: { kind: 'niche', userId: user.id, floor: String(floor), position: String(position) },
+    client_reference_id: user.id,
+    customer_email: user.email || undefined,
+    success_url: `${origin}/?vipsession={CHECKOUT_SESSION_ID}`,
+    cancel_url: `${origin}/?vipsession=cancelled`,
   })
   return NextResponse.json({ url: session.url })
 }

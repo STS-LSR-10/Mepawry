@@ -692,5 +692,15 @@ const t: string[] = [
   "Hindi ibinebenta ang regalong ito ngayon",
   "May kulang. Pakisubukang muli.",
   "Hindi makita ang memorial",
+  "Magbayad ng ฿{n} at ilagay ang dambana",
+  "VIP niche {n} · ฿{p}. Mag-sign in at magbayad muna, saka ilalagay dito ang dambana.",
+  "I-tap ang bakanteng niche para piliin. Kailangang mag-sign in at magbayad ng ฿{p} bago ilagay ang dambana.",
+  "Mag-sign in para pumili ng VIP niche",
+  "Mag-sign in para pumili ng VIP niche",
+  "May gumagamit na sa VIP niche na ito",
+  "Hindi pa tapos ang bayad. Subukang muli maya-maya.",
+  "Ang nagbayad lang ang puwedeng gumamit ng VIP niche na ito",
+  "Nagamit na ang VIP niche na ito",
+  "Masyadong malaki ang larawan para itabi habang nagbabayad. Subukan ang mas maliit.",
 ]
 export default t

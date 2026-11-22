@@ -692,5 +692,15 @@ const t: string[] = [
   "Ez az ajándék most nem kapható",
   "Valami hiányzik. Próbáld újra.",
   "Az emlékhely nem található",
+  "Fizess ฿{n}-t és helyezd el az oltárt",
+  "{n}. VIP fülke · ฿{p}. Előbb jelentkezz be és fizess, utána ide kerül az oltár.",
+  "Koppints egy szabad fülkére a választáshoz. Az oltár elhelyezése előtt be kell jelentkezned és ฿{p}-t fizetned.",
+  "Jelentkezz be a VIP fülke választásához",
+  "A VIP fülke választásához jelentkezz be",
+  "Ez a VIP fülke foglalt",
+  "A fizetés még nem ment át. Próbáld újra egy kicsit később.",
+  "Ezt a VIP fülkét csak az használhatja, aki fizetett",
+  "Ezt a VIP fülkét már felhasználták",
+  "A fotó túl nagy ahhoz, hogy fizetés közben megőrizzük. Próbálj kisebbet.",
 ]
 export default t

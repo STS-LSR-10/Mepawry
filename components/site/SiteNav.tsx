@@ -23,6 +23,8 @@ export function SiteNav({ solid = false, tone = 'dark' }: { solid?: boolean; ton
   const light = tone === 'light'
   const [scrolled, setScrolled] = useState(false)
   const [addOpen, setAddOpen] = useState(false)
+  // back from paying for a VIP niche: reopen the form so the shrine can be made (AddPetModal reads ?vipsession)
+  useEffect(() => { if (new URLSearchParams(window.location.search).has('vipsession')) setAddOpen(true) }, [])
   const t = useT()
 
   useEffect(() => {
