@@ -668,5 +668,10 @@ const t: string[] = [
   "Nové pozadí pro {name}",
   "Další rámečky",
   "Další pozadí",
+  "Vnější galerie",
+  "Vnitřní galerie",
+  "Zóna {z}",
+  "V síni už {n} dní",
+  "První den v síni",
 ]
 export default t

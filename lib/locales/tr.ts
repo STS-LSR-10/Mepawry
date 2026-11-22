@@ -668,5 +668,10 @@ const t: string[] = [
   "{name} için yeni arka plan",
   "Diğer çerçeveler",
   "Diğer arka planlar",
+  "Dış galeri",
+  "İç galeri",
+  "Bölge {z}",
+  "{n} gündür salonda",
+  "Salondaki ilk günü",
 ]
 export default t

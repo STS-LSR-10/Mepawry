@@ -36,6 +36,7 @@ export default async function ShrinePage({ params }: ShrinePageProps) {
   const flag = pet.show_flag === false ? '' : flagEmoji(pet.country_code)
   const years = formatYears(pet.birth_year, pet.death_year)
   const age = calculateAge(pet.birth_year, pet.death_year)
+  const days = Math.max(1, Math.ceil((Date.now() - Date.parse(pet.created_at)) / 86_400_000)) // counting the first day
   const look = SPECIES_LOOK[pet.species]
   await recordVisit(pet.id)
   // Neighbouring shrines for the ‹ › arrows
@@ -70,6 +71,10 @@ export default async function ShrinePage({ params }: ShrinePageProps) {
           {flag} {years}{age ? <> · <T text="{n} yrs" vars={{ n: age }} /></> : null} · <T text={look.label} />
         </p>
 
+        <p className="mt-2 text-sm text-[#FFE2C0]">
+          🐾 <T text="{n} visits" vars={{ n: formatCount(pet.visit_count) }} /> · 🌙 <T text={days === 1 ? 'Their first day in the hall' : 'In the hall for {n} days'} vars={{ n: formatCount(days) }} />
+        </p>
+
         {pet.epitaph && (
           <p className="mx-auto mt-3 max-w-[40ch] font-serif text-lg italic text-[#FAF7F2]/85">&ldquo;{pet.epitaph}&rdquo;</p>
         )}
@@ -78,7 +83,7 @@ export default async function ShrinePage({ params }: ShrinePageProps) {
         <ChangePhotoButton petId={pet.id} hasPhoto={!!pet.primary_photo_url} />
 
         <p className="mt-6 text-xs text-[#FAF7F2]/45">
-          <T text="Dome {n}" vars={{ n: pet.floor_id }} /> · {getFloorName(pet.floor_id)} · 🐾 <T text="{n} visits" vars={{ n: formatCount(pet.visit_count) }} />
+          <T text="Dome {n}" vars={{ n: pet.floor_id }} /> · {getFloorName(pet.floor_id)}
         </p>
       </main>
     </div>

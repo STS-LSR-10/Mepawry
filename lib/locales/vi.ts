@@ -668,5 +668,10 @@ const t: string[] = [
   "Phông nền mới cho {name}",
   "Khung khác",
   "Phông nền khác",
+  "Hành lang ngoài",
+  "Hành lang trong",
+  "Khu {z}",
+  "Ở sảnh được {n} ngày",
+  "Ngày đầu tiên ở sảnh",
 ]
 export default t

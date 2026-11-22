@@ -668,5 +668,10 @@ const t: string[] = [
   "Ein neuer Hintergrund für {name}",
   "Andere Rahmen",
   "Andere Hintergründe",
+  "Äußere Galerie",
+  "Innere Galerie",
+  "Zone {z}",
+  "Seit {n} Tagen in der Halle",
+  "Der erste Tag in der Halle",
 ]
 export default t

@@ -668,5 +668,10 @@ const t: string[] = [
   "Latar baharu untuk {name}",
   "Bingkai lain",
   "Latar lain",
+  "Galeri luar",
+  "Galeri dalam",
+  "Zon {z}",
+  "Di dewan selama {n} hari",
+  "Hari pertama di dewan",
 ]
 export default t

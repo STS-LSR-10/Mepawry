@@ -668,5 +668,10 @@ const t: string[] = [
   "Mandhari mapya ya {name}",
   "Fremu nyingine",
   "Mandhari mengine",
+  "Ukumbi wa nje",
+  "Ukumbi wa ndani",
+  "Eneo {z}",
+  "Ukumbini kwa siku {n}",
+  "Siku ya kwanza ukumbini",
 ]
 export default t

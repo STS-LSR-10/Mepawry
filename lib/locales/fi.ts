@@ -668,5 +668,10 @@ const t: string[] = [
   "Uusi tausta: {name}",
   "Muut kehykset",
   "Muut taustat",
+  "Ulompi galleria",
+  "Sisempi galleria",
+  "Vyöhyke {z}",
+  "Hallissa {n} päivää",
+  "Ensimmäinen päivä hallissa",
 ]
 export default t

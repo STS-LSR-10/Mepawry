@@ -668,5 +668,10 @@ const t: string[] = [
   "Un fundal nou pentru {name}",
   "Alte rame",
   "Alte fundaluri",
+  "Galeria exterioară",
+  "Galeria interioară",
+  "Zona {z}",
+  "În sală de {n} zile",
+  "Prima zi în sală",
 ]
 export default t

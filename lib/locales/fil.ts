@@ -668,5 +668,10 @@ const t: string[] = [
   "Bagong backdrop para kay {name}",
   "Ibang mga frame",
   "Ibang mga backdrop",
+  "Panlabas na galeriya",
+  "Panloob na galeriya",
+  "Zone {z}",
+  "{n} araw na sa bulwagan",
+  "Unang araw sa bulwagan",
 ]
 export default t

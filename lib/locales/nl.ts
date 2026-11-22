@@ -668,5 +668,10 @@ const t: string[] = [
   "Een nieuwe achtergrond voor {name}",
   "Andere lijsten",
   "Andere achtergronden",
+  "Buitenste galerij",
+  "Binnenste galerij",
+  "Zone {z}",
+  "Al {n} dagen in de hal",
+  "De eerste dag in de hal",
 ]
 export default t

@@ -668,5 +668,10 @@ const t: string[] = [
   "Új háttér {name} számára",
   "Más keretek",
   "Más hátterek",
+  "Külső galéria",
+  "Belső galéria",
+  "{z} zóna",
+  "{n} napja a csarnokban",
+  "Első napja a csarnokban",
 ]
 export default t

@@ -670,4 +670,9 @@ export const KEYS = [
   "A new backdrop for {name}",
   "Other frames",
   "Other backdrops",
+  "Outer gallery",
+  "Inner gallery",
+  "Zone {z}",
+  "In the hall for {n} days",
+  "Their first day in the hall",
 ] as const

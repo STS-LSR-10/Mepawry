@@ -12,7 +12,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { Environment, Lightformer, OrbitControls, RoundedBox, Sparkles } from '@react-three/drei'
 import { ExtrudeGeometry, MeshPhysicalMaterial, MeshStandardMaterial, Shape, ShapeGeometry, type BufferGeometry, type Group, type Mesh, type Texture } from 'three'
-import { glowTexture, moonTexture, petTexture, plaqueTexture } from './textures'
+import { glowTexture, moonTexture, nameplateTexture, petTexture, plaqueTexture } from './textures'
 import { microMap } from './look'
 import { useContextLossRecovery, useQuality } from './quality'
 import { giftById } from '@/lib/gifts'
@@ -21,6 +21,9 @@ import { DEFAULT_FRAME_TILE, FRAME_TILE, framePatternTexture } from './frameText
 import { backdropTexture } from './backdrops'
 import { BabysBreath, Bokeh, GiftSprite, Halo, PillarCandle, useMaterials, useTex, type Mats } from './ShrineCabinet'
 import type { Pet } from '@/types'
+import { flagEmoji, formatYears } from '@/lib/utils'
+import { useT } from '@/lib/i18n'
+import { SLOTS } from './sanctuary/plan'
 
 type V3 = [number, number, number]
 
@@ -149,8 +152,14 @@ function Cabinet({ d, pet, candlesToday, flowers, gifts, low }: { d: Dims; pet: 
   useEffect(() => () => frameMat.dispose(), [frameMat])
   const moon = useTex(() => moonTexture(), [])
   const glow = useTex(() => glowTexture(), [])
-  const nameplate = useTex(() => plaqueTexture(pet.name, 'wood', 640, 160), [pet.name])
-  const plate = useTex(() => plaqueTexture(`Dome ${pet.floor_id} · ${pet.name}'s place`, 'stone', 800, 128), [pet.name, pet.floor_id])
+  const sub = [pet.show_flag === false ? '' : flagEmoji(pet.country_code), formatYears(pet.birth_year, pet.death_year)].filter(Boolean).join('  ')
+  const nameplate = useTex(() => nameplateTexture(pet.name, sub), [pet.name, sub])
+  // the plinth says where the shrine stands: dome, gallery and zone (VIP: the pavilion)
+  const t = useT()
+  const room = SLOTS[pet.shrine_position]?.room.split(' · ') ?? []
+  const where = [t('Dome {n}', { n: pet.floor_id }), ...(pet.vip_position != null ? [t('VIP pavilion')]
+    : room.length === 2 ? [t(room[0]), t('Zone {z}', { z: room[1].replace('Zone ', '') })] : [])].join(' · ')
+  const plate = useTex(() => plaqueTexture(where, 'stone', 1000, 128), [where])
   const vip = pet.vip_position != null
   const grand = useMemo(() => vip ? {
     ivory: low ? new MeshStandardMaterial({ color: '#EFE6D6', roughness: 0.4 })
@@ -232,7 +241,7 @@ function Cabinet({ d, pet, candlesToday, flowers, gifts, low }: { d: Dims; pet: 
         <RoundedBox args={[W + 0.14, 0.2, DP + 0.12]} radius={0.03} smoothness={3} material={look.plinth} />
         <RoundedBox args={[W - 0.3, 0.13, 0.02]} radius={0.01} smoothness={2} position={[0, 0, DP / 2 + 0.065]} material={look.drawer} />
         <mesh position={[0, 0, DP / 2 + 0.077]}>
-          <planeGeometry args={[1.36, 0.1]} />
+          <planeGeometry args={[1.7, 0.1]} />
           <meshStandardMaterial map={plate} roughness={0.9} transparent alphaTest={0.5} />
         </mesh>
         {[-1, 1].map(s => (
@@ -257,11 +266,14 @@ function Cabinet({ d, pet, candlesToday, flowers, gifts, low }: { d: Dims; pet: 
       <PillarCandle at={[d.ITEM_X, FLOOR + 0.024, 0.02]} today={candlesToday} glow={glow} m={m} low={low} />
       <group position={[0, FLOOR + 0.024, 0.1]}>
         {[-0.28, 0.28].map(x => <mesh key={x} position={[x, 0.03, 0]} material={m.gold}><boxGeometry args={[0.05, 0.06, 0.05]} /></mesh>)}
-        <RoundedBox args={[0.8, 0.21, 0.04]} radius={0.012} smoothness={2} position={[0, 0.165, 0]} material={m.wood} />
-        <mesh position={[0, 0.165, 0.0215]}>
-          <planeGeometry args={[0.78, 0.195]} />
-          <meshStandardMaterial map={nameplate} roughness={0.45} metalness={0.1} transparent alphaTest={0.5} />
-        </mesh>
+        {/* a big brass plate, leaning back a little: the name, and their flag and years */}
+        <group position={[0, 0.2 * (vip ? 1.3 : 1), 0]} rotation-x={-0.12} scale={vip ? 1.3 : 1}>
+          <RoundedBox args={[0.98, 0.31, 0.035]} radius={0.012} smoothness={2} material={m.wood} />
+          <mesh position={[0, 0, 0.019]}>
+            <planeGeometry args={[0.96, 0.299]} />
+            <meshStandardMaterial map={nameplate} roughness={0.35} metalness={0.25} transparent alphaTest={0.5} />
+          </mesh>
+        </group>
       </group>
       {/* warm light from under the crown, and a little fill */}
       <spotLight position={[0, SPRING + 0.2, 0.2]} angle={1.15} penumbra={1} intensity={1.8} distance={3.5} decay={1.4} color="#FFD3A0" />

@@ -278,6 +278,24 @@ export function plaqueTexture(text: string, kind: 'wood' | 'stone', w = 640, h =
   return finish(c)
 }
 
+/** The shrine's brass nameplate: the name large, and a second line (flag and years) smaller beneath. */
+export function nameplateTexture(name: string, sub: string) {
+  const w = 900, h = 280
+  const { c, g } = canvas(w, h)
+  g.beginPath(); g.roundRect(4, 4, w - 8, h - 8, 22); g.clip()
+  const bg = g.createLinearGradient(0, 0, w, h)
+  bg.addColorStop(0, '#D9B866'); bg.addColorStop(0.45, '#B98E3E'); bg.addColorStop(0.55, '#C9A352'); bg.addColorStop(1, '#9A7028')
+  g.fillStyle = bg; g.fillRect(0, 0, w, h)
+  for (let i = 0; i < 140; i++) { g.strokeStyle = `rgba(255,255,255,${0.03 + (i % 5) * 0.012})`; g.lineWidth = 1; g.beginPath(); g.moveTo(0, i * 2); g.lineTo(w, i * 2 + 6); g.stroke() } // brushed
+  g.strokeStyle = 'rgba(110,70,20,.55)'; g.lineWidth = 4; g.beginPath(); g.roundRect(22, 22, w - 44, h - 44, 14); g.stroke()
+  g.textAlign = 'center'; g.textBaseline = 'middle'
+  g.fillStyle = '#3E2508'; g.shadowColor = 'rgba(255,236,190,.55)'; g.shadowOffsetY = 2
+  g.font = `600 ${sub ? 104 : 120}px Georgia, serif`
+  g.fillText(name, w / 2, sub ? h * 0.42 : h / 2 + 4, w - 120)
+  if (sub) { g.font = '500 50px Georgia, "Apple Color Emoji", "Segoe UI Emoji", serif'; g.fillStyle = '#4A2E0E'; g.fillText(sub, w / 2, h * 0.75, w - 140) }
+  return finish(c)
+}
+
 /** Name tag (✦ Name): cream letters on a dark chocolate pill with a thin gold rim, readable on any background. */
 export function nameTagTexture(text: string) {
   const w = 512, h = 112

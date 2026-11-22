@@ -668,5 +668,10 @@ const t: string[] = [
   "Nowe tło dla {name}",
   "Inne ramki",
   "Inne tła",
+  "Galeria zewnętrzna",
+  "Galeria wewnętrzna",
+  "Strefa {z}",
+  "W sali od {n} dni",
+  "Pierwszy dzień w sali",
 ]
 export default t

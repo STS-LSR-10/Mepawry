@@ -668,5 +668,10 @@ const t: string[] = [
   "En ny baggrund til {name}",
   "Andre rammer",
   "Andre baggrunde",
+  "Ydre galleri",
+  "Indre galleri",
+  "Zone {z}",
+  "I hallen i {n} dage",
+  "Første dag i hallen",
 ]
 export default t
