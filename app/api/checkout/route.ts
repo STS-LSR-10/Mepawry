@@ -9,7 +9,7 @@ import { VIP_CAPACITY } from '@/components/3d/sanctuary/plan'
 
 export async function POST(req: NextRequest) {
   // no key on this server yet (or a placeholder): say so instead of failing at Stripe
-  if (!/^sk_(test|live)_\w{20,}/.test(process.env.STRIPE_SECRET_KEY ?? '')) return NextResponse.json({ error: 'Payments opening soon' }, { status: 503 })
+  if (!/^(sk|rk)_(test|live)_\w{20,}/.test(process.env.STRIPE_SECRET_KEY ?? '')) return NextResponse.json({ error: 'Payments opening soon' }, { status: 503 })
   const body = await req.json().catch(() => null)
   const kind = body?.kind, petId = String(body?.petId ?? ''), item = String(body?.item ?? '')
   if (!['vip', 'frame', 'backdrop', 'gift'].includes(kind) || !/^[0-9a-f-]{36}$/i.test(petId)) {
