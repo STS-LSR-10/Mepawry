@@ -673,5 +673,10 @@ const t: string[] = [
   "Zone {z}",
   "{n} araw na sa bulwagan",
   "Unang araw sa bulwagan",
+  "Lagyan ng bituin ang memorial",
+  "Alisin ang bituin",
+  "I-save ang larawan ng dambana",
+  "Mga memorial na may bituin",
+  "Magsindi ng kandila para kay {name}",
 ]
 export default t

@@ -323,7 +323,8 @@ function GiftDecor({ gifts }: { gifts: string[] }) {
   const shown = gifts.slice(0, GIFT_SPOTS.length)
   return <>{shown.map((id, i) => <GiftSprite key={`${i}${id}`} emoji={giftById(id)?.emoji ?? '🎁'} img={giftById(id)?.img} at={GIFT_SPOTS[i]} />)}</>
 }
-export function GiftSprite({ emoji, img, at }: { emoji: string; img?: string; at: V3 }) {
+/** A gift on a shelf; `count` above 1 adds a small ×N tag (several of the same gift share one spot). */
+export function GiftSprite({ emoji, img, at, count = 1 }: { emoji: string; img?: string; at: V3; count?: number }) {
   const map = useTex(() => {
     const c = document.createElement('canvas')
     c.width = c.height = 128
@@ -331,16 +332,24 @@ export function GiftSprite({ emoji, img, at }: { emoji: string; img?: string; at
     g.font = '104px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif'
     g.textAlign = 'center'
     g.textBaseline = 'middle'
-    if (!img) g.fillText(emoji, 64, 70)
+    const tag = () => {
+      if (count < 2) return
+      const label = `×${count > 99 ? '99+' : count}`
+      g.font = '700 36px system-ui, sans-serif'
+      const w = Math.min(124, g.measureText(label).width + 26)
+      g.fillStyle = 'rgba(42,28,18,.88)'; g.beginPath(); g.roundRect(64 - w / 2, 84, w, 42, 21); g.fill()
+      g.fillStyle = '#FFF3DE'; g.fillText(label, 64, 106)
+    }
+    if (!img) { if (count > 1) g.font = '88px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif'; g.fillText(emoji, 64, count > 1 ? 50 : 70); tag() }
     const t = new CanvasTexture(c)
     t.colorSpace = SRGBColorSpace
     if (img) { // a picture: draw it in once it has loaded
       const pic = new Image()
-      pic.onload = () => { g.drawImage(pic, 8, 8, 112, 112); t.needsUpdate = true }
+      pic.onload = () => { if (count > 1) g.drawImage(pic, 20, 0, 88, 88); else g.drawImage(pic, 8, 8, 112, 112); tag(); t.needsUpdate = true }
       pic.src = img
     }
     return t
-  }, [emoji, img])
+  }, [emoji, img, count])
   return (
     <sprite position={at} scale={[0.22, 0.22, 1]}>
       <spriteMaterial map={map} transparent alphaTest={0.1} />

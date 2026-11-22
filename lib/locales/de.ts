@@ -673,5 +673,10 @@ const t: string[] = [
   "Zone {z}",
   "Seit {n} Tagen in der Halle",
   "Der erste Tag in der Halle",
+  "Mit Stern merken",
+  "Stern entfernen",
+  "Bild des Schreins speichern",
+  "Gemerkte Gedenkstätten",
+  "Zünde eine Kerze für {name} an",
 ]
 export default t

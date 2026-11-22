@@ -673,5 +673,10 @@ const t: string[] = [
   "Vyöhyke {z}",
   "Hallissa {n} päivää",
   "Ensimmäinen päivä hallissa",
+  "Merkitse tähdellä",
+  "Poista tähti",
+  "Tallenna kuva alttarista",
+  "Tähdellä merkityt muistosivut",
+  "Sytytä kynttilä: {name}",
 ]
 export default t

@@ -673,5 +673,10 @@ const t: string[] = [
   "Zona {z}",
   "În sală de {n} zile",
   "Prima zi în sală",
+  "Marchează cu stea",
+  "Scoate steaua",
+  "Salvează o imagine a altarului",
+  "Memoriale marcate cu stea",
+  "Aprinde o lumânare pentru {name}",
 ]
 export default t

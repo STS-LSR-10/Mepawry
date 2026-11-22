@@ -673,5 +673,10 @@ const t: string[] = [
   "Khu {z}",
   "Ở sảnh được {n} ngày",
   "Ngày đầu tiên ở sảnh",
+  "Gắn sao trang tưởng niệm",
+  "Bỏ sao",
+  "Lưu ảnh bàn thờ",
+  "Trang tưởng niệm đã gắn sao",
+  "Thắp nến cho {name}",
 ]
 export default t

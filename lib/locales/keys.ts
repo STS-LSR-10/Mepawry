@@ -675,4 +675,9 @@ export const KEYS = [
   "Zone {z}",
   "In the hall for {n} days",
   "Their first day in the hall",
+  "Star this memorial",
+  "Remove star",
+  "Save a picture of the shrine",
+  "Starred memorials",
+  "Light a candle for {name}",
 ] as const

@@ -673,5 +673,10 @@ const t: string[] = [
   "{z} zóna",
   "{n} napja a csarnokban",
   "Első napja a csarnokban",
+  "Csillag erre az emlékhelyre",
+  "Csillag eltávolítása",
+  "Kép mentése az oltárról",
+  "Csillagozott emlékhelyek",
+  "Gyújts gyertyát {name} emlékére",
 ]
 export default t

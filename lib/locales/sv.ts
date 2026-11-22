@@ -673,5 +673,10 @@ const t: string[] = [
   "Zon {z}",
   "I hallen i {n} dagar",
   "Första dagen i hallen",
+  "Stjärnmärk minnessidan",
+  "Ta bort stjärna",
+  "Spara en bild av altaret",
+  "Stjärnmärkta minnessidor",
+  "Tänd ett ljus för {name}",
 ]
 export default t

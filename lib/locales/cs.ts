@@ -673,5 +673,10 @@ const t: string[] = [
   "Zóna {z}",
   "V síni už {n} dní",
   "První den v síni",
+  "Označit hvězdičkou",
+  "Odebrat hvězdičku",
+  "Uložit obrázek oltáříku",
+  "Památníky s hvězdičkou",
+  "Zapalte svíčku pro {name}",
 ]
 export default t

@@ -673,5 +673,10 @@ const t: string[] = [
   "Zon {z}",
   "Di dewan selama {n} hari",
   "Hari pertama di dewan",
+  "Bintangkan memorial ini",
+  "Buang bintang",
+  "Simpan gambar altar",
+  "Memorial berbintang",
+  "Nyalakan lilin untuk {name}",
 ]
 export default t

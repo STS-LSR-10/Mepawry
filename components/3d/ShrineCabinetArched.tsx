@@ -91,7 +91,7 @@ export default function ShrineCabinetArched({ pet, candlesToday, flowers, gifts 
       shadows={!low ? 'percentage' : false}
       camera={{ position: [0, 0.2, 5], fov: 38 }}
       dpr={[1, low ? 1.5 : 2]}
-      gl={{ antialias: true }}
+      gl={{ antialias: true, preserveDrawingBuffer: true }} // so the camera button can copy the cabinet as it looks
       onCreated={recovery.onCreated}
     >
       <ambientLight intensity={0.3} color="#FFD9B5" />
@@ -261,7 +261,9 @@ function Cabinet({ d, pet, candlesToday, flowers, gifts, low }: { d: Dims; pet: 
           <mesh position={[0, 0, 0.212]} material={look.trim}><boxGeometry args={[d.SHELF_W, 0.012, 0.006]} /></mesh>
         </group>
       )))}
-      {gifts.slice(0, giftSpots.length).map((id, i) => <GiftSprite key={`${i}${id}`} emoji={giftById(id)?.emoji ?? '🎁'} img={giftById(id)?.img} at={giftSpots[i]} />)}
+      {/* one of each kind of gift, newest kinds first, with how many were left */}
+      {[...gifts.reduce((m, id) => m.set(id, (m.get(id) ?? 0) + 1), new Map<string, number>())].slice(0, giftSpots.length).map(([id, n], i) =>
+        <GiftSprite key={`${i}${id}${n}`} emoji={giftById(id)?.emoji ?? '🎁'} img={giftById(id)?.img} at={giftSpots[i]} count={n} />)}
       <BabysBreath at={[-d.ITEM_X, FLOOR + 0.024, 0.02]} stems={5 + Math.min(flowers, 7)} m={m} />
       <PillarCandle at={[d.ITEM_X, FLOOR + 0.024, 0.02]} today={candlesToday} glow={glow} m={m} low={low} />
       <group position={[0, FLOOR + 0.024, 0.1]}>

@@ -673,5 +673,10 @@ const t: string[] = [
   "Bölge {z}",
   "{n} gündür salonda",
   "Salondaki ilk günü",
+  "Bu anma sayfasına yıldız ver",
+  "Yıldızı kaldır",
+  "Sunağın resmini kaydet",
+  "Yıldızlı anma sayfaları",
+  "{name} için mum yak",
 ]
 export default t

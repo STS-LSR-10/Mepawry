@@ -7,6 +7,7 @@ import { getCandlesToday, getNeighbours, getPetBySlug, recordVisit } from '@/lib
 import { formatYears, formatCount, calculateAge, flagEmoji, getFloorName, SPECIES_LOOK } from '@/lib/utils'
 import { SiteNav } from '@/components/site/SiteNav'
 import { Starfield } from '@/components/site/LandingFx'
+import { ShrineActions } from '@/components/shrine/ShrineActions'
 import { ShrineClientSection } from './ShrineClientSection'
 import { ChangePhotoButton } from './ChangePhotoButton'
 
@@ -66,6 +67,7 @@ export default async function ShrinePage({ params }: ShrinePageProps) {
           ‹ <T text="Back to the hall" />
         </Link>
 
+        <ShrineActions pet={pet} />
         <h1 className="font-serif text-4xl font-medium sm:text-5xl">{pet.name}</h1>
         <p className="mt-2 text-sm text-[#FAF7F2]/70">
           {flag} {years}{age ? <> · <T text="{n} yrs" vars={{ n: age }} /></> : null} · <T text={look.label} />

@@ -8,6 +8,7 @@ import { AuthGate, LoginPanel, ProfileSetup } from '@/components/account/AuthGat
 import { DeletePetModal, EditPetModal } from '@/components/account/EditPetModal'
 import { LookEditor } from '@/components/account/LookEditor'
 import { useAccount } from '@/lib/account'
+import { toggleStar, useStars } from '@/lib/stars'
 import { useT } from '@/lib/i18n'
 import { flagEmoji, SPECIES_LOOK } from '@/lib/utils'
 import type { Pet } from '@/types'
@@ -90,11 +91,42 @@ function Account() {
         )}
       </section>
 
+      <StarredSection />
+
       {!user?.isAnonymous && <button onClick={signOut} className="text-sm text-[#8E8278] underline">{t('Sign out')}</button>}
 
       <EditPetModal pet={editing} onClose={() => setEditing(null)} onSaved={p => { setPets(ps => ps?.map(x => (x.id === p.id ? p : x)) ?? null); setEditing(null) }} />
       <DeletePetModal pet={deleting} onClose={() => setDeleting(null)} onDeleted={id => { setPets(ps => ps?.filter(x => x.id !== id) ?? null); setDeleting(null) }} />
     </div>
+  )
+}
+
+/** Memorials starred on this browser (the ☆ on a shrine page). */
+function StarredSection() {
+  const t = useT()
+  const stars = useStars()
+  if (!stars.length) return null
+  return (
+    <section>
+      <h2 className="mb-3 font-serif text-xl font-bold text-[#2A1E17]">★ {t('Starred memorials')}</h2>
+      <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        {stars.map(s => {
+          const look = SPECIES_LOOK[s.species as Pet['species']] ?? SPECIES_LOOK.other
+          return (
+            <li key={s.slug} className="relative overflow-hidden rounded-2xl border border-[#E8DFD6] bg-white">
+              <Link href={`/${s.slug}`} className="block">
+                <div className="grid aspect-square place-items-center text-5xl" style={{ background: look.from }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  {s.photo ? <img src={s.photo} alt="" className="h-full w-full object-cover" /> : look.emoji}
+                </div>
+                <p className="truncate px-3 py-2 text-sm font-semibold text-[#2A1E17]">{s.name}</p>
+              </Link>
+              <button onClick={() => toggleStar(s)} aria-label={t('Remove star')} className="absolute right-2 top-2 grid h-8 w-8 place-items-center rounded-full bg-white/85 text-lg text-[#D9A520]">★</button>
+            </li>
+          )
+        })}
+      </ul>
+    </section>
   )
 }
 

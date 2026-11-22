@@ -673,5 +673,10 @@ const t: string[] = [
   "Eneo {z}",
   "Ukumbini kwa siku {n}",
   "Siku ya kwanza ukumbini",
+  "Weka nyota kwenye kumbukumbu",
+  "Ondoa nyota",
+  "Hifadhi picha ya madhabahu",
+  "Kumbukumbu zenye nyota",
+  "Washa mshumaa kwa {name}",
 ]
 export default t
