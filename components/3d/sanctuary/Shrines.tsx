@@ -51,7 +51,7 @@ function placer() {
 export function GalleryShrines({ pets, playerPos, onOpen }: { pets: Pet[]; playerPos: React.RefObject<P>; onOpen: (pet: Pet, slot: Slot) => void }) {
   const placed = useMemo(() => pets.filter(p => SLOTS[p.shrine_position]), [pets])
   const lit = useMemo(() => placed.filter(p => p.candle_count > 0), [placed])
-  const refs = { frames: useRef<InstancedMesh>(null), mats: useRef<InstancedMesh>(null), cards: useRef<InstancedMesh>(null), candles: useRef<InstancedMesh>(null), flames: useRef<InstancedMesh>(null), halos: useRef<InstancedMesh>(null) }
+  const refs = { frames: useRef<InstancedMesh>(null), mats: useRef<InstancedMesh>(null), cards: useRef<InstancedMesh>(null), candles: useRef<InstancedMesh>(null), flames: useRef<InstancedMesh>(null), halos: useRef<InstancedMesh>(null), hits: useRef<InstancedMesh>(null) }
   const flame = useMemo(() => new MeshStandardMaterial({ color: '#FFE0A0', emissive: '#FFB040', emissiveIntensity: 9, toneMapped: false }), [])
   const glows = useMemo((): [MeshStandardMaterial, number, number?][] => [[flame, 9, 0.45]], [flame])
   const halo = useTexture(haloTexture, [])
@@ -62,6 +62,7 @@ export function GalleryShrines({ pets, playerPos, onOpen }: { pets: Pet[]; playe
     placed.forEach((pet, i) => {
       const s = SLOTS[pet.shrine_position]
       refs.frames.current!.setMatrixAt(i, at(s, DX, -0.008, -0.02))
+      refs.hits.current!.setMatrixAt(i, at(s, 0, 0, 0.12, 0))
       refs.mats.current!.setMatrixAt(i, at(s, DX, -0.008, 0.0))
       refs.cards.current!.setMatrixAt(i, at(s, DX, -0.004, 0.003))
       refs.cards.current!.setColorAt(i, c.set(SPECIES_LOOK[pet.species].to))
@@ -110,6 +111,11 @@ export function GalleryShrines({ pets, playerPos, onOpen }: { pets: Pet[]; playe
       <instancedMesh key={`f${n}`} ref={refs.frames} args={[undefined, undefined, n]} count={placed.length} onClick={click} onPointerOver={hover(true)} onPointerOut={hover(false)} castShadow>
         <boxGeometry args={[FW, FH, 0.03]} />
         <meshStandardMaterial color="#5E3A1E" roughness={0.4} />
+      </instancedMesh>
+      {/* an invisible box filling each cubby, so a tap anywhere in it (not just on the small portrait) opens the shrine */}
+      <instancedMesh key={`x${n}`} ref={refs.hits} args={[undefined, undefined, n]} count={placed.length} onClick={click} onPointerOver={hover(true)} onPointerOut={hover(false)}>
+        <boxGeometry args={[0.42, ROW_H - 0.02, 0.36]} />
+        <meshBasicMaterial transparent opacity={0} depthWrite={false} colorWrite={false} />
       </instancedMesh>
       <instancedMesh key={`m${n}`} ref={refs.mats} args={[undefined, undefined, n]} count={placed.length} raycast={noRay}>
         <planeGeometry args={[FW * 0.92, FH * 0.93]} />
