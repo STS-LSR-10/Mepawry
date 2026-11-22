@@ -19,7 +19,8 @@ import { giftById } from '@/lib/gifts'
 import { DEFAULT_BACKDROP, frameById, type FrameStyle } from '@/lib/decor'
 import { DEFAULT_FRAME_TILE, FRAME_TILE, framePatternTexture } from './frameTextures'
 import { backdropTexture } from './backdrops'
-import { BabysBreath, Bokeh, GiftSprite, Halo, PillarCandle, useMaterials, useTex, type Mats } from './ShrineCabinet'
+import { FlowerVase } from './FlowerVase'
+import { Bokeh, GiftSprite, Halo, PillarCandle, useMaterials, useTex, type Mats } from './ShrineCabinet'
 import type { Pet } from '@/types'
 import { flagEmoji, formatYears } from '@/lib/utils'
 import { useT } from '@/lib/i18n'
@@ -264,7 +265,7 @@ function Cabinet({ d, pet, candlesToday, flowers, gifts, low }: { d: Dims; pet: 
       {/* one of each kind of gift, newest kinds first, with how many were left */}
       {[...gifts.reduce((m, id) => m.set(id, (m.get(id) ?? 0) + 1), new Map<string, number>())].slice(0, giftSpots.length).map(([id, n], i) =>
         <GiftSprite key={`${i}${id}${n}`} emoji={giftById(id)?.emoji ?? '🎁'} img={giftById(id)?.img} at={giftSpots[i]} count={n} />)}
-      <BabysBreath at={[-d.ITEM_X, FLOOR + 0.024, 0.02]} stems={5 + Math.min(flowers, 7)} m={m} />
+      <FlowerVase at={[-d.ITEM_X, FLOOR + 0.024, 0.02]} stems={5 + Math.min(flowers, 7)} />
       <PillarCandle at={[d.ITEM_X, FLOOR + 0.024, 0.02]} today={candlesToday} glow={glow} m={m} low={low} />
       <group position={[0, FLOOR + 0.024, 0.1]}>
         {[-0.28, 0.28].map(x => <mesh key={x} position={[x, 0.03, 0]} material={m.gold}><boxGeometry args={[0.05, 0.06, 0.05]} /></mesh>)}
