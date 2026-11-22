@@ -14,7 +14,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const body = await req.json().catch(() => null)
   if (!isAdmin(user)) {
     if (!user || user.is_anonymous) return NextResponse.json({ error: 'Please sign in to choose a VIP niche' }, { status: 401 })
-    const ownFree = VIP_PRICE_THB === 0 && body?.action !== 'remove' && (await getPetById(id))?.owner_id === user.id
+    const ownFree = !VIP_PRICE_THB && body?.action !== 'remove' && (await getPetById(id))?.owner_id === user.id
     if (!ownFree) return NextResponse.json({ error: 'Only the owner of this memorial can do this' }, { status: 403 })
   }
   if (body?.action === 'remove') {
