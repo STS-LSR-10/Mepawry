@@ -11,7 +11,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { Environment, Lightformer, OrbitControls, RoundedBox, Sparkles } from '@react-three/drei'
-import { ExtrudeGeometry, MeshPhysicalMaterial, MeshStandardMaterial, Shape, ShapeGeometry, type BufferGeometry, type Group, type Mesh, type Texture } from 'three'
+import { Color, ExtrudeGeometry, MeshPhysicalMaterial, MeshStandardMaterial, Shape, ShapeGeometry, type BufferGeometry, type Group, type Mesh, type Texture } from 'three'
 import { glowTexture, moonTexture, nameplateTexture, petTexture, plaqueTexture } from './textures'
 import { microMap } from './look'
 import { useContextLossRecovery, useQuality } from './quality'
@@ -28,6 +28,7 @@ import { SLOTS } from './sanctuary/plan'
 
 type V3 = [number, number, number]
 
+const PAINT_TONE = 0.55 // how much painted frames are darkened to match their swatch under the spotlight
 const DOOR_OPEN = (145 * Math.PI) / 180 // the doors stand open at 145°: swung right back, folded out to the sides, clear of the inside
 
 /**
@@ -146,8 +147,10 @@ function Cabinet({ d, pet, candlesToday, flowers, gifts, low }: { d: Dims; pet: 
   const backdrop = pet.backdrop ?? DEFAULT_BACKDROP
   const sky = useTex(() => backdropTexture(backdrop), [backdrop])
   const style = frameById(pet.frame_style)
+  // painted (non-metal) frames sit right under the cabinet's spotlight, which washed them out next to their swatch:
+  // tone them down so they read as the colour you picked
   const frameMat = useMemo(() => new MeshStandardMaterial({
-    color: style.color, metalness: low ? Math.min(style.metalness, 0.45) : style.metalness, roughness: style.roughness,
+    color: style.metalness > 0.5 ? style.color : new Color(style.color).multiplyScalar(PAINT_TONE), envMapIntensity: style.metalness > 0.5 ? 1 : 0.3, metalness: low ? Math.min(style.metalness, 0.45) : style.metalness, roughness: style.metalness > 0.5 ? style.roughness : Math.max(style.roughness, 0.8),
     emissive: style.metalness > 0.5 ? '#4A3205' : '#000000', emissiveIntensity: low ? 0.6 : 0.25,
   }), [style, low])
   useEffect(() => () => frameMat.dispose(), [frameMat])
@@ -213,9 +216,10 @@ function Cabinet({ d, pet, candlesToday, flowers, gifts, low }: { d: Dims; pet: 
       <mesh geometry={body} material={look.case} />
       <mesh geometry={inlay} position-z={DP / 2 + 0.02} material={look.trim} />
       {grand && <Columns d={d} ivory={grand.ivory} gold={m.gold} />}
+      {/* keyed: swapping between the two in place (trying backdrops on) left the old material behind, a white wall */}
       {backdrop === DEFAULT_BACKDROP
-        ? <mesh geometry={back} position-z={BACK} material={look.case} />
-        : <mesh geometry={back} position-z={BACK}><meshBasicMaterial map={sky} toneMapped={false} /></mesh>}
+        ? <mesh key="plain" geometry={back} position-z={BACK} material={look.case} />
+        : <mesh key="sky" geometry={back} position-z={BACK}><meshBasicMaterial map={sky} toneMapped={false} /></mesh>}
       {backdrop === 'midnight' && (
         <mesh position={[-OPEN.half * 0.5, SPRING - 0.16, BACK + 0.01]}>
           <planeGeometry args={[0.5, 0.5]} />
@@ -300,7 +304,7 @@ function Portrait({ d, photo, frame, style }: { d: Dims; photo: Texture; frame: 
     const tile = FRAME_TILE[style.pattern!] ?? DEFAULT_FRAME_TILE, map = framePatternTexture(style.pattern!)
     if (style.pattern === 'oak' && w > h) { map.center.set(0.5, 0.5); map.rotation = Math.PI / 2; map.repeat.set(h / tile, w / tile) } // grain along the bar
     else map.repeat.set(w / tile, h / tile)
-    return new MeshStandardMaterial({ map, metalness: style.metalness, roughness: style.roughness })
+    return new MeshStandardMaterial({ map, color: new Color(1, 1, 1).multiplyScalar(PAINT_TONE), envMapIntensity: 0.3, metalness: style.metalness, roughness: Math.max(style.roughness, 0.75) })
   }) : null, [style, bars])
   useEffect(() => () => barMats?.forEach(m => { m.map?.dispose(); m.dispose() }), [barMats])
   return (
