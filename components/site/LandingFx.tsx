@@ -14,33 +14,63 @@ export function Starfield() {
   useEffect(() => {
     const cv = ref.current!
     const ctx = cv.getContext('2d')!
-    let stars: { x: number; y: number; r: number; p: number; v: number }[] = []
-    let raf = 0
+    type Star = { x: number; y: number; r: number; p: number; v: number; dx: number; c: string }
+    type Meteor = { x: number; y: number; vx: number; vy: number; life: number; len: number }
+    let stars: Star[] = [], meteors: Meteor[] = []
+    let raf = 0, d = 1, nextMeteor = 0
+    const COLORS = ['#FFFFFF', '#FFF4DE', '#DCE8FF', '#FFE2C0']
     const size = () => {
-      const d = window.devicePixelRatio
+      d = window.devicePixelRatio || 1
       cv.width = cv.offsetWidth * d
       cv.height = cv.offsetHeight * d
-      stars = Array.from({ length: Math.min(220, cv.width / 6) }, () => ({
-        x: Math.random() * cv.width, y: Math.random() * cv.height * 0.75,
-        r: Math.random() * 1.4 * d + 0.2, p: Math.random() * 6.28, v: 0.005 + Math.random() * 0.02,
+      stars = Array.from({ length: Math.min(420, (cv.width * cv.height) / (2600 * d * d)) }, (_, i) => ({
+        x: Math.random() * cv.width, y: Math.random() * cv.height,
+        r: (Math.random() ** 3 * 1.6 + 0.3) * d, p: Math.random() * 6.28, v: 0.004 + Math.random() * 0.03,
+        dx: i % 7 === 0 ? (0.04 + Math.random() * 0.1) * d : 0, // one in seven drifts slowly across
+        c: COLORS[i % COLORS.length],
       }))
     }
+    const meteor = (now: number) => {
+      if (now < nextMeteor) return
+      nextMeteor = now + 3500 + Math.random() * 6000 // one every few seconds
+      const a = Math.PI * (0.15 + Math.random() * 0.15), sp = (9 + Math.random() * 6) * d
+      meteors.push({ x: Math.random() * cv.width * 0.8, y: Math.random() * cv.height * 0.4, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, life: 1, len: (90 + Math.random() * 120) * d })
+    }
     const still = reducedMotion()
-    const draw = () => {
+    const draw = (now = 0) => {
       ctx.clearRect(0, 0, cv.width, cv.height)
-      ctx.fillStyle = '#FFF4DE'
       for (const s of stars) {
         s.p += s.v
-        ctx.globalAlpha = 0.35 + 0.65 * Math.abs(Math.sin(s.p))
+        if (s.dx) { s.x += s.dx; if (s.x > cv.width + 4) s.x = -4 }
+        ctx.globalAlpha = 0.25 + 0.75 * Math.abs(Math.sin(s.p))
+        ctx.fillStyle = s.c
         ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, 6.28); ctx.fill()
+        if (s.r > 1.3 * d) { // a soft glow round the bright ones
+          const g = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, s.r * 4)
+          g.addColorStop(0, 'rgba(255,248,230,.35)'); g.addColorStop(1, 'rgba(255,248,230,0)')
+          ctx.fillStyle = g; ctx.beginPath(); ctx.arc(s.x, s.y, s.r * 4, 0, 6.28); ctx.fill()
+        }
       }
-      if (!still) raf = requestAnimationFrame(draw)
+      if (!still) {
+        meteor(now)
+        meteors = meteors.filter(m => m.life > 0)
+        for (const m of meteors) {
+          m.x += m.vx; m.y += m.vy; m.life -= 0.012
+          const sp = Math.hypot(m.vx, m.vy), tx = m.x - (m.vx / sp) * m.len, ty = m.y - (m.vy / sp) * m.len
+          const g = ctx.createLinearGradient(m.x, m.y, tx, ty)
+          g.addColorStop(0, `rgba(255,250,235,${m.life})`); g.addColorStop(1, 'rgba(255,250,235,0)')
+          ctx.globalAlpha = 1; ctx.strokeStyle = g; ctx.lineWidth = 1.6 * d; ctx.lineCap = 'round'
+          ctx.beginPath(); ctx.moveTo(m.x, m.y); ctx.lineTo(tx, ty); ctx.stroke()
+        }
+        raf = requestAnimationFrame(draw)
+      }
+      ctx.globalAlpha = 1
     }
     size(); draw()
     window.addEventListener('resize', size)
     return () => { cancelAnimationFrame(raf); window.removeEventListener('resize', size) }
   }, [])
-  return <canvas ref={ref} className="absolute inset-0 h-full w-full" aria-hidden="true" />
+  return <canvas ref={ref} className="pointer-events-none fixed inset-0 h-full w-full" aria-hidden="true" />
 }
 
 /** Real number of people on the site right now. */

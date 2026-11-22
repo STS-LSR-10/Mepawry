@@ -52,8 +52,10 @@ async function shrinePicture(cab: HTMLCanvasElement, pet: Pet, line: string): Pr
   const c = document.createElement('canvas'); c.width = W; c.height = H
   const g = c.getContext('2d')!
   const bg = g.createRadialGradient(W / 2, H * 0.52, 0, W / 2, H * 0.52, H * 0.75)
-  bg.addColorStop(0, '#6E3A1A'); bg.addColorStop(0.45, '#3A1D0E'); bg.addColorStop(1, '#160B06')
+  bg.addColorStop(0, '#0E1020'); bg.addColorStop(0.55, '#05060C'); bg.addColorStop(1, '#000')
   g.fillStyle = bg; g.fillRect(0, 0, W, H)
+  for (let i = 0; i < 260; i++) { g.globalAlpha = 0.25 + Math.random() * 0.75; g.fillStyle = '#FFF8EC'; g.beginPath(); g.arc(Math.random() * W, Math.random() * H, Math.random() ** 3 * 2.4 + 0.5, 0, 6.28); g.fill() }
+  g.globalAlpha = 1
   g.textAlign = 'center'; g.fillStyle = '#FAF7F2'
   g.font = '500 92px Georgia, serif'; g.fillText(pet.name, W / 2, 150, W - 80)
   const sub = [pet.show_flag === false ? '' : flagEmoji(pet.country_code), formatYears(pet.birth_year, pet.death_year)].filter(Boolean).join('  ')

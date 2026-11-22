@@ -46,7 +46,7 @@ export default async function ShrinePage({ params }: ShrinePageProps) {
   return (
     <div
       className="relative min-h-dvh overflow-hidden text-[#FAF7F2]"
-      style={{ background: 'radial-gradient(60% 55% at 50% 52%, #6E3A1A 0%, #3A1D0E 45%, #160B06 100%)' }}
+      style={{ background: 'radial-gradient(70% 60% at 50% 45%, #0E1020 0%, #05060C 55%, #000 100%)' }}
     >
       <Starfield />
       <SiteNav />
