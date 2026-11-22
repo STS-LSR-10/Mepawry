@@ -712,5 +712,8 @@ const t: string[] = [
   "Tento dárek už máte",
   "Tento dárek jste ještě nekoupili",
   "Tento dárek už u svatyně je",
+  "Zatím zdarma",
+  "Přesunout sem",
+  "VIP je zatím zdarma. Přihlaste se a svatyně bude umístěna tam.",
 ]
 export default t

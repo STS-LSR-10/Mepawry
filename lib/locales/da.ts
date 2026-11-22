@@ -712,5 +712,8 @@ const t: string[] = [
   "Du ejer allerede denne gave",
   "Du har ikke købt denne gave endnu",
   "Denne gave står allerede ved mindestedet",
+  "Gratis lige nu",
+  "Flyt hertil",
+  "VIP er gratis lige nu. Log ind, så placeres mindestedet der.",
 ]
 export default t

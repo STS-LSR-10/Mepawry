@@ -712,5 +712,8 @@ const t: string[] = [
   "Bu hediye zaten sende",
   "Bu hediyeyi henüz satın almadın",
   "Bu hediye zaten anıtının yanında",
+  "Şimdilik ücretsiz",
+  "Buraya taşı",
+  "VIP şimdilik ücretsiz. Giriş yap, anıtı oraya yerleştirilsin.",
 ]
 export default t

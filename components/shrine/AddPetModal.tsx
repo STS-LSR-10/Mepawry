@@ -54,7 +54,8 @@ export function AddPetModal({ open, onClose }: AddPetModalProps) {
   const [slotsVersion, setSlotsVersion] = useState(0)
   const account = useAccount()
   const admin = !!account.user?.isAdmin
-  const paysForVip = vipNiche != null && !admin // admins place for free; everyone else pays first
+  const choseVip = vipNiche != null && !admin // signed-in users only
+  const paysForVip = choseVip && VIP_PRICE_THB > 0 // admins place for free; everyone else pays first, unless VIP is free
   const t = useT()
   const [country, setCountry] = useState('XX')
   const [showFlag, setShowFlag] = useState(true)
@@ -100,6 +101,7 @@ export function AddPetModal({ open, onClose }: AddPetModalProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!form.name.trim() || photoBusy) return
+    if (choseVip && (!account.user || account.user.isAnonymous)) { setNeedLogin(true); return }
     if (paysForVip) {
       // a VIP niche: signed in with Google, then pay, then the shrine is made (see the effect above)
       if (!account.user || account.user.isAnonymous) { setNeedLogin(true); return }
@@ -180,9 +182,9 @@ export function AddPetModal({ open, onClose }: AddPetModalProps) {
             : 'You can edit it anytime from My memorials.'}
           onClose={() => { const slug = createdSlug; handleClose(); if (slug) router.push(`/${slug}`) }}
         />
-      ) : needLogin && (!account.user || (paysForVip && account.user.isAnonymous)) ? (
+      ) : needLogin && (!account.user || (choseVip && account.user.isAnonymous)) ? (
         <div className="space-y-3">
-          <LoginPanel title={paysForVip ? 'Sign in to choose a VIP niche' : 'Sign in to place their shrine'} />
+          <LoginPanel title={choseVip ? 'Sign in to choose a VIP niche' : 'Sign in to place their shrine'} />
           <button onClick={() => setNeedLogin(false)} className="w-full text-xs text-[#C67129] underline">{t('Back to the form')}</button>
         </div>
       ) : (
@@ -343,10 +345,10 @@ export function AddPetModal({ open, onClose }: AddPetModalProps) {
 
           {/* Submit */}
           <Button type="submit" size="lg" loading={loading} className="w-full">
-            {paysForVip ? <>✿ {t('Pay ฿{n} and place their shrine', { n: VIP_PRICE_THB })}</> : <>🕯️ {t('Place their shrine')}</>}
+            {paysForVip ? <>✿ {t('Pay ฿{n} and place their shrine', { n: VIP_PRICE_THB })}</> : choseVip ? <>✿ {t('Place their shrine')}</> : <>🕯️ {t('Place their shrine')}</>}
           </Button>
           <p className="text-center text-xs text-[#8E8278]">
-            {paysForVip ? t('VIP niche {n}', { n: vipNiche! + 1 }) : t('Free')} · {account.user && !account.user.isAnonymous ? t('Saved to your account') : t('No sign-up')} · {t('You can change it anytime')}
+            {choseVip ? `${t('VIP niche {n}', { n: vipNiche! + 1 })}${paysForVip ? '' : ` · ${t('Free for now')}`}` : t('Free')} · {account.user && !account.user.isAnonymous ? t('Saved to your account') : choseVip ? t('Sign in') : t('No sign-up')} · {t('You can change it anytime')}
           </p>
         </form>
       )}

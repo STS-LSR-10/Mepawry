@@ -712,5 +712,8 @@ const t: string[] = [
   "Ai deja acest cadou",
   "Nu ai cumpărat încă acest cadou",
   "Acest cadou este deja lângă altar",
+  "Gratuit deocamdată",
+  "Mută aici",
+  "VIP este gratuit deocamdată. Conectează-te și altarul va fi așezat acolo.",
 ]
 export default t

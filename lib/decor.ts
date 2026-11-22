@@ -33,7 +33,7 @@ export interface Backdrop {
 
 export const DEFAULT_FRAME = 'gold'
 export const DEFAULT_BACKDROP = 'plain'
-export const VIP_PRICE_THB = 99 // moving a pet into the VIP pavilion, one-time
+export const VIP_PRICE_THB = 0 // moving a pet into the VIP pavilion, one-time. 0: free for now (signed-in owners, no Stripe)
 export const FRAME_PRICE = 49
 export const PATTERN_FRAME_PRICE = 59
 export const BACKDROP_PRICE = 59

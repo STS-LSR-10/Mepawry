@@ -714,4 +714,7 @@ export const KEYS = [
   "You already own this gift",
   "You haven’t bought this gift yet",
   "This gift is already by their shrine",
+  "Free for now",
+  "Move here",
+  "VIP is free for now. Sign in and their shrine is placed there.",
 ] as const

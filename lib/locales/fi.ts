@@ -712,5 +712,8 @@ const t: string[] = [
   "Omistat jo tämän lahjan",
   "Et ole vielä ostanut tätä lahjaa",
   "Tämä lahja on jo muistopaikalla",
+  "Toistaiseksi ilmainen",
+  "Siirrä tänne",
+  "VIP on toistaiseksi ilmainen. Kirjaudu sisään, niin muistopaikka sijoitetaan sinne.",
 ]
 export default t

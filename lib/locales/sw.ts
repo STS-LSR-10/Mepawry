@@ -712,5 +712,8 @@ const t: string[] = [
   "Tayari unamiliki zawadi hii",
   "Bado hujanunua zawadi hii",
   "Zawadi hii tayari iko karibu na kaburi lake",
+  "Bure kwa sasa",
+  "Hamisha hapa",
+  "VIP ni bure kwa sasa. Ingia na kaburi lake litawekwa hapo.",
 ]
 export default t

@@ -712,5 +712,8 @@ const t: string[] = [
   "Anda sudah memiliki hadiah ini",
   "Anda belum membeli hadiah ini",
   "Hadiah ini sudah ada di tempat peringatannya",
+  "Percuma buat masa ini",
+  "Pindah ke sini",
+  "VIP percuma buat masa ini. Log masuk dan tempat peringatannya akan diletakkan di sana.",
 ]
 export default t

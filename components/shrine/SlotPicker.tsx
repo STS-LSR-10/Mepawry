@@ -125,7 +125,7 @@ function VipSection({ floor, taken, admin, open, onToggle, value, onPick }: {
   return (
     <div className="rounded-xl border border-[#E8C365] bg-gradient-to-b from-[#FFF8E6] to-white">
       <button type="button" onClick={onToggle} aria-expanded={open} className="flex w-full items-center justify-between px-3 py-2 text-sm">
-        <span className="font-semibold text-[#8A6418]">✿ {t('VIP pavilion')} <span className="font-normal text-[#B08A3A]">· {t('big arched niche')} · ฿{VIP_PRICE_THB}</span></span>
+        <span className="font-semibold text-[#8A6418]">✿ {t('VIP pavilion')} <span className="font-normal text-[#B08A3A]">· {t('big arched niche')} · {VIP_PRICE_THB ? `฿${VIP_PRICE_THB}` : t('Free for now')}</span></span>
         <span className="text-xs text-[#8E8278]">{t('{n} free', { n: free })} {open ? '▴' : '▾'}</span>
       </button>
       {open && (
@@ -151,6 +151,7 @@ function VipSection({ floor, taken, admin, open, onToggle, value, onPick }: {
           <p className="mt-2 text-[11px] text-[#8A6418]">
             {admin
               ? value != null ? <>{t('Admin: they’ll be placed in VIP niche {n} as well as their shelf.', { n: value + 1 })}</> : <>{t('Admin: tap a niche to place them in the VIP pavilion too.')}</>
+              : !VIP_PRICE_THB ? <>{value != null ? `${t('VIP niche {n}', { n: value + 1 })} · ` : ''}{t('VIP is free for now. Sign in and their shrine is placed there.')}</>
               : value != null ? <>{t('VIP niche {n} · ฿{p}. You’ll sign in and pay first, then their shrine is placed there.', { n: value + 1, p: VIP_PRICE_THB })}</>
               : <>{t('Tap a free niche to choose it. You’ll sign in and pay ฿{p} before their shrine is placed.', { p: VIP_PRICE_THB })}</>}
           </p>

@@ -712,5 +712,8 @@ const t: string[] = [
   "Nasa iyo na ang regalong ito",
   "Hindi mo pa nabibili ang regalong ito",
   "Nasa tabi na ng dambana ang regalong ito",
+  "Libre muna ngayon",
+  "Ilipat dito",
+  "Libre muna ang VIP. Mag-sign in at doon ilalagay ang kanilang dambana.",
 ]
 export default t

@@ -712,5 +712,8 @@ const t: string[] = [
   "Bạn đã có món quà này",
   "Bạn chưa mua món quà này",
   "Món quà này đã ở bên điện thờ",
+  "Miễn phí lúc này",
+  "Chuyển đến đây",
+  "VIP đang miễn phí. Đăng nhập và điện thờ sẽ được đặt ở đó.",
 ]
 export default t

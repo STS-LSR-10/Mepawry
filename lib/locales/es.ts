@@ -712,5 +712,8 @@ const t: string[] = [
   "Ya tienes este regalo",
   "Aún no has comprado este regalo",
   "Este regalo ya está junto a su altar",
+  "Gratis por ahora",
+  "Mover aquí",
+  "El VIP es gratis por ahora. Inicia sesión y su altar se colocará allí.",
 ]
 export default t

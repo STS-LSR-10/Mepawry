@@ -59,9 +59,9 @@ export function VipUpgrade({ pet, isOwner, onChange }: { pet: Pet; isOwner: bool
             <li>🕯️ {t('Candles, flowers and the guestbook stay the same')}</li>
           </ul>
           {error && <p role="alert" className="text-sm text-[#C0392B]">{t(error)}</p>}
-          {admin ? (
+          {admin || !VIP_PRICE_THB ? (
             <button disabled={busy} onClick={() => act('place')} className="w-full rounded-2xl bg-[#D9823B] py-3 text-sm font-semibold text-white disabled:opacity-60">
-              {busy ? t('Placing…') : t('Admin: place in the VIP pavilion now')}
+              {busy ? t('Placing…') : admin ? t('Admin: place in the VIP pavilion now') : `✿ ${t('Move here')} · ${t('Free for now')}`}
             </button>
           ) : (
             <button disabled={busy} onClick={async () => { setBusy(true); setError(await startCheckout({ kind: 'vip', petId: pet.id })); setBusy(false) }}
