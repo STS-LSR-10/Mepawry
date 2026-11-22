@@ -692,7 +692,5 @@ const t: string[] = [
   "Den här gåvan säljs inte just nu",
   "Något saknas. Försök igen.",
   "Minnessidan hittades inte",
-  "Det här fotot verkar inte visa ett husdjur. Välj ett foto av ditt husdjur.",
-  "Det här fotot kan inte användas här. Välj ett foto av ditt husdjur.",
 ]
 export default t

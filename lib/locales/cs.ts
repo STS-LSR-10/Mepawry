@@ -692,7 +692,5 @@ const t: string[] = [
   "Tento dárek se teď neprodává",
   "Něco chybí. Zkuste to znovu.",
   "Památník nenalezen",
-  "Na fotce asi není mazlíček. Vyberte fotku svého mazlíčka.",
-  "Tuto fotku zde nelze použít. Vyberte fotku svého mazlíčka.",
 ]
 export default t

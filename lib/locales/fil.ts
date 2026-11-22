@@ -692,7 +692,5 @@ const t: string[] = [
   "Hindi ibinebenta ang regalong ito ngayon",
   "May kulang. Pakisubukang muli.",
   "Hindi makita ang memorial",
-  "Mukhang hindi alaga ang nasa larawang ito. Pumili ng larawan ng iyong alaga.",
-  "Hindi puwedeng gamitin dito ang larawang ito. Pumili ng larawan ng iyong alaga.",
 ]
 export default t

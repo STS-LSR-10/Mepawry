@@ -692,7 +692,5 @@ const t: string[] = [
   "Ten prezent nie jest teraz w sprzedaży",
   "Czegoś brakuje. Spróbuj ponownie.",
   "Nie znaleziono miejsca pamięci",
-  "Na tym zdjęciu chyba nie ma zwierzaka. Wybierz zdjęcie swojego pupila.",
-  "Tego zdjęcia nie można tu użyć. Wybierz zdjęcie swojego pupila.",
 ]
 export default t

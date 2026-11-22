@@ -692,7 +692,5 @@ const t: string[] = [
   "Dieses Geschenk ist gerade nicht erhältlich",
   "Etwas fehlt. Bitte erneut versuchen.",
   "Gedenkstätte nicht gefunden",
-  "Auf diesem Foto scheint kein Haustier zu sein. Bitte wähle ein Foto deines Tieres.",
-  "Dieses Foto kann hier nicht verwendet werden. Bitte wähle ein Foto deines Tieres.",
 ]
 export default t

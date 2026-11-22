@@ -692,7 +692,5 @@ const t: string[] = [
   "Hadiah ini tidak dijual sekarang",
   "Ada yang tertinggal. Sila cuba lagi.",
   "Memorial tidak dijumpai",
-  "Foto ini nampaknya bukan haiwan peliharaan. Sila pilih foto haiwan anda.",
-  "Foto ini tidak boleh digunakan di sini. Sila pilih foto haiwan anda.",
 ]
 export default t

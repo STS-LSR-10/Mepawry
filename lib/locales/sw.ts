@@ -692,7 +692,5 @@ const t: string[] = [
   "Zawadi hii haiuzwi sasa",
   "Kuna kitu kinakosekana. Jaribu tena.",
   "Kumbukumbu haikupatikana",
-  "Picha hii haionekani kuonyesha mnyama kipenzi. Chagua picha ya mnyama wako.",
-  "Picha hii haiwezi kutumika hapa. Chagua picha ya mnyama wako.",
 ]
 export default t

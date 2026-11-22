@@ -692,7 +692,5 @@ const t: string[] = [
   "Món quà này hiện không bán",
   "Thiếu thông tin. Vui lòng thử lại.",
   "Không tìm thấy trang tưởng niệm",
-  "Ảnh này có vẻ không phải thú cưng. Hãy chọn ảnh thú cưng của bạn.",
-  "Không thể dùng ảnh này ở đây. Hãy chọn ảnh thú cưng của bạn.",
 ]
 export default t

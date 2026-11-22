@@ -198,7 +198,7 @@ function StoryComposer({ onPosted }: { onPosted: (p: Post) => void }) {
         )}
         <span className="ml-auto text-xs text-[#B5A99F]">{body.length}/3000</span>
       </div>
-      {error && <p role="alert" className="text-sm text-[#C0392B]">{t(error)}</p>}
+      {error && <p role="alert" className="text-sm text-[#C0392B]">{error}</p>}
       <div className="flex gap-2">
         <button type="button" onClick={() => setOpen(false)} className="flex-1 rounded-2xl border border-[#D4C9BF] py-2.5 text-sm font-semibold text-[#5C5046]">{t('Cancel')}</button>
         <button disabled={busy || !body.trim()} className="flex-[2] rounded-2xl bg-[#D9823B] py-2.5 text-sm font-semibold text-white hover:bg-[#C67129] disabled:opacity-60">{busy ? t('Posting…') : t('Share on the board')}</button>

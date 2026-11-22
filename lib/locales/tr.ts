@@ -692,7 +692,5 @@ const t: string[] = [
   "Bu hediye şu an satışta değil",
   "Bir şey eksik. Lütfen tekrar deneyin.",
   "Anma sayfası bulunamadı",
-  "Bu fotoğrafta bir evcil hayvan görünmüyor. Lütfen evcil hayvanının fotoğrafını seç.",
-  "Bu fotoğraf burada kullanılamaz. Lütfen evcil hayvanının fotoğrafını seç.",
 ]
 export default t
