@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getPetById, petTokenMatches, updatePetPhoto } from '@/lib/data'
 import { getUser } from '@/lib/auth'
 import { isPhotoDataUrl } from '@/lib/utils'
+import { checkPetPhoto } from '@/lib/moderate'
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -16,6 +17,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   if (!owns && !(await petTokenMatches(id, String(body.token ?? '')))) {
     return NextResponse.json({ error: 'Not allowed to edit this memorial' }, { status: 403 })
   }
+  const refused = await checkPetPhoto(body.photo) // after the owner check, so strangers can't use it to test photos
+  if (refused) return NextResponse.json({ error: refused }, { status: 422 })
   const pet = await updatePetPhoto(id, body.photo)
   if (!pet) return NextResponse.json({ error: 'Memorial not found' }, { status: 404 })
   return NextResponse.json({ pet })

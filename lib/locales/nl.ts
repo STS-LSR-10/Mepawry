@@ -692,5 +692,7 @@ const t: string[] = [
   "Dit cadeau is nu niet te koop",
   "Er ontbreekt iets. Probeer het opnieuw.",
   "Gedenkplek niet gevonden",
+  "Op deze foto lijkt geen huisdier te staan. Kies een foto van je huisdier.",
+  "Deze foto kan hier niet worden gebruikt. Kies een foto van je huisdier.",
 ]
 export default t

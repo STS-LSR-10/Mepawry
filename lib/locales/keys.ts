@@ -694,4 +694,6 @@ export const KEYS = [
   "That gift isn’t on offer right now",
   "Something’s missing. Please try again.",
   "Memorial not found",
+  "This photo doesn’t seem to show a pet. Please choose a photo of your pet.",
+  "This photo can’t be used here. Please choose a photo of your pet.",
 ] as const

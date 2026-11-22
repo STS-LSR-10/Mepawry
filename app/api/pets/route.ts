@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createPet, getMemorials, getPetsOnFloor, getProfile, SlotTakenError } from '@/lib/data'
 import { getUser } from '@/lib/auth'
 import { isPhotoDataUrl } from '@/lib/utils'
+import { checkPetPhoto } from '@/lib/moderate'
 
 export async function GET(req: NextRequest) {
   const q = req.nextUrl.searchParams
@@ -33,6 +34,10 @@ export async function POST(req: NextRequest) {
     }
     if (body.primary_photo_url != null && !isPhotoDataUrl(body.primary_photo_url)) {
       return NextResponse.json({ error: 'Photo must be a JPG, PNG or WebP under 1.5 MB' }, { status: 400 })
+    }
+    if (body.primary_photo_url != null) {
+      const refused = await checkPetPhoto(body.primary_photo_url)
+      if (refused) return NextResponse.json({ error: refused }, { status: 422 })
     }
     const pick = body.slot && Number.isInteger(body.slot.floor) && Number.isInteger(body.slot.position) ? body.slot : undefined
     // The form's country wins; without one, the owner's profile country

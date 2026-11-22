@@ -692,5 +692,7 @@ const t: string[] = [
   "Ez az ajándék most nem kapható",
   "Valami hiányzik. Próbáld újra.",
   "Az emlékhely nem található",
+  "Úgy tűnik, ezen a fotón nincs kisállat. Válassz fotót a kedvencedről.",
+  "Ez a fotó itt nem használható. Válassz fotót a kedvencedről.",
 ]
 export default t

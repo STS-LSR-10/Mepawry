@@ -692,5 +692,7 @@ const t: string[] = [
   "Tämä lahja ei ole nyt myynnissä",
   "Jotain puuttuu. Yritä uudelleen.",
   "Muistosivua ei löytynyt",
+  "Kuvassa ei näytä olevan lemmikkiä. Valitse kuva lemmikistäsi.",
+  "Tätä kuvaa ei voi käyttää täällä. Valitse kuva lemmikistäsi.",
 ]
 export default t
