@@ -279,3 +279,14 @@ create unique index if not exists pets_vip_slot on pets (floor_id, vip_position)
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values ('pet-photos', 'pet-photos', true, 2000000, array['image/jpeg', 'image/png', 'image/webp'])
 on conflict (id) do nothing;
+
+-- ── Special gifts each signed-in user owns (007_owned_gifts.sql) ──
+create table if not exists gift_owners (
+  user_id uuid not null references auth.users on delete cascade,
+  item text not null,
+  created_at timestamptz not null default now(),
+  primary key (user_id, item)
+);
+alter table gift_owners enable row level security;
+revoke all on gift_owners from anon, authenticated;
+grant all on gift_owners to service_role;

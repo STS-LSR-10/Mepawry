@@ -702,5 +702,15 @@ const t: string[] = [
   "Bu VIP nişi yalnızca ödeme yapan kişi kullanabilir",
   "Bu VIP niş zaten kullanıldı",
   "Fotoğraf ödeme sırasında saklanamayacak kadar büyük. Daha küçük bir fotoğraf deneyin.",
+  "Satın alındı",
+  "Hediye et",
+  "Satın almak için giriş yap",
+  "Özel hediyeler almak için giriş yap",
+  "Özel hediyeler almak için lütfen giriş yapın",
+  "Hediyelere dön",
+  "senin, istediğin anıtta hediye et",
+  "Bu hediye zaten sende",
+  "Bu hediyeyi henüz satın almadın",
+  "Bu hediye zaten anıtının yanında",
 ]
 export default t

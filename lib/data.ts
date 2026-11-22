@@ -357,6 +357,33 @@ export async function leaveGift(petId: string, itemId: string, visitorId: unknow
   return data.ok ? { gift: data.gift } : { nextAt: data.next_at }
 }
 
+/** The special gifts this signed-in user has bought (bought once, theirs to give at any shrine). */
+export async function ownedGifts(userId: string): Promise<string[]> {
+  const rows: { item: string }[] = must(await db().from('gift_owners').select('item').eq('user_id', userId)) ?? []
+  return rows.map(r => r.item)
+}
+
+/**
+ * Gives a special gift its owner already bought, for free. One of each item per shrine while it's still showing.
+ * shortcut: check-then-insert, so two taps at the same instant could leave it twice; harmless, upgrade to a lock if it matters.
+ */
+export async function giveOwnedGift(petId: string, itemId: string, userId: string, name: string):
+  Promise<{ gift: LeftGift } | { error: string; status: number }> {
+  const item = giftById(itemId)
+  if (!item?.price || !isUuid(petId)) return { error: 'Unknown pet or gift', status: 400 }
+  const { count } = await db().from('gift_owners').select('item', { count: 'exact', head: true }).eq('user_id', userId).eq('item', item.id)
+  if (!count) return { error: 'You haven’t bought this gift yet', status: 403 }
+  const since = new Date(Date.now() - SPECIAL_GIFT_SHOWS_DAYS * 86_400_000).toISOString()
+  const { count: there } = await db().from('gifts').select('id', { count: 'exact', head: true })
+    .eq('pet_id', petId).eq('item', item.id).eq('visitor_id', userId).gte('created_at', since)
+  if (there) return { error: 'This gift is already by their shrine', status: 409 }
+  const { data, error } = await db().from('gifts').insert({ pet_id: petId, visitor_id: userId, visitor_name: cleanName(name), item: item.id })
+    .select('id, item, visitor_name, created_at').single()
+  if (error?.code === '23503') return { error: 'Memorial not found', status: 404 }
+  if (error) throw new Error(error.message)
+  return { gift: data }
+}
+
 // ── Counts ──
 
 export async function getStats(): Promise<GlobalStats & { candles_today: number; countries_today: number }> {

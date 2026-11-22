@@ -702,5 +702,15 @@ const t: string[] = [
   "Bara den som betalade kan använda den här VIP-nischen",
   "Den här VIP-nischen har redan använts",
   "Fotot är för stort för att sparas medan du betalar. Prova ett mindre.",
+  "Köpt",
+  "Ge den",
+  "Logga in för att köpa",
+  "Logga in för att köpa speciella gåvor",
+  "Logga in för att köpa speciella gåvor",
+  "Tillbaka till gåvorna",
+  "din att behålla, ge den vid vilken minnesplats som helst",
+  "Du äger redan den här gåvan",
+  "Du har inte köpt den här gåvan än",
+  "Den här gåvan står redan vid minnesplatsen",
 ]
 export default t

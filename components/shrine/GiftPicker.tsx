@@ -1,7 +1,7 @@
 'use client'
 // components/shrine/GiftPicker.tsx — Choose a little gift to leave at a shrine.
-// Free gifts: one every few days per visitor. Special gifts, frames and backdrops show a price; payment isn't connected
-// yet, so admins can apply a frame or backdrop directly for now.
+// Free gifts: one every few days per visitor. Special gifts are bought once (signed in) and kept: after that they show
+// "Owned" and can be given at any shrine for free. Frames and backdrops are bought by the owner for their shrine.
 
 import { useEffect, useState } from 'react'
 import { Modal } from '@/components/ui/Modal'
@@ -10,6 +10,7 @@ import { getVisitor } from '@/lib/visitor'
 import { useT } from '@/lib/i18n'
 import { useAccount } from '@/lib/account'
 import { startCheckout } from '@/lib/checkout'
+import { LoginPanel } from '@/components/account/AuthGate'
 import { DEFAULT_BACKDROP, DEFAULT_FRAME, FRAMES, backdropsFor, type FrameStyle } from '@/lib/decor'
 import { backdropThumb } from '@/components/3d/backdrops'
 import type { Pet } from '@/types'
@@ -46,6 +47,14 @@ export function GiftPicker({ open, onClose, pet, onLeft, onDecor, onPreview }: {
   const t = useT()
   const { user } = useAccount()
   const admin = !!user?.isAdmin, owner = !!user && user.id === pet.owner_id
+  const signedIn = !!user && !user.isAnonymous
+  const [owned, setOwned] = useState<string[]>([])
+  const [needLogin, setNeedLogin] = useState(false)
+  useEffect(() => {
+    if (!open || !signedIn) { setOwned([]); return }
+    fetch('/api/gifts?owned', { cache: 'no-store' }).then(r => r.json()).then(d => setOwned(d.owned ?? [])).catch(() => {})
+  }, [open, signedIn, user?.id])
+  useEffect(() => { if (signedIn) setNeedLogin(false) }, [signedIn])
   const pay = async (body: Parameters<typeof startCheckout>[0]) => { setSending(true); setError(''); const e = await startCheckout(body); if (e) { setError(t(e)); setSending(false) } }
   const [tab, setTab] = useState<Tab>('food')
   const [picked, setPicked] = useState<Gift | null>(null)
@@ -66,7 +75,7 @@ export function GiftPicker({ open, onClose, pet, onLeft, onDecor, onPreview }: {
   // Remember the wait from last time so the button says so before anyone taps it
   useEffect(() => {
     if (!open) return
-    setSent(null); setError('')
+    setSent(null); setError(''); setNeedLogin(false)
     try {
       const saved = localStorage.getItem(waitKey(petId))
       setNextAt(saved && Date.parse(saved) > Date.now() ? saved : null)
@@ -94,7 +103,8 @@ export function GiftPicker({ open, onClose, pet, onLeft, onDecor, onPreview }: {
   }
 
   const send = async () => {
-    if (!picked || picked.price || waiting || sending) return
+    const mine = !!picked?.price && owned.includes(picked.id)
+    if (!picked || (picked.price && !mine) || (!mine && waiting) || sending) return
     setSending(true); setError('')
     const v = getVisitor()
     const res = await fetch('/api/gifts', {
@@ -104,7 +114,9 @@ export function GiftPicker({ open, onClose, pet, onLeft, onDecor, onPreview }: {
     }).catch(() => null)
     setSending(false)
     const d = await res?.json().catch(() => null)
-    if (res?.status === 201) {
+    if (res?.status === 201 && mine) {
+      setSent(picked); setPicked(null); onLeft(d.gift)
+    } else if (res?.status === 201) {
       const next = new Date(Date.now() + FREE_GIFT_COOLDOWN_DAYS * 86_400_000).toISOString()
       try { localStorage.setItem(waitKey(petId), next) } catch {}
       setNextAt(next); setSent(picked); setPicked(null)
@@ -113,7 +125,7 @@ export function GiftPicker({ open, onClose, pet, onLeft, onDecor, onPreview }: {
       try { localStorage.setItem(waitKey(petId), d.nextAt) } catch {}
       setNextAt(d.nextAt)
     } else {
-      setError(t('That didn’t go through. Please try again.'))
+      setError(t(d?.error ?? 'That didn’t go through. Please try again.'))
     }
   }
 
@@ -154,7 +166,12 @@ export function GiftPicker({ open, onClose, pet, onLeft, onDecor, onPreview }: {
 
   return (
     <Modal open={open} onClose={onClose} className="sm:max-w-[520px] bg-[#FFFBF5]">
-      {sent ? (
+      {needLogin ? (
+        <div className="space-y-3">
+          <LoginPanel title="Sign in to buy special gifts" />
+          <button onClick={() => setNeedLogin(false)} className="w-full text-xs text-[#C67129] underline">{t('Back to the gifts')}</button>
+        </div>
+      ) : sent ? (
         <div className="py-8 text-center">
           <div className="mx-auto mb-4 grid h-28 w-28 place-items-center rounded-full bg-gradient-to-b from-[#FFE9CF] to-[#FFF6EA] text-6xl shadow-[0_0_40px_rgba(217,130,59,0.35)] float-anim" aria-hidden>
             <GiftIcon gift={sent} />
@@ -208,8 +225,8 @@ export function GiftPicker({ open, onClose, pet, onLeft, onDecor, onPreview }: {
               <BackdropGrid current={currentBackdrop} picked={decor?.id}
                 onPick={b => pick({ kind: 'backdrop', id: b.id, name: b.name, price: b.price })} />
             )}
-            {tab === 'special' && seasonal.map(s => <Section key={s.id} title={`${s.emoji} ${t(s.label)}`} items={s.items} picked={picked} onPick={setPicked} />)}
-            {!isDecor && <Section title={tab === 'special' && seasonal.length ? `🌈 ${t('All year')}` : ''} items={yearRound} picked={picked} onPick={setPicked} />}
+            {tab === 'special' && seasonal.map(s => <Section key={s.id} title={`${s.emoji} ${t(s.label)}`} items={s.items} owned={owned} picked={picked} onPick={setPicked} />)}
+            {!isDecor && <Section title={tab === 'special' && seasonal.length ? `🌈 ${t('All year')}` : ''} items={yearRound} owned={owned} picked={picked} onPick={setPicked} />}
           </div>
 
           {/* Footer: what you're about to leave */}
@@ -224,11 +241,23 @@ export function GiftPicker({ open, onClose, pet, onLeft, onDecor, onPreview }: {
               ) : (
                 <p className="py-3 text-center text-sm text-[#8E8278]">{t('Tap one to see it up close')}</p>
               )
-            ) : picked?.price ? (
-              <FooterRow icon={<GiftIcon gift={picked} />} title={t(picked.name)} sub={`฿${picked.price} · ${t('stays {n} days with your name', { n: SPECIAL_GIFT_SHOWS_DAYS })}`}>
-                <button onClick={() => pay({ kind: 'gift', petId, item: picked.id, name: getVisitor().name })} disabled={sending} className="rounded-2xl bg-[#D9823B] px-4 py-3 text-xs font-semibold text-white shadow-md hover:bg-[#C67129] disabled:opacity-60">
-                  {sending ? t('Opening payment…') : t('Pay ฿{n}', { n: picked.price })}
+            ) : picked?.price && owned.includes(picked.id) ? (
+              <FooterRow icon={<GiftIcon gift={picked} />} title={t(picked.name)} sub={`${t('Owned')} · ${t('stays {n} days with your name', { n: SPECIAL_GIFT_SHOWS_DAYS })}`}>
+                <button onClick={send} disabled={sending} className="rounded-2xl bg-[#D9823B] px-5 py-3 text-sm font-semibold text-white shadow-md hover:bg-[#C67129] disabled:opacity-60">
+                  {sending ? t('Leaving…') : t('Give it')}
                 </button>
+              </FooterRow>
+            ) : picked?.price ? (
+              <FooterRow icon={<GiftIcon gift={picked} />} title={t(picked.name)} sub={`฿${picked.price} · ${t('yours to keep, give it at any shrine')}`}>
+                {signedIn ? (
+                  <button onClick={() => pay({ kind: 'gift', petId, item: picked.id, name: getVisitor().name })} disabled={sending} className="rounded-2xl bg-[#D9823B] px-4 py-3 text-xs font-semibold text-white shadow-md hover:bg-[#C67129] disabled:opacity-60">
+                    {sending ? t('Opening payment…') : t('Pay ฿{n}', { n: picked.price })}
+                  </button>
+                ) : (
+                  <button onClick={() => setNeedLogin(true)} className="rounded-2xl bg-[#D9823B] px-4 py-3 text-xs font-semibold text-white shadow-md hover:bg-[#C67129]">
+                    {t('Sign in to buy')}
+                  </button>
+                )}
               </FooterRow>
             ) : waiting ? (
               <p className="rounded-2xl bg-[#F4EBDD] px-4 py-3 text-center text-sm text-[#5C5046]">
@@ -250,7 +279,7 @@ export function GiftPicker({ open, onClose, pet, onLeft, onDecor, onPreview }: {
   )
 }
 
-function Section({ title, items, picked, onPick }: { title: string; items: Gift[]; picked: Gift | null; onPick: (g: Gift) => void }) {
+function Section({ title, items, owned, picked, onPick }: { title: string; items: Gift[]; owned: string[]; picked: Gift | null; onPick: (g: Gift) => void }) {
   const t = useT()
   return (
     <div className="mb-3">
@@ -273,7 +302,7 @@ function Section({ title, items, picked, onPick }: { title: string; items: Gift[
                 <GiftIcon gift={item} />
               </span>
               <span className="text-[11px] font-medium leading-tight text-[#2A1E17]">{t(item.name)}</span>
-              {item.price && <span className="text-[10px] font-semibold text-[#B8860B]">฿{item.price}</span>}
+              {item.price && <span className="text-[10px] font-semibold text-[#B8860B]">{owned.includes(item.id) ? `✓ ${t('Owned')}` : `฿${item.price}`}</span>}
               {on && <span className="absolute right-1.5 top-1.5 grid h-4 w-4 place-items-center rounded-full bg-[#D9823B] text-[9px] text-white" aria-hidden>✓</span>}
             </button>
           )

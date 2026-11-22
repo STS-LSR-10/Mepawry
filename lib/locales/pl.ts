@@ -702,5 +702,15 @@ const t: string[] = [
   "Z tej niszy VIP może skorzystać tylko osoba, która zapłaciła",
   "Ta nisza VIP została już wykorzystana",
   "Zdjęcie jest za duże, by je zachować podczas płatności. Spróbuj mniejszego.",
+  "Kupione",
+  "Podaruj",
+  "Zaloguj się, aby kupić",
+  "Zaloguj się, aby kupić specjalne prezenty",
+  "Zaloguj się, aby kupić specjalne prezenty",
+  "Wróć do prezentów",
+  "zostaje twój, podaruj go przy dowolnej kapliczce",
+  "Masz już ten prezent",
+  "Jeszcze nie kupiłeś tego prezentu",
+  "Ten prezent jest już przy kapliczce",
 ]
 export default t

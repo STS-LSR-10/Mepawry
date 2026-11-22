@@ -25,7 +25,7 @@ export const SEASONS: { id: Season; emoji: string; label: string; on: (m: number
 
 export const FREE_GIFT_COOLDOWN_DAYS = 3
 export const FREE_GIFT_SHOWS_DAYS = 7
-export const SPECIAL_GIFT_SHOWS_DAYS = 60
+export const SPECIAL_GIFT_SHOWS_DAYS = 30
 
 export const CATEGORIES: { id: GiftCategory; emoji: string; label: string; hint: string }[] = [
   { id: 'food', emoji: '🍪', label: 'Snacks', hint: 'Their favourite things to eat' },

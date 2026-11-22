@@ -10,7 +10,7 @@ import type { Pet } from '@/types'
 export type Purchase =
   | { kind: 'vip'; petId: string }
   | { kind: 'frame' | 'backdrop'; petId: string; item: string }
-  | { kind: 'gift'; petId: string; item: string; name: string }
+  | { kind: 'gift'; petId: string; item: string; name: string; userId?: string } // userId: missing on gifts bought before they were kept
   /** a VIP niche bought before the shrine exists: the shrine is made after paying (POST /api/pets with vipSession) */
   | { kind: 'niche'; userId: string; floor: string; position: string }
 
@@ -51,13 +51,13 @@ export function purchaseFrom(meta: Stripe.Metadata | null): Purchase | null {
   if (!petId) return null
   if (kind === 'vip') return { kind, petId }
   if (kind === 'frame' || kind === 'backdrop') return { kind, petId, item }
-  if (kind === 'gift') return { kind, petId, item, name }
+  if (kind === 'gift') return { kind, petId, item, name, ...(userId && { userId }) }
   return null
 }
 
 /**
  * Applies a paid purchase. Safe to run twice for the same session (Stripe retries webhooks): VIP and decor just set the
- * same value again, and a paid gift is keyed by the session id.
+ * same value again, and a paid gift only applies the first time its owner is recorded.
  */
 export async function fulfil(p: Purchase, sessionId: string): Promise<void> {
   switch (p.kind) {
@@ -74,9 +74,15 @@ export async function fulfil(p: Purchase, sessionId: string): Promise<void> {
       return
     case 'gift': {
       if (!giftById(p.item)) throw new Error(`Unknown gift ${p.item}`)
-      const { data: done } = await db().from('gifts').select('id').eq('visitor_id', sessionId).maybeSingle()
-      if (done) return
-      const { error } = await db().from('gifts').insert({ pet_id: p.petId, visitor_id: sessionId, visitor_name: p.name || 'A friend', item: p.item })
+      if (p.userId) { // theirs to keep: the first time Stripe tells us, record it and leave it at this shrine
+        const { data: added, error: e } = await db().from('gift_owners').upsert({ user_id: p.userId, item: p.item }, { ignoreDuplicates: true }).select('item')
+        if (e) throw new Error(e.message)
+        if (!added?.length) return // already applied (a webhook retry)
+      } else {
+        const { data: done } = await db().from('gifts').select('id').eq('visitor_id', sessionId).maybeSingle()
+        if (done) return
+      }
+      const { error } = await db().from('gifts').insert({ pet_id: p.petId, visitor_id: p.userId ?? sessionId, visitor_name: p.name || 'A friend', item: p.item })
       if (error && error.code !== '23503') throw new Error(error.message) // 23503: the memorial was deleted
       return
     }

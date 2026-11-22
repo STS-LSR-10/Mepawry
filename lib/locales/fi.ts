@@ -702,5 +702,15 @@ const t: string[] = [
   "Vain maksaja voi käyttää tätä VIP-syvennystä",
   "Tämä VIP-syvennys on jo käytetty",
   "Kuva on liian suuri säilytettäväksi maksun ajan. Kokeile pienempää.",
+  "Ostettu",
+  "Anna se",
+  "Kirjaudu ostaaksesi",
+  "Kirjaudu ostaaksesi erikoislahjoja",
+  "Kirjaudu sisään ostaaksesi erikoislahjoja",
+  "Takaisin lahjoihin",
+  "sinun pidettäväsi, anna se millä tahansa muistopaikalla",
+  "Omistat jo tämän lahjan",
+  "Et ole vielä ostanut tätä lahjaa",
+  "Tämä lahja on jo muistopaikalla",
 ]
 export default t

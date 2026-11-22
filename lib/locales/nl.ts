@@ -702,5 +702,15 @@ const t: string[] = [
   "Alleen wie betaald heeft kan deze VIP-nis gebruiken",
   "Deze VIP-nis is al gebruikt",
   "De foto is te groot om te bewaren tijdens het betalen. Probeer een kleinere.",
+  "Gekocht",
+  "Geef het",
+  "Log in om te kopen",
+  "Log in om speciale cadeaus te kopen",
+  "Log in om speciale cadeaus te kopen",
+  "Terug naar de cadeaus",
+  "blijft van jou, geef het bij elk gedenkplekje",
+  "Je hebt dit cadeau al",
+  "Je hebt dit cadeau nog niet gekocht",
+  "Dit cadeau staat al bij hun gedenkplekje",
 ]
 export default t

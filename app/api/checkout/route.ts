@@ -1,10 +1,10 @@
 // app/api/checkout/route.ts — Starts a Stripe Checkout for a VIP move, a frame or backdrop (owner only) or a special
-// gift (anyone). Returns the Stripe page to send the browser to; the webhook applies the purchase once it's paid.
+// gift (signed-in buyers; it's theirs to give again). Returns the Stripe page to send the browser to; the webhook applies the purchase once it's paid.
 
 import { NextRequest, NextResponse } from 'next/server'
 import { getUser } from '@/lib/auth'
 import { getPetById, priceOf, stripe, type Purchase } from '@/lib/payments'
-import { db } from '@/lib/data'
+import { db, ownedGifts } from '@/lib/data'
 import { VIP_CAPACITY } from '@/components/3d/sanctuary/plan'
 import { VIP_PRICE_THB } from '@/lib/decor'
 
@@ -24,8 +24,12 @@ export async function POST(req: NextRequest) {
   if (kind !== 'gift' && (!user || user.id !== pet.owner_id)) {
     return NextResponse.json({ error: 'Only the owner of this memorial can do this' }, { status: 403 })
   }
+  if (kind === 'gift') { // bought once and kept, so we need to know who's buying
+    if (!user || user.is_anonymous) return NextResponse.json({ error: 'Please sign in to buy special gifts' }, { status: 401 })
+    if ((await ownedGifts(user.id)).includes(item)) return NextResponse.json({ error: 'You already own this gift' }, { status: 409 })
+  }
   const name = String(body?.name ?? '').trim().slice(0, 40)
-  const purchase: Purchase = kind === 'vip' ? { kind, petId } : kind === 'gift' ? { kind, petId, item, name } : { kind, petId, item }
+  const purchase: Purchase = kind === 'vip' ? { kind, petId } : kind === 'gift' ? { kind, petId, item, name, userId: user!.id } : { kind, petId, item }
   const price = priceOf(purchase, pet)
   if ('error' in price) return NextResponse.json(price, { status: 400 })
 

@@ -702,5 +702,15 @@ const t: string[] = [
   "Ang nagbayad lang ang puwedeng gumamit ng VIP niche na ito",
   "Nagamit na ang VIP niche na ito",
   "Masyadong malaki ang larawan para itabi habang nagbabayad. Subukan ang mas maliit.",
+  "Nabili na",
+  "Ibigay",
+  "Mag-sign in para bumili",
+  "Mag-sign in para bumili ng espesyal na regalo",
+  "Mangyaring mag-sign in para bumili ng espesyal na regalo",
+  "Bumalik sa mga regalo",
+  "sa iyo na ito, ibigay sa kahit anong dambana",
+  "Nasa iyo na ang regalong ito",
+  "Hindi mo pa nabibili ang regalong ito",
+  "Nasa tabi na ng dambana ang regalong ito",
 ]
 export default t

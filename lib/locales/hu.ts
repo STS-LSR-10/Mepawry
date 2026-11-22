@@ -702,5 +702,15 @@ const t: string[] = [
   "Ezt a VIP fülkét csak az használhatja, aki fizetett",
   "Ezt a VIP fülkét már felhasználták",
   "A fotó túl nagy ahhoz, hogy fizetés közben megőrizzük. Próbálj kisebbet.",
+  "Megvásárolva",
+  "Odaadom",
+  "Jelentkezz be a vásárláshoz",
+  "Jelentkezz be különleges ajándékok vásárlásához",
+  "Kérjük, jelentkezz be különleges ajándékok vásárlásához",
+  "Vissza az ajándékokhoz",
+  "a tiéd marad, bármelyik emlékhelyen odaadhatod",
+  "Ez az ajándék már a tiéd",
+  "Ezt az ajándékot még nem vetted meg",
+  "Ez az ajándék már ott van az emlékhelynél",
 ]
 export default t

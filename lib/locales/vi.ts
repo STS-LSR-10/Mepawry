@@ -702,5 +702,15 @@ const t: string[] = [
   "Chỉ người đã thanh toán mới dùng được hốc VIP này",
   "Hốc VIP này đã được sử dụng",
   "Ảnh quá lớn để lưu trong lúc thanh toán. Hãy thử ảnh nhỏ hơn.",
+  "Đã mua",
+  "Tặng",
+  "Đăng nhập để mua",
+  "Đăng nhập để mua quà đặc biệt",
+  "Vui lòng đăng nhập để mua quà đặc biệt",
+  "Quay lại quà tặng",
+  "là của bạn, tặng ở bất kỳ điện thờ nào",
+  "Bạn đã có món quà này",
+  "Bạn chưa mua món quà này",
+  "Món quà này đã ở bên điện thờ",
 ]
 export default t

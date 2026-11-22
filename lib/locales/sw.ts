@@ -702,5 +702,15 @@ const t: string[] = [
   "Aliyelipa pekee ndiye anayeweza kutumia kibanda hiki cha VIP",
   "Kibanda hiki cha VIP kimeshatumika",
   "Picha ni kubwa mno kuhifadhiwa wakati wa kulipa. Jaribu ndogo zaidi.",
+  "Imenunuliwa",
+  "Toa",
+  "Ingia ili ununue",
+  "Ingia ili ununue zawadi maalum",
+  "Tafadhali ingia ili ununue zawadi maalum",
+  "Rudi kwenye zawadi",
+  "ni yako, itoe kwenye kaburi lolote",
+  "Tayari unamiliki zawadi hii",
+  "Bado hujanunua zawadi hii",
+  "Zawadi hii tayari iko karibu na kaburi lake",
 ]
 export default t

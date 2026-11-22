@@ -702,5 +702,15 @@ const t: string[] = [
   "Só quem pagou pode usar este nicho VIP",
   "Este nicho VIP já foi usado",
   "A foto é grande demais para guardar durante o pagamento. Tente uma menor.",
+  "Comprado",
+  "Oferecer",
+  "Entre para comprar",
+  "Entre para comprar presentes especiais",
+  "Entre para comprar presentes especiais",
+  "Voltar aos presentes",
+  "é seu, ofereça em qualquer altar",
+  "Você já tem este presente",
+  "Você ainda não comprou este presente",
+  "Este presente já está ao lado do altar",
 ]
 export default t

@@ -702,5 +702,15 @@ const t: string[] = [
   "Hanya orang yang membayar boleh menggunakan ceruk VIP ini",
   "Ceruk VIP ini sudah digunakan",
   "Foto terlalu besar untuk disimpan semasa membayar. Cuba foto yang lebih kecil.",
+  "Sudah dibeli",
+  "Berikan",
+  "Log masuk untuk membeli",
+  "Log masuk untuk membeli hadiah istimewa",
+  "Sila log masuk untuk membeli hadiah istimewa",
+  "Kembali ke hadiah",
+  "milik anda, berikan di mana-mana tempat peringatan",
+  "Anda sudah memiliki hadiah ini",
+  "Anda belum membeli hadiah ini",
+  "Hadiah ini sudah ada di tempat peringatannya",
 ]
 export default t

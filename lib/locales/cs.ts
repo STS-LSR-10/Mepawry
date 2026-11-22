@@ -702,5 +702,15 @@ const t: string[] = [
   "Tento VIP výklenek může použít jen ten, kdo zaplatil",
   "Tento VIP výklenek už byl použit",
   "Fotka je příliš velká na uložení během platby. Zkuste menší.",
+  "Zakoupeno",
+  "Darovat",
+  "Přihlaste se a kupte",
+  "Přihlaste se a kupte speciální dárky",
+  "Pro nákup speciálních dárků se prosím přihlaste",
+  "Zpět k dárkům",
+  "patří vám, darujte ho u kterékoli svatyně",
+  "Tento dárek už máte",
+  "Tento dárek jste ještě nekoupili",
+  "Tento dárek už u svatyně je",
 ]
 export default t

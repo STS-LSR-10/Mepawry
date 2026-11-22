@@ -702,5 +702,15 @@ const t: string[] = [
   "Doar persoana care a plătit poate folosi această nișă VIP",
   "Această nișă VIP a fost deja folosită",
   "Fotografia e prea mare pentru a fi păstrată cât plătești. Încearcă una mai mică.",
+  "Cumpărat",
+  "Dăruiește",
+  "Conectează-te pentru a cumpăra",
+  "Conectează-te pentru a cumpăra cadouri speciale",
+  "Te rugăm să te conectezi pentru a cumpăra cadouri speciale",
+  "Înapoi la cadouri",
+  "rămâne al tău, dăruiește-l la orice altar",
+  "Ai deja acest cadou",
+  "Nu ai cumpărat încă acest cadou",
+  "Acest cadou este deja lângă altar",
 ]
 export default t
