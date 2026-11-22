@@ -169,14 +169,10 @@ function Gallery({ r, from, to, m, demo }: { r: number; from: number; to: number
           <torusGeometry args={[rr, t, 5, 200, len]} />
         </mesh>
       ))}
-      {/* Gable ends where the ring opens: a wooden arch with glass */}
-      {[from, to].map(a => (
+      {/* The outer gallery's ends, where it meets the reception dome: a wooden arch. The inner gallery's ends stay
+          open (just its last rib), so the walk in from the garden isn't half closed off */}
+      {r > 30 && [from, to].map(a => (
         <group key={a} position={polar(a, r, 0)} rotation-y={-a}>
-          {r < 30 && ( // the outer gallery's ends open straight into the reception dome
-            <mesh position-y={H + 0.28} rotation-y={Math.PI / 2} material={m.glass} raycast={noRay} renderOrder={2}>
-              <circleGeometry args={[W / 2, 28, 0, Math.PI]} />
-            </mesh>
-          )}
           <mesh position-y={H + 0.28} rotation-y={Math.PI / 2} material={m.frame} castShadow>
             <torusGeometry args={[W / 2, 0.11, 6, 28, Math.PI]} />
           </mesh>
