@@ -251,7 +251,7 @@ export function glowTexture() {
 }
 
 /** Name plaques: walnut with a gold inlay border and gold letters, or pale carved stone. */
-export function plaqueTexture(text: string, kind: 'wood' | 'stone', w = 640, h = 160) {
+export function plaqueTexture(text: string, kind: 'wood' | 'stone', w = 640, h = 160, size = kind === 'stone' ? 0.3 : 0.42) {
   const { c, g } = canvas(w, h)
   const rad = kind === 'stone' ? h / 2 - 6 : 18
   g.beginPath(); g.roundRect(4, 4, w - 8, h - 8, rad); g.clip()
@@ -264,14 +264,14 @@ export function plaqueTexture(text: string, kind: 'wood' | 'stone', w = 640, h =
     g.beginPath(); g.roundRect(18, 18, w - 36, h - 36, 12); g.stroke()
     g.lineWidth = 1.5; g.beginPath(); g.roundRect(28, 28, w - 56, h - 56, 8); g.stroke()
     g.fillStyle = '#E8C365'; g.shadowColor = 'rgba(0,0,0,.5)'; g.shadowBlur = 4; g.shadowOffsetY = 2
-    g.font = `600 ${Math.round(h * 0.42)}px Georgia, serif`
+    g.font = `600 ${Math.round(h * size)}px Georgia, serif`
   } else {
     const bg = g.createLinearGradient(0, 0, 0, h)
     bg.addColorStop(0, '#E4DED4'); bg.addColorStop(1, '#C9C1B4')
     g.fillStyle = bg; g.fillRect(0, 0, w, h)
     for (let i = 0; i < 900; i++) { g.fillStyle = `rgba(${i % 2 ? 90 : 255},${i % 2 ? 80 : 250},${i % 2 ? 70 : 240},.18)`; g.fillRect((i * 73.1) % w, (i * 37.9) % h, 1.6, 1.6) }
     g.fillStyle = '#4A4036'; g.shadowColor = 'rgba(255,255,255,.6)'; g.shadowOffsetY = 1.5
-    g.font = `500 ${Math.round(h * 0.3)}px Georgia, serif`
+    g.font = `600 ${Math.round(h * size)}px Georgia, serif`
   }
   g.textAlign = 'center'; g.textBaseline = 'middle'
   g.fillText(text, w / 2, h / 2 + 3, w - 90)

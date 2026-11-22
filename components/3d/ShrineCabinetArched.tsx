@@ -159,7 +159,7 @@ function Cabinet({ d, pet, candlesToday, flowers, gifts, low }: { d: Dims; pet: 
   const room = SLOTS[pet.shrine_position]?.room.split(' · ') ?? []
   const where = [t('Dome {n}', { n: pet.floor_id }), ...(pet.vip_position != null ? [t('VIP pavilion')]
     : room.length === 2 ? [t(room[0]), t('Zone {z}', { z: room[1].replace('Zone ', '') })] : [])].join(' · ')
-  const plate = useTex(() => plaqueTexture(where, 'stone', 1000, 128), [where])
+  const plate = useTex(() => plaqueTexture(where, 'stone', 1470, 100, 0.6), [where]) // same shape as the plate below, so the letters aren't stretched
   const vip = pet.vip_position != null
   const grand = useMemo(() => vip ? {
     ivory: low ? new MeshStandardMaterial({ color: '#EFE6D6', roughness: 0.4 })
@@ -241,7 +241,7 @@ function Cabinet({ d, pet, candlesToday, flowers, gifts, low }: { d: Dims; pet: 
         <RoundedBox args={[W + 0.14, 0.2, DP + 0.12]} radius={0.03} smoothness={3} material={look.plinth} />
         <RoundedBox args={[W - 0.3, 0.13, 0.02]} radius={0.01} smoothness={2} position={[0, 0, DP / 2 + 0.065]} material={look.drawer} />
         <mesh position={[0, 0, DP / 2 + 0.077]}>
-          <planeGeometry args={[1.7, 0.1]} />
+          <planeGeometry args={[1.76, 0.12]} />
           <meshStandardMaterial map={plate} roughness={0.9} transparent alphaTest={0.5} />
         </mesh>
         {[-1, 1].map(s => (
