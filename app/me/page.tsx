@@ -36,11 +36,17 @@ function Account() {
     fetch('/api/me/pets', { cache: 'no-store' }).then(r => r.json()).then(d => setPets(d.pets ?? [])).catch(() => setPets([]))
   }, [])
   useEffect(() => { load() }, [load])
-  // ?edit=<id> from a shrine page opens that pet straight away
+  // ?edit=<id> from a shrine page opens that pet straight away; closing or saving goes back to that shrine
+  const [fromShrine, setFromShrine] = useState<string | null>(null)
   useEffect(() => {
     const id = new URLSearchParams(window.location.search).get('edit')
-    if (id && pets) setEditing(pets.find(p => p.id === id) ?? null)
+    const pet = id && pets?.find(p => p.id === id)
+    if (pet) { setEditing(pet); setFromShrine(pet.slug) }
   }, [pets])
+  const closeEdit = (saved?: Pet) => {
+    if (fromShrine) { window.location.href = `/${saved?.slug ?? fromShrine}`; return }
+    setEditing(null)
+  }
 
   return (
     <div className="space-y-8">
@@ -95,7 +101,7 @@ function Account() {
 
       {!user?.isAnonymous && <button onClick={signOut} className="text-sm text-[#8E8278] underline">{t('Sign out')}</button>}
 
-      <EditPetModal pet={editing} onClose={() => setEditing(null)} onSaved={p => { setPets(ps => ps?.map(x => (x.id === p.id ? p : x)) ?? null); setEditing(null) }} />
+      <EditPetModal pet={editing} onClose={() => closeEdit()} onSaved={p => { setPets(ps => ps?.map(x => (x.id === p.id ? p : x)) ?? null); closeEdit(p) }} />
       <DeletePetModal pet={deleting} onClose={() => setDeleting(null)} onDeleted={id => { setPets(ps => ps?.filter(x => x.id !== id) ?? null); setDeleting(null) }} />
     </div>
   )
