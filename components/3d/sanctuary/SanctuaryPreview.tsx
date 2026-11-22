@@ -874,7 +874,8 @@ export function SanctuaryWorld({ time, interior: inRoom, cutaway = false, low, d
 }) {
   const t = TIMES[time]
   const interior = inRoom && !cutaway
-  const lampFill = inRoom && cutaway && t.lamp > 0
+  // the walkable hall (roof off), and everywhere outdoors at night: the warm lamp fill, so night stays bright and readable
+  const lampFill = ((inRoom && cutaway) || (time === 'night' && !inRoom)) && t.lamp > 0
   const m = useMaterials(low)
   const sign = useMemo(() => signTexture('🐾 Mepawry Sanctuary 🐾', { w: 900, h: 160, bg: '#F6EFE2', fg: '#3E2A1A', font: 'italic 700 70px Georgia, serif' }), [])
   return (
