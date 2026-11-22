@@ -678,5 +678,7 @@ const t: string[] = [
   "Bild des Schreins speichern",
   "Gemerkte Gedenkstätten",
   "Zünde eine Kerze für {name} an",
+  "Knöpfe zeigen",
+  "Knöpfe ausblenden",
 ]
 export default t

@@ -678,5 +678,7 @@ const t: string[] = [
   "Lưu ảnh bàn thờ",
   "Trang tưởng niệm đã gắn sao",
   "Thắp nến cho {name}",
+  "Hiện các nút",
+  "Ẩn các nút",
 ]
 export default t

@@ -678,5 +678,7 @@ const t: string[] = [
   "Enregistrer une image de l’autel",
   "Mémoriaux étoilés",
   "Allumez une bougie pour {name}",
+  "Afficher les boutons",
+  "Masquer les boutons",
 ]
 export default t

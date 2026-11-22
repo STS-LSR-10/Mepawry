@@ -678,5 +678,7 @@ const t: string[] = [
   "Kép mentése az oltárról",
   "Csillagozott emlékhelyek",
   "Gyújts gyertyát {name} emlékére",
+  "Gombok megjelenítése",
+  "Gombok elrejtése",
 ]
 export default t

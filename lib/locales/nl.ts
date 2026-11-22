@@ -678,5 +678,7 @@ const t: string[] = [
   "Afbeelding van het altaar bewaren",
   "Gedenkplekken met ster",
   "Steek een kaars aan voor {name}",
+  "Knoppen tonen",
+  "Knoppen verbergen",
 ]
 export default t

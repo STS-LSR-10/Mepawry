@@ -678,5 +678,7 @@ const t: string[] = [
   "儲存神龕圖片",
   "已收藏的紀念館",
   "為{name}點一支蠟燭",
+  "顯示按鈕",
+  "隱藏按鈕",
 ]
 export default t

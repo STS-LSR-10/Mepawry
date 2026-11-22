@@ -678,5 +678,7 @@ const t: string[] = [
   "Sunağın resmini kaydet",
   "Yıldızlı anma sayfaları",
   "{name} için mum yak",
+  "Düğmeleri göster",
+  "Düğmeleri gizle",
 ]
 export default t

@@ -678,5 +678,7 @@ const t: string[] = [
   "Hifadhi picha ya madhabahu",
   "Kumbukumbu zenye nyota",
   "Washa mshumaa kwa {name}",
+  "Onyesha vitufe",
+  "Ficha vitufe",
 ]
 export default t

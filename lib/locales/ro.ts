@@ -678,5 +678,7 @@ const t: string[] = [
   "Salvează o imagine a altarului",
   "Memoriale marcate cu stea",
   "Aprinde o lumânare pentru {name}",
+  "Arată butoanele",
+  "Ascunde butoanele",
 ]
 export default t

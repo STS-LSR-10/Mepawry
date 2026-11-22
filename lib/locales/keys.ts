@@ -680,4 +680,6 @@ export const KEYS = [
   "Save a picture of the shrine",
   "Starred memorials",
   "Light a candle for {name}",
+  "Show the buttons",
+  "Hide the buttons",
 ] as const

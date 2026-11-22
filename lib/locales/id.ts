@@ -678,5 +678,7 @@ const t: string[] = [
   "Simpan gambar altar",
   "Memorial berbintang",
   "Nyalakan lilin untuk {name}",
+  "Tampilkan tombol",
+  "Sembunyikan tombol",
 ]
 export default t

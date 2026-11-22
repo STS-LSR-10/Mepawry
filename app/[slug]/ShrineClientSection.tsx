@@ -51,6 +51,10 @@ export function ShrineClientSection({ pet: initialPet, candlesToday: initialToda
   }
   const [keepsakeOpen, setKeepsakeOpen] = useState(false)
   const [giftOpen, setGiftOpen] = useState(false)
+  // the tribute bar can fold down to a small button, so it doesn't cover the shrine while zooming (remembered)
+  const [barOpen, setBarOpen] = useState(true)
+  useEffect(() => { try { if (localStorage.getItem('pm-bar') === 'closed') setBarOpen(false) } catch {} }, [])
+  const foldBar = (open: boolean) => { setBarOpen(open); try { localStorage.setItem('pm-bar', open ? 'open' : 'closed') } catch {} }
   // a frame or backdrop being tried on from the gift picker
   const [tryDecor, setTryDecor] = useState<{ kind: 'frame' | 'backdrop'; id: string } | null>(null)
   const shown = tryDecor ? { ...pet, ...(tryDecor.kind === 'frame' ? { frame_style: tryDecor.id } : { backdrop: tryDecor.id }) } : pet
@@ -175,13 +179,19 @@ export function ShrineClientSection({ pet: initialPet, candlesToday: initialToda
       <GiftShelf gifts={gifts} petName={pet.name} />
 
       {/* Floating Action Toolbar */}
-      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-20 w-full max-w-lg px-4 flex flex-col items-center gap-2">
+      <div className={`fixed bottom-6 z-20 flex flex-col gap-2 ${barOpen ? 'left-1/2 w-full max-w-lg -translate-x-1/2 items-center px-4' : 'right-4 items-end'}`}>
         {shareSuccess && (
           <div className="bg-[#27AE60] text-white text-xs px-4 py-1.5 rounded-full shadow-lg animate-fade-in">
             {t('Link copied to clipboard! 📋')}
           </div>
         )}
-        <div className="glass rounded-3xl p-2.5 shadow-2xl border border-white/20">
+        {!barOpen ? (
+          <button onClick={() => foldBar(true)} aria-label={t('Show the buttons')} className="glass flex items-center gap-1.5 rounded-full border border-white/20 px-4 py-2.5 text-lg text-[#FAF7F2] shadow-2xl">
+            <span aria-hidden>🕯️🌸🎁</span><svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M6 15l6-6 6 6" /></svg>
+          </button>
+        ) : (
+        <div className="glass relative rounded-3xl border border-white/20 p-2 shadow-2xl">
+          <button onClick={() => foldBar(false)} aria-label={t('Hide the buttons')} className="absolute -top-3 right-3 grid h-6 w-10 place-items-center rounded-full border border-white/20 bg-[#2A1E17]/80 text-xs text-[#FAF7F2] backdrop-blur"><svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M6 9l6 6 6-6" /></svg></button>
           <TributeToolbar
             candleCount={candles}
             flowerCount={flowers}
@@ -195,6 +205,7 @@ export function ShrineClientSection({ pet: initialPet, candlesToday: initialToda
             onTribute={leaveTribute}
           />
         </div>
+        )}
       </div>
 
       <GiftPicker open={giftOpen} onClose={() => setGiftOpen(false)} pet={pet} onLeft={g => { setGifts(prev => [g, ...prev]); setGiftTotal(n => n + 1) }} onDecor={setPet} onPreview={setTryDecor} />

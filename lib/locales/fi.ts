@@ -678,5 +678,7 @@ const t: string[] = [
   "Tallenna kuva alttarista",
   "Tähdellä merkityt muistosivut",
   "Sytytä kynttilä: {name}",
+  "Näytä painikkeet",
+  "Piilota painikkeet",
 ]
 export default t

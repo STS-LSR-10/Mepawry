@@ -678,5 +678,7 @@ const t: string[] = [
   "I-save ang larawan ng dambana",
   "Mga memorial na may bituin",
   "Magsindi ng kandila para kay {name}",
+  "Ipakita ang mga button",
+  "Itago ang mga button",
 ]
 export default t

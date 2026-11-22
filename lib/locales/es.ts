@@ -678,5 +678,7 @@ const t: string[] = [
   "Guardar una imagen del altar",
   "Memoriales con estrella",
   "Enciende una vela por {name}",
+  "Mostrar los botones",
+  "Ocultar los botones",
 ]
 export default t

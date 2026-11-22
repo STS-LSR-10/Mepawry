@@ -127,7 +127,7 @@ function TributeButton({ emoji, label, count, active, glow, highlight, onClick, 
     <button
       onClick={onClick}
       className={cn(
-        'flex-shrink-0 flex flex-col items-center gap-1 px-4 py-2.5 rounded-2xl border transition-all duration-150',
+        'flex-shrink-0 flex flex-col items-center gap-0.5 px-3 py-2 rounded-2xl border transition-all duration-150',
         'hover:scale-105 active:scale-95',
         highlight
           ? 'bg-[#FDF0E5] border-[#D9823B] text-[#C67129]'

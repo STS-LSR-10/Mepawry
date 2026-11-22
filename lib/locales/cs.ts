@@ -678,5 +678,7 @@ const t: string[] = [
   "Uložit obrázek oltáříku",
   "Památníky s hvězdičkou",
   "Zapalte svíčku pro {name}",
+  "Zobrazit tlačítka",
+  "Skrýt tlačítka",
 ]
 export default t
