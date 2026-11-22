@@ -298,21 +298,24 @@ export function nameplateTexture(name: string, sub: string) {
 
 /** Name tag (✦ Name): cream letters on a dark chocolate pill with a thin gold rim, readable on any background. */
 export function nameTagTexture(text: string) {
-  const w = 512, h = 112
+  // drawn at twice the size it shows, with big bold letters, so it stays sharp and readable from a distance
+  const w = 1024, h = 224
   const { c, g } = canvas(w, h)
-  g.font = '700 46px system-ui, sans-serif'
-  const tw = Math.min(w - 16, g.measureText(text).width + 64)
+  g.font = '800 104px system-ui, -apple-system, "Segoe UI", sans-serif'
+  const tw = Math.min(w - 16, g.measureText(text).width + 120)
   const x0 = (w - tw) / 2
-  g.shadowColor = 'rgba(0,0,0,.35)'; g.shadowBlur = 8; g.shadowOffsetY = 3
-  g.fillStyle = 'rgba(42,26,16,.9)'
-  g.beginPath(); g.roundRect(x0, 12, tw, h - 26, (h - 26) / 2); g.fill()
+  g.shadowColor = 'rgba(0,0,0,.45)'; g.shadowBlur = 14; g.shadowOffsetY = 5
+  g.fillStyle = 'rgba(34,21,12,.94)'
+  g.beginPath(); g.roundRect(x0, 20, tw, h - 46, (h - 46) / 2); g.fill()
   g.shadowColor = 'transparent'
-  g.strokeStyle = '#E8C365'; g.lineWidth = 3
-  g.beginPath(); g.roundRect(x0 + 2, 14, tw - 4, h - 30, (h - 30) / 2); g.stroke()
-  g.fillStyle = '#FFF6E2'
+  g.strokeStyle = '#E8C365'; g.lineWidth = 6
+  g.beginPath(); g.roundRect(x0 + 4, 24, tw - 8, h - 54, (h - 54) / 2); g.stroke()
+  g.fillStyle = '#FFF8EA'
   g.textAlign = 'center'; g.textBaseline = 'middle'
-  g.fillText(text, w / 2, h / 2 - 1, tw - 28)
-  return finish(c)
+  g.fillText(text, w / 2, h / 2 - 3, tw - 60)
+  const t = finish(c)
+  t.anisotropy = 8
+  return t
 }
 
 /** Knitted hoodie front: soft ribbing with little bones and paw prints raised in a lighter shade. */

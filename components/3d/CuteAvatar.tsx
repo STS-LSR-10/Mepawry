@@ -338,12 +338,12 @@ export function NameTag({ map }: { map: THREE_Texture }) {
   const ref = useRef<Sprite>(null!)
   useFrame(({ camera }) => {
     const d = camera.position.distanceTo(ref.current.getWorldPosition(tagAt))
-    const w = Math.min(1.4, Math.max(0.36, d * 0.14))
+    const w = Math.min(1.9, Math.max(0.75, d * 0.2)) // readable up close and from across a gallery
     ref.current.scale.set(w, w * TAG_ASPECT, 1)
   })
   return (
-    <sprite ref={ref} position={[0, 1.8, 0]} scale={[1, TAG_ASPECT, 1]}>
-      <spriteMaterial map={map} transparent alphaTest={0.1} depthWrite={false} />
+    <sprite ref={ref} position={[0, 1.85, 0]} scale={[1, TAG_ASPECT, 1]}>
+      <spriteMaterial map={map} transparent alphaTest={0.1} depthWrite={false} toneMapped={false} fog={false} />
     </sprite>
   )
 }
