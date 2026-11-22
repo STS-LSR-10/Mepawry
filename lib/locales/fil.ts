@@ -664,5 +664,9 @@ const t: string[] = [
   "Gubat sa taglamig",
   "Mga pista",
   "Mga panahon",
+  "Bagong frame para kay {name}",
+  "Bagong backdrop para kay {name}",
+  "Ibang mga frame",
+  "Ibang mga backdrop",
 ]
 export default t

@@ -664,5 +664,9 @@ const t: string[] = [
   "Zimní les",
   "Svátky",
   "Roční období",
+  "Nový rámeček pro {name}",
+  "Nové pozadí pro {name}",
+  "Další rámečky",
+  "Další pozadí",
 ]
 export default t

@@ -664,5 +664,9 @@ const t: string[] = [
   "Kış ormanı",
   "Bayramlar",
   "Mevsimler",
+  "{name} için yeni çerçeve",
+  "{name} için yeni arka plan",
+  "Diğer çerçeveler",
+  "Diğer arka planlar",
 ]
 export default t

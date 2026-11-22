@@ -664,5 +664,9 @@ const t: string[] = [
   "Hutan musim sejuk",
   "Perayaan",
   "Musim",
+  "Bingkai baharu untuk {name}",
+  "Latar baharu untuk {name}",
+  "Bingkai lain",
+  "Latar lain",
 ]
 export default t

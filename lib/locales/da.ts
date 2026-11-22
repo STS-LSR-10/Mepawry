@@ -664,5 +664,9 @@ const t: string[] = [
   "Vinterskov",
   "Højtider",
   "Årstider",
+  "En ny ramme til {name}",
+  "En ny baggrund til {name}",
+  "Andre rammer",
+  "Andre baggrunde",
 ]
 export default t

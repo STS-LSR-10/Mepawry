@@ -1,7 +1,7 @@
 'use client'
 // app/[slug]/ShrineClientSection.tsx — S04 Interactive Toolbar & Modals for Guestbook and Keepsakes
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import dynamic from 'next/dynamic'
 import { TributeToolbar } from '@/components/shrine/TributeToolbar'
 import { GiftPicker, GiftShelf } from '@/components/shrine/GiftPicker'
@@ -51,6 +51,11 @@ export function ShrineClientSection({ pet: initialPet, candlesToday: initialToda
   }
   const [keepsakeOpen, setKeepsakeOpen] = useState(false)
   const [giftOpen, setGiftOpen] = useState(false)
+  // a frame or backdrop being tried on from the gift picker
+  const [tryDecor, setTryDecor] = useState<{ kind: 'frame' | 'backdrop'; id: string } | null>(null)
+  const shown = tryDecor ? { ...pet, ...(tryDecor.kind === 'frame' ? { frame_style: tryDecor.id } : { backdrop: tryDecor.id }) } : pet
+  const cabinetRef = useRef<HTMLDivElement>(null)
+  useEffect(() => { if (tryDecor) cabinetRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }, [tryDecor])
   const [gifts, setGifts] = useState<LeftGift[]>([])
   const [giftTotal, setGiftTotal] = useState(0)
   const [messages, setMessages] = useState<GuestbookEntry[]>([])
@@ -153,8 +158,8 @@ export function ShrineClientSection({ pet: initialPet, candlesToday: initialToda
     <>
       {/* 3D shrine cabinet */}
       {/* a VIP pet's cabinet is the big one, like its niche in the VIP pavilion: give it more room */}
-      <div className={`relative -mx-4 w-[calc(100%+2rem)] max-w-[760px] ${pet.vip_position != null ? 'h-[460px] sm:h-[600px]' : 'h-[360px] sm:h-[460px]'}`} aria-label={t("{name}'s shrine, {n} candles lit", { name: pet.name, n: candles })}>
-        <ShrineCabinet pet={pet} candlesToday={candlesToday} flowers={flowers} gifts={gifts.map(g => g.item)} />
+      <div className={`relative -mx-4 w-[calc(100%+2rem)] max-w-[760px] ${pet.vip_position != null ? 'h-[460px] sm:h-[600px]' : 'h-[360px] sm:h-[460px]'}`}  ref={cabinetRef} aria-label={t("{name}'s shrine, {n} candles lit", { name: pet.name, n: candles })}>
+        <ShrineCabinet pet={shown} candlesToday={candlesToday} flowers={flowers} gifts={gifts.map(g => g.item)} />
       </div>
       <p className="mt-1 rounded-full bg-black/30 px-4 py-1.5 text-sm text-[#FFE2C0]">
         {litToday ? <>🕯️ {t('You lit a candle for {name} today. Come back tomorrow to light another.', { name: pet.name })}</>
@@ -191,7 +196,7 @@ export function ShrineClientSection({ pet: initialPet, candlesToday: initialToda
         </div>
       </div>
 
-      <GiftPicker open={giftOpen} onClose={() => setGiftOpen(false)} pet={pet} onLeft={g => { setGifts(prev => [g, ...prev]); setGiftTotal(n => n + 1) }} onDecor={setPet} />
+      <GiftPicker open={giftOpen} onClose={() => setGiftOpen(false)} pet={pet} onLeft={g => { setGifts(prev => [g, ...prev]); setGiftTotal(n => n + 1) }} onDecor={setPet} onPreview={setTryDecor} />
 
       {/* S05: Guestbook & Tributes Modal */}
       <Modal

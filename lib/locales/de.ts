@@ -664,5 +664,9 @@ const t: string[] = [
   "Winterwald",
   "Feste",
   "Jahreszeiten",
+  "Ein neuer Rahmen für {name}",
+  "Ein neuer Hintergrund für {name}",
+  "Andere Rahmen",
+  "Andere Hintergründe",
 ]
 export default t

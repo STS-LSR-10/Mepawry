@@ -664,5 +664,9 @@ const t: string[] = [
   "Talvimetsä",
   "Juhlat",
   "Vuodenajat",
+  "Uusi kehys: {name}",
+  "Uusi tausta: {name}",
+  "Muut kehykset",
+  "Muut taustat",
 ]
 export default t

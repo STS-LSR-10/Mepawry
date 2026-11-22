@@ -666,4 +666,8 @@ export const KEYS = [
   "Winter forest",
   "Festivals",
   "Seasons",
+  "A new frame for {name}",
+  "A new backdrop for {name}",
+  "Other frames",
+  "Other backdrops",
 ] as const

@@ -664,5 +664,9 @@ const t: string[] = [
   "Winterbos",
   "Feesten",
   "Seizoenen",
+  "Een nieuwe lijst voor {name}",
+  "Een nieuwe achtergrond voor {name}",
+  "Andere lijsten",
+  "Andere achtergronden",
 ]
 export default t

@@ -31,13 +31,15 @@ const TABS: { id: Tab; emoji: string; label: string; hint: string }[] = [
   { id: 'backdrops', emoji: '🌄', label: 'Backdrops', hint: 'A new scene behind their portrait. It stays for good.' },
 ]
 
-export function GiftPicker({ open, onClose, pet, onLeft, onDecor }: {
+export function GiftPicker({ open, onClose, pet, onLeft, onDecor, onPreview }: {
   open: boolean
   onClose: () => void
   pet: Pet
   onLeft: (gift: LeftGift) => void
   /** A frame or backdrop was applied: the updated memorial */
   onDecor: (pet: Pet) => void
+  /** Try a frame or backdrop on the cabinet before giving it (null: back to what it has) */
+  onPreview?: (decor: { kind: 'frame' | 'backdrop'; id: string } | null) => void
 }) {
   const petId = pet.id, petName = pet.name
   const t = useT()
@@ -45,6 +47,12 @@ export function GiftPicker({ open, onClose, pet, onLeft, onDecor }: {
   const [tab, setTab] = useState<Tab>('food')
   const [picked, setPicked] = useState<Gift | null>(null)
   const [decor, setDecor] = useState<Decor | null>(null)
+  // a frame or backdrop was tapped: the picker steps aside so it shows on the cabinet, with a small bar to decide
+  const [previewing, setPreviewing] = useState(false)
+  const pick = (d: Decor) => { setDecor(d); setPreviewing(true) }
+  const showing = open && previewing && decor ? decor : null
+  useEffect(() => { onPreview?.(showing && { kind: showing.kind, id: showing.id }) }, [showing?.kind, showing?.id]) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (!open) setPreviewing(false) }, [open])
   const currentFrame = pet.frame_style ?? DEFAULT_FRAME
   const currentBackdrop = pet.backdrop ?? DEFAULT_BACKDROP
   const [nextAt, setNextAt] = useState<string | null>(null)
@@ -79,7 +87,7 @@ export function GiftPicker({ open, onClose, pet, onLeft, onDecor }: {
     }).catch(() => null)
     setSending(false)
     const d = await res?.json().catch(() => null)
-    if (res?.ok && d?.pet) { onDecor(d.pet); setDecor(null) } else setError(d?.error ?? t('That didn’t go through. Please try again.'))
+    if (res?.ok && d?.pet) { onDecor(d.pet); setDecor(null); setPreviewing(false) } else setError(d?.error ?? t('That didn’t go through. Please try again.'))
   }
 
   const send = async () => {
@@ -105,6 +113,37 @@ export function GiftPicker({ open, onClose, pet, onLeft, onDecor }: {
       setError(t('That didn’t go through. Please try again.'))
     }
   }
+
+  const decorIcon = decor && (decor.kind === 'backdrop'
+    // eslint-disable-next-line @next/next/no-img-element
+    ? <img src={backdropThumb(decor.id)} alt="" className="h-full w-full object-cover" />
+    : <span className="block h-full w-full rounded-xl p-1.5" style={{ background: FRAMES.find(f => f.id === decor.id)?.swatch }}><span className="block h-full w-full rounded-md bg-[#FBF6EC]" /></span>)
+  const decorAction = admin ? (
+    <button onClick={applyDecor} disabled={sending} className="rounded-2xl bg-[#D9823B] px-4 py-3 text-xs font-semibold text-white shadow-md hover:bg-[#C67129] disabled:opacity-60">
+      {sending ? t('Applying…') : t('Apply (admin)')}
+    </button>
+  ) : (
+    <button disabled className="rounded-2xl bg-[#E8DFD6] px-4 py-3 text-xs font-semibold text-[#8E8278]">{t('Opening soon')}</button>
+  )
+
+  // Trying one on: a small bar at the bottom, the cabinet above shows it
+  if (showing) return (
+    <div className="fixed inset-x-0 bottom-0 z-50 flex justify-center px-3 pb-[max(12px,env(safe-area-inset-bottom))]" role="dialog" aria-label={t(showing.kind === 'frame' ? 'A new frame for {name}' : 'A new backdrop for {name}', { name: petName })}>
+      <div className="w-full max-w-[520px] rounded-3xl bg-[#FFFBF5] p-4 shadow-2xl ring-1 ring-[#EFE4D4]">
+        <p className="mb-3 font-serif text-lg font-bold text-[#2A1E17]">{t(showing.kind === 'frame' ? 'A new frame for {name}' : 'A new backdrop for {name}', { name: petName })}</p>
+        {error && <p className="mb-2 text-center text-xs text-[#C0392B]">{error}</p>}
+        <FooterRow icon={decorIcon} title={t(showing.name)} sub={`฿${showing.price} · ${t('stays for good')}`}>
+          <button onClick={() => setPreviewing(false)} className="shrink-0 text-xs font-semibold text-[#C67129]">
+            {t(showing.kind === 'frame' ? 'Other frames' : 'Other backdrops')} ▴
+          </button>
+        </FooterRow>
+        <div className="mt-3 grid grid-cols-2 gap-2 [&>button]:w-full">
+          <button onClick={onClose} className="rounded-2xl border border-[#E8DFD6] bg-white px-4 py-3 text-xs font-semibold text-[#2A1E17]">{t('Close')}</button>
+          {decorAction}
+        </div>
+      </div>
+    </div>
+  )
 
   return (
     <Modal open={open} onClose={onClose} className="sm:max-w-[520px] bg-[#FFFBF5]">
@@ -156,11 +195,11 @@ export function GiftPicker({ open, onClose, pet, onLeft, onDecor }: {
           <div className="-mx-1 mt-2 max-h-[46dvh] overflow-y-auto overscroll-contain px-1 py-1">
             {tab === 'frames' && (
               <FrameGrid frames={FRAMES.filter(f => f.id !== DEFAULT_FRAME)} current={currentFrame} picked={decor?.id}
-                onPick={f => setDecor({ kind: 'frame', id: f.id, name: f.name, price: f.price })} />
+                onPick={f => pick({ kind: 'frame', id: f.id, name: f.name, price: f.price })} />
             )}
             {tab === 'backdrops' && (
               <BackdropGrid current={currentBackdrop} picked={decor?.id}
-                onPick={b => setDecor({ kind: 'backdrop', id: b.id, name: b.name, price: b.price })} />
+                onPick={b => pick({ kind: 'backdrop', id: b.id, name: b.name, price: b.price })} />
             )}
             {tab === 'special' && seasonal.map(s => <Section key={s.id} title={`${s.emoji} ${t(s.label)}`} items={s.items} picked={picked} onPick={setPicked} />)}
             {!isDecor && <Section title={tab === 'special' && seasonal.length ? `🌈 ${t('All year')}` : ''} items={yearRound} picked={picked} onPick={setPicked} />}
@@ -171,20 +210,9 @@ export function GiftPicker({ open, onClose, pet, onLeft, onDecor }: {
             {error && <p className="mb-2 text-center text-xs text-[#C0392B]">{error}</p>}
             {isDecor ? (
               decor ? (
-                <FooterRow
-                  icon={decor.kind === 'backdrop'
-                    // eslint-disable-next-line @next/next/no-img-element
-                    ? <img src={backdropThumb(decor.id)} alt="" className="h-full w-full object-cover" />
-                    : <span className="block h-full w-full rounded-xl p-1.5" style={{ background: FRAMES.find(f => f.id === decor.id)?.swatch }}><span className="block h-full w-full rounded-md bg-[#FBF6EC]" /></span>}
-                  title={t(decor.name)} sub={`฿${decor.price} · ${t('stays for good')}`}
-                >
-                  {admin ? (
-                    <button onClick={applyDecor} disabled={sending} className="rounded-2xl bg-[#D9823B] px-4 py-3 text-xs font-semibold text-white shadow-md hover:bg-[#C67129] disabled:opacity-60">
-                      {sending ? t('Applying…') : t('Apply (admin)')}
-                    </button>
-                  ) : (
-                    <button disabled className="rounded-2xl bg-[#E8DFD6] px-4 py-3 text-xs font-semibold text-[#8E8278]">{t('Opening soon')}</button>
-                  )}
+                <FooterRow icon={decorIcon} title={t(decor.name)} sub={`฿${decor.price} · ${t('stays for good')}`}>
+                  <button onClick={() => setPreviewing(true)} className="rounded-2xl border border-[#E8DFD6] bg-white px-3 py-3 text-xs font-semibold text-[#2A1E17]">{t('Preview')}</button>
+                  {decorAction}
                 </FooterRow>
               ) : (
                 <p className="py-3 text-center text-sm text-[#8E8278]">{t('Tap one to see it up close')}</p>

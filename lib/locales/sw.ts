@@ -664,5 +664,9 @@ const t: string[] = [
   "Msitu wa majira ya baridi",
   "Sherehe",
   "Misimu",
+  "Fremu mpya ya {name}",
+  "Mandhari mapya ya {name}",
+  "Fremu nyingine",
+  "Mandhari mengine",
 ]
 export default t

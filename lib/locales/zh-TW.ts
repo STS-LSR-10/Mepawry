@@ -664,5 +664,9 @@ const t: string[] = [
   "冬日森林",
   "節慶",
   "季節",
+  "給{name}的新相框",
+  "給{name}的新背景",
+  "其他相框",
+  "其他背景",
 ]
 export default t

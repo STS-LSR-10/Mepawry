@@ -664,5 +664,9 @@ const t: string[] = [
   "Pădure de iarnă",
   "Sărbători",
   "Anotimpuri",
+  "O ramă nouă pentru {name}",
+  "Un fundal nou pentru {name}",
+  "Alte rame",
+  "Alte fundaluri",
 ]
 export default t

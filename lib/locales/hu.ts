@@ -664,5 +664,9 @@ const t: string[] = [
   "Téli erdő",
   "Ünnepek",
   "Évszakok",
+  "Új keret {name} számára",
+  "Új háttér {name} számára",
+  "Más keretek",
+  "Más hátterek",
 ]
 export default t

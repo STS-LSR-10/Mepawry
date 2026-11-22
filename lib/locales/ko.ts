@@ -664,5 +664,9 @@ const t: string[] = [
   "겨울 숲",
   "축제",
   "계절",
+  "{name}의 새 액자",
+  "{name}의 새 배경",
+  "다른 액자",
+  "다른 배경",
 ]
 export default t
