@@ -137,6 +137,7 @@ function krathong(g: G, x: number, y: number, s: number) {
 }
 
 const PAINT: Record<string, (g: G) => void> = {
+  plain: g => sky(g, [[0, '#6B4430'], [1, '#4A2C1C']]),
   midnight: g => {
     sky(g, [[0, '#0D1033'], [0.6, '#1E1F52'], [1, '#2E2A62']])
     stars(g, 140, 7)

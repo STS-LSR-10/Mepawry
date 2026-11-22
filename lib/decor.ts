@@ -32,7 +32,7 @@ export interface Backdrop {
 }
 
 export const DEFAULT_FRAME = 'gold'
-export const DEFAULT_BACKDROP = 'midnight'
+export const DEFAULT_BACKDROP = 'plain'
 export const FRAME_PRICE = 49
 export const PATTERN_FRAME_PRICE = 59
 export const BACKDROP_PRICE = 59
@@ -84,6 +84,7 @@ const months = (...ms: number[]) => (m: number) => ms.includes(m)
 
 /** The first one is the free default every shrine starts with. */
 export const BACKDROPS: Backdrop[] = [
+  bd('plain', 'Plain wood'), // the cabinet's own wood (or ivory, VIP) right across the back
   bd('midnight', 'Midnight sky'),
   bd('peach', 'Peach dawn'),
   bd('meadow', 'Meadow at dusk'),

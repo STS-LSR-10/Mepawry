@@ -203,8 +203,10 @@ function Cabinet({ d, pet, candlesToday, flowers, gifts, low }: { d: Dims; pet: 
       <mesh geometry={body} material={look.case} />
       <mesh geometry={inlay} position-z={DP / 2 + 0.02} material={look.trim} />
       {grand && <Columns d={d} ivory={grand.ivory} gold={m.gold} />}
-      <mesh geometry={back} position-z={BACK}><meshBasicMaterial map={sky} toneMapped={false} /></mesh>
-      {backdrop === DEFAULT_BACKDROP && (
+      {backdrop === DEFAULT_BACKDROP
+        ? <mesh geometry={back} position-z={BACK} material={look.case} />
+        : <mesh geometry={back} position-z={BACK}><meshBasicMaterial map={sky} toneMapped={false} /></mesh>}
+      {backdrop === 'midnight' && (
         <mesh position={[-OPEN.half * 0.5, SPRING - 0.16, BACK + 0.01]}>
           <planeGeometry args={[0.5, 0.5]} />
           <meshBasicMaterial map={moon} transparent depthWrite={false} toneMapped={false} />

@@ -172,7 +172,7 @@ function Cabinet({ pet, candlesToday, flowers, gifts, low }: { pet: Pet; candles
         <planeGeometry args={[W - T * 2, H - 0.04]} />
         <meshBasicMaterial map={sky} toneMapped={false} />
       </mesh>
-      {backdrop === DEFAULT_BACKDROP && (
+      {backdrop === 'midnight' && (
         <mesh position={[-0.5, 0.52, BACK + 0.01]}>
           <planeGeometry args={[0.5, 0.5]} />
           <meshBasicMaterial map={moon} transparent depthWrite={false} toneMapped={false} />
