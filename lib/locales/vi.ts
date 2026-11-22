@@ -680,5 +680,17 @@ const t: string[] = [
   "Thắp nến cho {name}",
   "Hiện các nút",
   "Ẩn các nút",
+  "Cảm ơn bạn. Đã nhận thanh toán — sẽ xuất hiện trên bàn thờ trong giây lát.",
+  "Đang mở trang thanh toán…",
+  "Thanh toán ฿{n}",
+  "Chỉ chủ nhân mới thay đổi được",
+  "Chỉ chủ của trang tưởng niệm này mới làm được",
+  "Nhà kính VIP ở mái vòm này đã đầy",
+  "Đã ở trong nhà kính VIP",
+  "Khung không xác định",
+  "Phông nền này hiện không bán",
+  "Món quà này hiện không bán",
+  "Thiếu thông tin. Vui lòng thử lại.",
+  "Không tìm thấy trang tưởng niệm",
 ]
 export default t

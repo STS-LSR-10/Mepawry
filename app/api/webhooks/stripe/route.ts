@@ -1,53 +1,35 @@
-// app/api/webhooks/stripe/route.ts — Idempotent Stripe Webhooks Handler
+// app/api/webhooks/stripe/route.ts — Stripe tells us a Checkout was paid; apply what was bought.
+// Only signed events count. Card payments arrive as checkout.session.completed; PromptPay and other delayed methods
+// arrive later as checkout.session.async_payment_succeeded. A failure answers 500 so Stripe tries again.
 
 import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_mock', {
-  apiVersion: '2024-11-20.acacia' as any,
-})
-
-const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET || ''
+import { fulfil, purchaseFrom, stripe } from '@/lib/payments'
 
 export async function POST(req: NextRequest) {
-  const body = await req.text()
+  const secret = process.env.STRIPE_WEBHOOK_SECRET
   const sig = req.headers.get('stripe-signature')
+  if (!secret || !sig) return NextResponse.json({ error: 'Webhook not configured' }, { status: 400 })
 
   let event: Stripe.Event
-
-  // Only Stripe can tell us a payment happened: without the secret and its signature, refuse
-  if (!webhookSecret || !sig) return NextResponse.json({ error: 'Webhook not configured' }, { status: 400 })
   try {
-    event = stripe.webhooks.constructEvent(body, sig, webhookSecret)
-  } catch (err: any) {
-    console.error(`Webhook signature verification failed: ${err.message}`)
+    event = await stripe().webhooks.constructEventAsync(await req.text(), sig, secret, undefined, Stripe.createSubtleCryptoProvider())
+  } catch {
     return NextResponse.json({ error: 'Invalid signature' }, { status: 400 })
   }
 
-  // Idempotency: In real database, check if event.id was already processed
-  // e.g. SELECT id FROM processed_events WHERE id = event.id
-  console.log(`[Stripe Webhook] Processing event: ${event.type} (ID: ${event.id})`)
-
-  switch (event.type) {
-    case 'checkout.session.completed': {
-      const session = event.data.object as Stripe.Checkout.Session
-      console.log(`Payment confirmed for Order: ${session.id}, Customer: ${session.customer_details?.email}`)
-      // Update order status in PostgreSQL: UPDATE orders SET status = 'paid' WHERE stripe_payment_intent_id = ...
-      break
+  if (event.type === 'checkout.session.completed' || event.type === 'checkout.session.async_payment_succeeded') {
+    const session = event.data.object as Stripe.Checkout.Session
+    if (session.payment_status === 'paid') {
+      const purchase = purchaseFrom(session.metadata)
+      if (!purchase) return NextResponse.json({ received: true, ignored: 'no purchase in metadata' })
+      try {
+        await fulfil(purchase, session.id)
+      } catch (e) {
+        console.error(`[stripe] couldn't apply ${session.id}:`, e)
+        return NextResponse.json({ error: 'Could not apply the purchase' }, { status: 500 })
+      }
     }
-    case 'payment_intent.succeeded': {
-      const paymentIntent = event.data.object as Stripe.PaymentIntent
-      console.log(`PaymentIntent ${paymentIntent.id} succeeded`)
-      break
-    }
-    case 'payment_intent.payment_failed': {
-      const failedIntent = event.data.object as Stripe.PaymentIntent
-      console.warn(`Payment failed for ${failedIntent.id}: ${failedIntent.last_payment_error?.message}`)
-      break
-    }
-    default:
-      console.log(`Unhandled Stripe event type: ${event.type}`)
   }
-
   return NextResponse.json({ received: true })
 }

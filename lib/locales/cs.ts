@@ -680,5 +680,17 @@ const t: string[] = [
   "Zapalte svíčku pro {name}",
   "Zobrazit tlačítka",
   "Skrýt tlačítka",
+  "Děkujeme. Platba přijata — za chvíli se objeví u oltáříku.",
+  "Otevírám platbu…",
+  "Zaplatit ฿{n}",
+  "Změnit to může jen majitel",
+  "To může udělat jen majitel památníku",
+  "Pavilon VIP v této kopuli je plný",
+  "Už je v pavilonu VIP",
+  "Neznámý rámeček",
+  "Toto pozadí se teď neprodává",
+  "Tento dárek se teď neprodává",
+  "Něco chybí. Zkuste to znovu.",
+  "Památník nenalezen",
 ]
 export default t

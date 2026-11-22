@@ -680,5 +680,17 @@ const t: string[] = [
   "Tenn et lys for {name}",
   "Vis knappene",
   "Skjul knappene",
+  "Takk. Betalingen er mottatt — den vises ved alteret om et øyeblikk.",
+  "Åpner betalingen…",
+  "Betal ฿{n}",
+  "Bare eieren kan endre dette",
+  "Bare eieren av minnesiden kan gjøre dette",
+  "VIP-paviljongen i denne kuppelen er full",
+  "Allerede i VIP-paviljongen",
+  "Ukjent ramme",
+  "Denne bakgrunnen selges ikke nå",
+  "Denne gaven selges ikke nå",
+  "Noe mangler. Prøv igjen.",
+  "Fant ikke minnesiden",
 ]
 export default t

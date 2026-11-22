@@ -680,5 +680,17 @@ const t: string[] = [
   "Sytytä kynttilä: {name}",
   "Näytä painikkeet",
   "Piilota painikkeet",
+  "Kiitos. Maksu vastaanotettu — se näkyy alttarilla hetken päästä.",
+  "Avataan maksua…",
+  "Maksa ฿{n}",
+  "Vain omistaja voi muuttaa tätä",
+  "Vain muistosivun omistaja voi tehdä tämän",
+  "Tämän kupolin VIP-paviljonki on täynnä",
+  "Jo VIP-paviljongissa",
+  "Tuntematon kehys",
+  "Tämä tausta ei ole nyt myynnissä",
+  "Tämä lahja ei ole nyt myynnissä",
+  "Jotain puuttuu. Yritä uudelleen.",
+  "Muistosivua ei löytynyt",
 ]
 export default t

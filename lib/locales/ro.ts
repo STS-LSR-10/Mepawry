@@ -680,5 +680,17 @@ const t: string[] = [
   "Aprinde o lumânare pentru {name}",
   "Arată butoanele",
   "Ascunde butoanele",
+  "Mulțumim. Plata a fost primită — va apărea la altar în curând.",
+  "Se deschide plata…",
+  "Plătește ฿{n}",
+  "Doar proprietarul poate schimba asta",
+  "Doar proprietarul acestui memorial poate face asta",
+  "Pavilionul VIP din această cupolă e plin",
+  "Deja în pavilionul VIP",
+  "Ramă necunoscută",
+  "Acest fundal nu se vinde acum",
+  "Acest cadou nu se vinde acum",
+  "Lipsește ceva. Încearcă din nou.",
+  "Memorialul nu a fost găsit",
 ]
 export default t

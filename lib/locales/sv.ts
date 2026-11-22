@@ -680,5 +680,17 @@ const t: string[] = [
   "Tänd ett ljus för {name}",
   "Visa knapparna",
   "Dölj knapparna",
+  "Tack. Betalningen är mottagen — den syns vid altaret om en stund.",
+  "Öppnar betalningen…",
+  "Betala ฿{n}",
+  "Bara ägaren kan ändra detta",
+  "Bara ägaren av minnessidan kan göra detta",
+  "VIP-paviljongen i den här kupolen är full",
+  "Redan i VIP-paviljongen",
+  "Okänd ram",
+  "Den här bakgrunden säljs inte just nu",
+  "Den här gåvan säljs inte just nu",
+  "Något saknas. Försök igen.",
+  "Minnessidan hittades inte",
 ]
 export default t

@@ -680,5 +680,17 @@ const t: string[] = [
   "Acenda uma vela para {name}",
   "Mostrar os botões",
   "Ocultar os botões",
+  "Obrigado. Pagamento recebido — aparecerá no altar em instantes.",
+  "Abrindo o pagamento…",
+  "Pagar ฿{n}",
+  "Só o dono pode mudar isso",
+  "Só o dono deste memorial pode fazer isso",
+  "O pavilhão VIP desta cúpula está cheio",
+  "Já está no pavilhão VIP",
+  "Moldura desconhecida",
+  "Este fundo não está à venda agora",
+  "Este presente não está à venda agora",
+  "Falta algo. Tente novamente.",
+  "Memorial não encontrado",
 ]
 export default t

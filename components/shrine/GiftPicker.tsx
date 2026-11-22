@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils'
 import { getVisitor } from '@/lib/visitor'
 import { useT } from '@/lib/i18n'
 import { useAccount } from '@/lib/account'
+import { startCheckout } from '@/lib/checkout'
 import { DEFAULT_BACKDROP, DEFAULT_FRAME, FRAMES, backdropsFor, type FrameStyle } from '@/lib/decor'
 import { backdropThumb } from '@/components/3d/backdrops'
 import type { Pet } from '@/types'
@@ -43,7 +44,9 @@ export function GiftPicker({ open, onClose, pet, onLeft, onDecor, onPreview }: {
 }) {
   const petId = pet.id, petName = pet.name
   const t = useT()
-  const admin = !!useAccount().user?.isAdmin
+  const { user } = useAccount()
+  const admin = !!user?.isAdmin, owner = !!user && user.id === pet.owner_id
+  const pay = async (body: Parameters<typeof startCheckout>[0]) => { setSending(true); setError(''); const e = await startCheckout(body); if (e) { setError(t(e)); setSending(false) } }
   const [tab, setTab] = useState<Tab>('food')
   const [picked, setPicked] = useState<Gift | null>(null)
   const [decor, setDecor] = useState<Decor | null>(null)
@@ -118,12 +121,16 @@ export function GiftPicker({ open, onClose, pet, onLeft, onDecor, onPreview }: {
     // eslint-disable-next-line @next/next/no-img-element
     ? <img src={backdropThumb(decor.id)} alt="" className="h-full w-full object-cover" />
     : <span className="block h-full w-full rounded-xl p-1.5" style={{ background: FRAMES.find(f => f.id === decor.id)?.swatch }}><span className="block h-full w-full rounded-md bg-[#FBF6EC]" /></span>)
-  const decorAction = admin ? (
+  const decorAction = owner && decor ? (
+    <button onClick={() => pay({ kind: decor.kind, petId, item: decor.id })} disabled={sending} className="rounded-2xl bg-[#D9823B] px-4 py-3 text-xs font-semibold text-white shadow-md hover:bg-[#C67129] disabled:opacity-60">
+      {sending ? t('Opening payment…') : t('Pay ฿{n}', { n: decor.price })}
+    </button>
+  ) : admin ? (
     <button onClick={applyDecor} disabled={sending} className="rounded-2xl bg-[#D9823B] px-4 py-3 text-xs font-semibold text-white shadow-md hover:bg-[#C67129] disabled:opacity-60">
       {sending ? t('Applying…') : t('Apply (admin)')}
     </button>
   ) : (
-    <button disabled className="rounded-2xl bg-[#E8DFD6] px-4 py-3 text-xs font-semibold text-[#8E8278]">{t('Opening soon')}</button>
+    <button disabled className="rounded-2xl bg-[#E8DFD6] px-4 py-3 text-xs font-semibold text-[#8E8278]">{t('Only the owner can change this')}</button>
   )
 
   // Trying one on: a small bar at the bottom, the cabinet above shows it
@@ -219,7 +226,9 @@ export function GiftPicker({ open, onClose, pet, onLeft, onDecor, onPreview }: {
               )
             ) : picked?.price ? (
               <FooterRow icon={<GiftIcon gift={picked} />} title={t(picked.name)} sub={`฿${picked.price} · ${t('stays {n} days with your name', { n: SPECIAL_GIFT_SHOWS_DAYS })}`}>
-                <button disabled className="rounded-2xl bg-[#E8DFD6] px-4 py-3 text-xs font-semibold text-[#8E8278]">{t('Opening soon')}</button>
+                <button onClick={() => pay({ kind: 'gift', petId, item: picked.id, name: getVisitor().name })} disabled={sending} className="rounded-2xl bg-[#D9823B] px-4 py-3 text-xs font-semibold text-white shadow-md hover:bg-[#C67129] disabled:opacity-60">
+                  {sending ? t('Opening payment…') : t('Pay ฿{n}', { n: picked.price })}
+                </button>
               </FooterRow>
             ) : waiting ? (
               <p className="rounded-2xl bg-[#F4EBDD] px-4 py-3 text-center text-sm text-[#5C5046]">

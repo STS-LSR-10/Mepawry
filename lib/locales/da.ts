@@ -680,5 +680,17 @@ const t: string[] = [
   "Tænd et lys for {name}",
   "Vis knapperne",
   "Skjul knapperne",
+  "Tak. Betalingen er modtaget — den vises ved alteret om et øjeblik.",
+  "Åbner betalingen…",
+  "Betal ฿{n}",
+  "Kun ejeren kan ændre dette",
+  "Kun ejeren af mindesiden kan gøre dette",
+  "VIP-pavillonen i denne kuppel er fuld",
+  "Allerede i VIP-pavillonen",
+  "Ukendt ramme",
+  "Denne baggrund sælges ikke lige nu",
+  "Denne gave sælges ikke lige nu",
+  "Noget mangler. Prøv igen.",
+  "Mindesiden blev ikke fundet",
 ]
 export default t

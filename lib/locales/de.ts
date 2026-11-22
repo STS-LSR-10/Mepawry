@@ -680,5 +680,17 @@ const t: string[] = [
   "Zünde eine Kerze für {name} an",
   "Knöpfe zeigen",
   "Knöpfe ausblenden",
+  "Danke. Zahlung erhalten — es erscheint gleich am Schrein.",
+  "Zahlung wird geöffnet…",
+  "฿{n} bezahlen",
+  "Nur der Besitzer kann das ändern",
+  "Nur der Besitzer dieser Gedenkstätte kann das",
+  "Der VIP-Pavillon in dieser Kuppel ist voll",
+  "Schon im VIP-Pavillon",
+  "Unbekannter Rahmen",
+  "Dieser Hintergrund ist gerade nicht erhältlich",
+  "Dieses Geschenk ist gerade nicht erhältlich",
+  "Etwas fehlt. Bitte erneut versuchen.",
+  "Gedenkstätte nicht gefunden",
 ]
 export default t

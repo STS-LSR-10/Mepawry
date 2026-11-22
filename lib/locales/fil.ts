@@ -680,5 +680,17 @@ const t: string[] = [
   "Magsindi ng kandila para kay {name}",
   "Ipakita ang mga button",
   "Itago ang mga button",
+  "Salamat. Natanggap ang bayad — lalabas ito sa dambana maya-maya.",
+  "Binubuksan ang bayaran…",
+  "Magbayad ng ฿{n}",
+  "Ang may-ari lang ang makakapagpalit nito",
+  "Ang may-ari lang ng memorial na ito ang makakagawa nito",
+  "Puno na ang VIP pavilion sa dome na ito",
+  "Nasa VIP pavilion na",
+  "Hindi kilalang frame",
+  "Hindi ibinebenta ang backdrop na ito ngayon",
+  "Hindi ibinebenta ang regalong ito ngayon",
+  "May kulang. Pakisubukang muli.",
+  "Hindi makita ang memorial",
 ]
 export default t

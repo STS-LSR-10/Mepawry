@@ -680,5 +680,17 @@ const t: string[] = [
   "Washa mshumaa kwa {name}",
   "Onyesha vitufe",
   "Ficha vitufe",
+  "Asante. Malipo yamepokelewa — yataonekana madhabahuni baada ya muda mfupi.",
+  "Inafungua malipo…",
+  "Lipa ฿{n}",
+  "Mmiliki pekee anaweza kubadilisha hili",
+  "Mmiliki wa kumbukumbu hii pekee anaweza kufanya hivi",
+  "Banda la VIP katika kuba hii limejaa",
+  "Tayari iko kwenye banda la VIP",
+  "Fremu isiyojulikana",
+  "Mandhari haya hayauzwi sasa",
+  "Zawadi hii haiuzwi sasa",
+  "Kuna kitu kinakosekana. Jaribu tena.",
+  "Kumbukumbu haikupatikana",
 ]
 export default t

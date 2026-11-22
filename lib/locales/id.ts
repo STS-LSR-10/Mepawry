@@ -680,5 +680,17 @@ const t: string[] = [
   "Nyalakan lilin untuk {name}",
   "Tampilkan tombol",
   "Sembunyikan tombol",
+  "Terima kasih. Pembayaran diterima — sebentar lagi akan muncul di altar.",
+  "Membuka pembayaran…",
+  "Bayar ฿{n}",
+  "Hanya pemilik yang bisa mengubah ini",
+  "Hanya pemilik memorial ini yang bisa melakukannya",
+  "Paviliun VIP di kubah ini penuh",
+  "Sudah di paviliun VIP",
+  "Bingkai tidak dikenal",
+  "Latar ini sedang tidak dijual",
+  "Hadiah ini sedang tidak dijual",
+  "Ada yang kurang. Silakan coba lagi.",
+  "Memorial tidak ditemukan",
 ]
 export default t

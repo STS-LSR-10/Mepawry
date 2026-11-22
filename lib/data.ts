@@ -10,7 +10,7 @@ import { BACKDROPS, FRAMES } from '@/lib/decor'
 import type { Floor, GlobalStats, GuestbookEntry, Pet, Profile, Species, TributeType } from '@/types'
 import { FLOOR_CAPACITY, OPEN_NEXT_AT_FREE, VIP_CAPACITY } from '@/components/3d/sanctuary/plan'
 import { generateSlug, getFloorName } from '@/lib/utils'
-import { FREE_GIFT_COOLDOWN_DAYS, FREE_GIFT_SHOWS_DAYS, giftById, type LeftGift } from '@/lib/gifts'
+import { FREE_GIFT_COOLDOWN_DAYS, FREE_GIFT_SHOWS_DAYS, SPECIAL_GIFT_SHOWS_DAYS, giftById, type LeftGift } from '@/lib/gifts'
 
 const g = globalThis as typeof globalThis & { __pmDb?: SupabaseClient }
 
@@ -330,12 +330,14 @@ export async function countGifts(petId: string): Promise<number> {
   return count ?? 0
 }
 
-/** Gifts still showing at a shrine, newest first. */
+/** Gifts still showing at a shrine, newest first: free ones for a week, paid (special) ones for two months. */
 export async function getGifts(petId: string): Promise<LeftGift[]> {
   if (!isUuid(petId)) return []
-  const since = new Date(Date.now() - FREE_GIFT_SHOWS_DAYS * 86_400_000).toISOString()
-  return (must(await db().from('gifts').select('id, item, visitor_name, created_at')
-    .eq('pet_id', petId).gte('created_at', since).order('created_at', { ascending: false }).limit(60))) ?? []
+  const since = (days: number) => new Date(Date.now() - days * 86_400_000).toISOString()
+  const freeSince = since(FREE_GIFT_SHOWS_DAYS)
+  const rows: LeftGift[] = (must(await db().from('gifts').select('id, item, visitor_name, created_at')
+    .eq('pet_id', petId).gte('created_at', since(SPECIAL_GIFT_SHOWS_DAYS)).order('created_at', { ascending: false }).limit(120))) ?? []
+  return rows.filter(g => giftById(g.item)?.price || g.created_at >= freeSince).slice(0, 60)
 }
 
 /**

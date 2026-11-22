@@ -66,6 +66,14 @@ export function ShrineClientSection({ pet: initialPet, candlesToday: initialToda
   const [newMsg, setNewMsg] = useState('')
   const [visitorName, setVisitorName] = useState('')
   const [shareSuccess, setShareSuccess] = useState(false)
+  // back from Stripe (?paid=…): say thanks, then reload once the payment webhook has had a moment to apply it
+  const [paid, setPaid] = useState(false)
+  useEffect(() => {
+    if (!new URLSearchParams(window.location.search).get('paid')) return
+    setPaid(true)
+    const id = setTimeout(() => window.location.replace(window.location.pathname), 4000)
+    return () => clearTimeout(id)
+  }, [])
 
   // Keepsake checkout state
   const [selectedProduct, setSelectedProduct] = useState<'acrylic_plaque' | 'keychain' | 'canvas_print'>('acrylic_plaque')
@@ -180,6 +188,11 @@ export function ShrineClientSection({ pet: initialPet, candlesToday: initialToda
 
       {/* Floating Action Toolbar */}
       <div className={`fixed bottom-6 z-20 flex flex-col gap-2 ${barOpen ? 'left-1/2 w-full max-w-lg -translate-x-1/2 items-center px-4' : 'right-4 items-end'}`}>
+        {paid && (
+          <div role="status" className="rounded-full bg-[#27AE60] px-4 py-1.5 text-xs text-white shadow-lg animate-fade-in">
+            {t('Thank you. Payment received — it will appear on the shrine in a moment.')}
+          </div>
+        )}
         {shareSuccess && (
           <div className="bg-[#27AE60] text-white text-xs px-4 py-1.5 rounded-full shadow-lg animate-fade-in">
             {t('Link copied to clipboard! 📋')}

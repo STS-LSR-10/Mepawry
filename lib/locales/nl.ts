@@ -680,5 +680,17 @@ const t: string[] = [
   "Steek een kaars aan voor {name}",
   "Knoppen tonen",
   "Knoppen verbergen",
+  "Dank je. Betaling ontvangen — het verschijnt zo bij het altaar.",
+  "Betaling openen…",
+  "฿{n} betalen",
+  "Alleen de eigenaar kan dit wijzigen",
+  "Alleen de eigenaar van deze gedenkplek kan dit",
+  "Het VIP-paviljoen in deze koepel is vol",
+  "Al in het VIP-paviljoen",
+  "Onbekende lijst",
+  "Deze achtergrond is nu niet te koop",
+  "Dit cadeau is nu niet te koop",
+  "Er ontbreekt iets. Probeer het opnieuw.",
+  "Gedenkplek niet gevonden",
 ]
 export default t

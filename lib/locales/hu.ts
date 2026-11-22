@@ -680,5 +680,17 @@ const t: string[] = [
   "Gyújts gyertyát {name} emlékére",
   "Gombok megjelenítése",
   "Gombok elrejtése",
+  "Köszönjük. A fizetés megérkezett — hamarosan megjelenik az oltárnál.",
+  "Fizetés megnyitása…",
+  "฿{n} fizetése",
+  "Ezt csak a tulajdonos változtathatja meg",
+  "Ezt csak az emlékhely tulajdonosa teheti meg",
+  "Ebben a kupolában a VIP pavilon megtelt",
+  "Már a VIP pavilonban van",
+  "Ismeretlen keret",
+  "Ez a háttér most nem kapható",
+  "Ez az ajándék most nem kapható",
+  "Valami hiányzik. Próbáld újra.",
+  "Az emlékhely nem található",
 ]
 export default t

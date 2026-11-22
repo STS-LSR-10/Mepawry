@@ -680,5 +680,17 @@ const t: string[] = [
   "{name} için mum yak",
   "Düğmeleri göster",
   "Düğmeleri gizle",
+  "Teşekkürler. Ödeme alındı — birazdan sunakta görünecek.",
+  "Ödeme açılıyor…",
+  "฿{n} öde",
+  "Bunu yalnızca sahibi değiştirebilir",
+  "Bunu yalnızca bu anma sayfasının sahibi yapabilir",
+  "Bu kubbedeki VIP köşkü dolu",
+  "Zaten VIP köşkünde",
+  "Bilinmeyen çerçeve",
+  "Bu arka plan şu an satışta değil",
+  "Bu hediye şu an satışta değil",
+  "Bir şey eksik. Lütfen tekrar deneyin.",
+  "Anma sayfası bulunamadı",
 ]
 export default t

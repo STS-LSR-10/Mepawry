@@ -8,8 +8,10 @@ import { useAccount } from '@/lib/account'
 import type { Pet } from '@/types'
 import { useT } from '@/lib/i18n'
 import { k } from '@/lib/tkey'
+import { startCheckout } from '@/lib/checkout'
 
-export const VIP_PRICE_THB = 299 // shortcut: placeholder price until payments are connected; set the real one then
+export { VIP_PRICE_THB } from '@/lib/decor'
+import { VIP_PRICE_THB } from '@/lib/decor'
 
 export function VipUpgrade({ pet, isOwner, onChange }: { pet: Pet; isOwner: boolean; onChange: (p: Pet) => void }) {
   const { user } = useAccount()
@@ -62,8 +64,9 @@ export function VipUpgrade({ pet, isOwner, onChange }: { pet: Pet; isOwner: bool
               {busy ? t('Placing…') : t('Admin: place in the VIP pavilion now')}
             </button>
           ) : (
-            <button disabled className="w-full rounded-2xl bg-[#E8DFD6] py-3 text-sm font-semibold text-[#8E8278]">
-              {t('฿{n} one-time', { n: VIP_PRICE_THB })} · {t('Payments opening soon')}
+            <button disabled={busy} onClick={async () => { setBusy(true); setError(await startCheckout({ kind: 'vip', petId: pet.id })); setBusy(false) }}
+              className="w-full rounded-2xl bg-[#D9823B] py-3 text-sm font-semibold text-white shadow-md hover:bg-[#C67129] disabled:opacity-60">
+              {busy ? t('Opening payment…') : t('Pay ฿{n}', { n: VIP_PRICE_THB })}
             </button>
           )}
         </div>
