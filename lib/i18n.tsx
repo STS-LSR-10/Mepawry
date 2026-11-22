@@ -73,25 +73,12 @@ export function translate(table: Table | null, text: string, vars?: Vars): strin
 
 const isLang = (c: string | null): c is Lang => !!c && LANGS.some(l => l.code === c)
 
-/** Browser codes that differ from ours (old or regional ones). */
-function fromBrowser(tag: string): Lang | null {
-  const t = tag.toLowerCase()
-  if (/^zh-(tw|hk|mo|hant)/.test(t)) return 'zh-TW'
-  const base = t.split('-')[0]
-  const alias: Record<string, Lang> = { no: 'nb', nn: 'nb', tl: 'fil', iw: 'he', in: 'id' }
-  return alias[base] ?? (isLang(base) ? base : null)
-}
-
 function detect(): Lang {
   try {
     const saved = localStorage.getItem(KEY)
     if (isLang(saved)) return saved
   } catch { /* private mode */ }
-  for (const tag of navigator.languages ?? [navigator.language]) {
-    const l = fromBrowser(tag)
-    if (l) return l
-  }
-  return 'en'
+  return 'en' // everyone starts in English; the language they pick in settings is remembered
 }
 
 const Ctx = createContext<{ lang: Lang; table: Table | null; setLang: (l: Lang) => void }>({ lang: 'en', table: null, setLang: () => {} })
