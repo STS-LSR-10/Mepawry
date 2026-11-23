@@ -1,42 +1,15 @@
 'use client'
 // components/ui/Translatable.tsx — Text people wrote (an epitaph, a guestbook note, a board post). When it isn't in the
-// language the reader picked, a small "Translate to …" button appears under it. Chrome on computers translates it in
-// place with its built-in, on-device translator; elsewhere (or if that fails) it's a link to Google Translate in a new tab.
+// language the reader picked, a small "Translate to …" button appears under it, translating it in place: with Chrome's
+// built-in on-device translator where there is one, otherwise on our server (/api/translate, kept for the next
+// reader). Only if both fail, or for text that isn't saved yet, it's a link to Google Translate in a new tab.
 
 import { useEffect, useState } from 'react'
 import { LANGS, useLang, useT, type Lang } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
+import { looksEnglish, ONLY, SCRIPT, scriptOf } from '@/lib/langDetect'
 
-// Which writing system a language uses. Different ones: surely another language. The same: ask the browser.
-const SCRIPT: Record<Lang, string> = {
-  th: 'thai', ko: 'hangul', ja: 'cjk', zh: 'cjk', 'zh-TW': 'cjk', ar: 'arabic', ur: 'arabic', he: 'hebrew',
-  ru: 'cyrillic', uk: 'cyrillic', el: 'greek', hi: 'devanagari', bn: 'bengali',
-  en: 'latin', ms: 'latin', cs: 'latin', da: 'latin', de: 'latin', es: 'latin', fil: 'latin', fr: 'latin', id: 'latin',
-  it: 'latin', sw: 'latin', hu: 'latin', nl: 'latin', nb: 'latin', pl: 'latin', pt: 'latin', ro: 'latin', fi: 'latin',
-  sv: 'latin', vi: 'latin', tr: 'latin',
-}
-// A script only one of our languages uses tells us the language itself
-const ONLY: Record<string, string> = { thai: 'th', hangul: 'ko', hebrew: 'he', greek: 'el', devanagari: 'hi', bengali: 'bn' }
-
-const RANGES: [string, RegExp][] = [
-  ['thai', /[฀-๿]/g], ['hangul', /[가-힯ᄀ-ᇿ]/g], ['cjk', /[぀-ヿ一-鿿]/g],
-  ['arabic', /[؀-ۿ]/g], ['hebrew', /[֐-׿]/g], ['cyrillic', /[Ѐ-ӿ]/g],
-  ['greek', /[Ͱ-Ͽ]/g], ['devanagari', /[ऀ-ॿ]/g], ['bengali', /[ঀ-৿]/g], ['latin', /[A-Za-zÀ-ɏ]/g],
-]
-
-/** The writing system most of the letters are in. */
-export function scriptOf(text: string): string | null {
-  let best: string | null = null, most = 0
-  for (const [name, re] of RANGES) { const n = text.match(re)?.length ?? 0; if (n > most) { most = n; best = name } }
-  return best
-}
-
-// Fallback for Latin text when the browser can't detect languages: does it read as English?
-const EN_WORDS = new Set('the and you your my our was were is are of to in for with love loved miss always forever best friend we he she his her it i'.split(' '))
-const looksEnglish = (text: string) => {
-  const words = text.toLowerCase().match(/[a-z']+/g) ?? []
-  return words.length >= 3 && words.filter(w => EN_WORDS.has(w)).length / words.length >= 0.2
-}
+export { scriptOf }
 
 /** A browser API call that may never answer (no model, or a hidden tab): give up after `ms`. */
 const within = <T,>(p: Promise<T>, ms: number) => Promise.race([p, new Promise<never>((_, no) => setTimeout(() => no(new Error('timeout')), ms))])
@@ -84,28 +57,31 @@ async function foreignLang(text: string, lang: Lang): Promise<string | 'other' |
 const TRANSLATOR_CODE: Partial<Record<Lang, string>> = { 'zh-TW': 'zh-Hant' }
 const GOOGLE_CODE: Partial<Record<Lang, string>> = { zh: 'zh-CN', 'zh-TW': 'zh-TW', fil: 'tl', nb: 'no', he: 'iw' }
 
-export function Translatable({ text, className, quote = false, light = false }: {
+export function Translatable({ text, className, quote = false, light = false, source }: {
   text: string
   className?: string
   /** wrap in “ ” (epitaphs) */
   quote?: boolean
   /** the button on a dark background */
   light?: boolean
+  /** where the text is saved, so the server can translate it (without it: Chrome's translator or Google Translate) */
+  source?: { kind: 'epitaph' | 'guestbook' | 'post' | 'comment'; id: string }
 }) {
   const { lang } = useLang()
   const t = useT()
   const [from, setFrom] = useState<string | null>(null)
   const [shown, setShown] = useState<string | null>(null) // the translation, while it's showing
   const [busy, setBusy] = useState(false)
-  const [inPlace, setInPlace] = useState(false) // Chrome's translator can do it here; otherwise the button is a link to Google Translate
+  const [onDevice, setOnDevice] = useState(false) // Chrome's own translator can do this pair here
+  const [failed, setFailed] = useState(false)     // in-place translation didn't work: offer Google Translate instead
 
   useEffect(() => {
     let live = true
-    setShown(null); setInPlace(false)
+    setShown(null); setOnDevice(false); setFailed(false)
     foreignLang(text, lang).then(async f => {
       if (!live) return
       setFrom(f)
-      if (f && f !== 'other' && await canTranslate(f, TRANSLATOR_CODE[lang] ?? lang) && live) setInPlace(true)
+      if (f && f !== 'other' && await canTranslate(f, TRANSLATOR_CODE[lang] ?? lang) && live) setOnDevice(true)
     })
     return () => { live = false }
   }, [text, lang])
@@ -113,14 +89,22 @@ export function Translatable({ text, className, quote = false, light = false }: 
   const translate = async () => {
     if (shown) return setShown(null)
     setBusy(true)
-    try {
+    let out: string | null = null
+    if (onDevice) try {
       /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
       const g = globalThis as any
       const tr: { translate: (s: string) => Promise<string> } = await within(g.Translator.create({ sourceLanguage: from, targetLanguage: TRANSLATOR_CODE[lang] ?? lang }), 20000) // may download the language pack first
-      setShown(await within(tr.translate(text), 10000) as string)
-    } catch {
-      setInPlace(false) // didn't work here: the button becomes the Google Translate link
+      out = await within(tr.translate(text), 10000) as string
+    } catch { setOnDevice(false) }
+    if (!out && source) {
+      const r = await fetch('/api/translate', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...source, to: lang, from: from !== 'other' ? from : undefined }),
+      }).catch(() => null)
+      out = r?.ok ? ((await r.json().catch(() => null))?.text ?? null) : null
     }
+    if (out) setShown(out)
+    else setFailed(true) // the button becomes the Google Translate link
     setBusy(false)
   }
 
@@ -134,7 +118,7 @@ export function Translatable({ text, className, quote = false, light = false }: 
           light ? 'text-[#FFE2C0]/80' : 'text-[#C67129]')
         const label = t('Translate to {lang}', { lang: native })
         // a plain link, so no browser blocks it as a pop-up
-        if (!inPlace && !shown) return (
+        if ((failed || (!onDevice && !source)) && !shown) return (
           <a href={`https://translate.google.com/?sl=auto&tl=${encodeURIComponent(GOOGLE_CODE[lang] ?? lang)}&text=${encodeURIComponent(text)}&op=translate`}
             target="_blank" rel="noopener noreferrer" className={cls}>
             <span aria-hidden>🌐</span>{label}

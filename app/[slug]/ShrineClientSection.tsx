@@ -298,7 +298,7 @@ export function ShrineClientSection({ pet: initialPet, candlesToday: initialToda
                     </span>
                     <span className="text-[#8E8278]">{timeAgo(msg.created_at, t)}</span>
                   </div>
-                  <Translatable text={msg.message} className="text-sm text-[#5C5046] leading-relaxed pt-1" />
+                  <Translatable text={msg.message} source={{ kind: 'guestbook', id: msg.id }} className="text-sm text-[#5C5046] leading-relaxed pt-1" />
                 </div>
               ))
             )}

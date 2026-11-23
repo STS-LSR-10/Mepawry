@@ -291,3 +291,17 @@ create table if not exists gift_owners (
 alter table gift_owners enable row level security;
 revoke all on gift_owners from anon, authenticated;
 grant all on gift_owners to service_role;
+
+-- ── Translations of what people wrote, kept for the next reader (010_translations.sql) ──
+create table if not exists translations (
+  source_hash text not null,
+  lang text not null,
+  text text not null,
+  provider text not null, -- which translator made it ('workers-ai', 'gemini')
+  created_at timestamptz not null default now(),
+  primary key (source_hash, lang)
+);
+alter table translations enable row level security;
+revoke all on translations from anon, authenticated;
+grant all on translations to service_role;
+

@@ -8,6 +8,8 @@
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
   "assets": { "directory": ".open-next/assets", "binding": "ASSETS" },
   "services": [{ "binding": "WORKER_SELF_REFERENCE", "service": "mepawry" }],
+  // Workers AI: translates epitaphs, guestbook notes and board posts (lib/translate.ts)
+  "ai": { "binding": "AI" },
   // Public settings (not secrets). keep_vars: deploys leave variables set in the dashboard alone
   "keep_vars": true,
   "vars": { "GOOGLE_CLIENT_ID": "765592068822-3rjobs1k0ubkqea42tss9igfo7uo1bl2.apps.googleusercontent.com" },

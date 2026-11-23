@@ -81,7 +81,7 @@ export default async function ShrinePage({ params }: ShrinePageProps) {
 
         {pet.epitaph && (
           <div className="mx-auto mt-3 max-w-[40ch]">
-            <Translatable text={pet.epitaph} quote light className="font-serif text-lg italic text-[#FAF7F2]/85" />
+            <Translatable text={pet.epitaph} source={{ kind: 'epitaph', id: pet.id }} quote light className="font-serif text-lg italic text-[#FAF7F2]/85" />
           </div>
         )}
 

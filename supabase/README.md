@@ -12,6 +12,7 @@ SQL files are numbered in the order they were made. Run them in **Supabase → S
 | `007_owned_gifts.sql` | Special gifts are bought once: who owns which |
 | `008_vip_frees_shelf.sql` | A VIP shrine gives its ordinary shelf back |
 | `009_name_latin.sql` | A pet's name in English letters (optional) |
+| `010_translations.sql` | Kept translations of epitaphs, guestbook notes and board posts |
 
 **Existing database:** run only the numbered files after the last one you ran.
 Every file is safe to run more than once.
