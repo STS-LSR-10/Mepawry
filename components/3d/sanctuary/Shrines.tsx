@@ -49,7 +49,8 @@ function placer() {
 }
 
 export function GalleryShrines({ pets, playerPos, onOpen }: { pets: Pet[]; playerPos: React.RefObject<P>; onOpen: (pet: Pet, slot: Slot) => void }) {
-  const placed = useMemo(() => pets.filter(p => SLOTS[p.shrine_position]), [pets])
+  // a VIP pet keeps its shelf in the database but stands only in the VIP pavilion
+  const placed = useMemo(() => pets.filter(p => p.vip_position == null && SLOTS[p.shrine_position]), [pets])
   const lit = useMemo(() => placed.filter(p => p.candle_count > 0), [placed])
   const refs = { frames: useRef<InstancedMesh>(null), mats: useRef<InstancedMesh>(null), cards: useRef<InstancedMesh>(null), candles: useRef<InstancedMesh>(null), flames: useRef<InstancedMesh>(null), halos: useRef<InstancedMesh>(null), hits: useRef<InstancedMesh>(null) }
   const flame = useMemo(() => new MeshStandardMaterial({ color: '#FFE0A0', emissive: '#FFB040', emissiveIntensity: 9, toneMapped: false }), [])

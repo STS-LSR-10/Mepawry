@@ -85,7 +85,7 @@ function Account() {
                 </div>
                 <div className="min-w-0 flex-1">
                   <Link href={`/${p.slug}`} className="block truncate font-semibold text-[#2A1E17] hover:underline">{p.name}</Link>
-                  <p className="text-xs text-[#8E8278]">{t('Dome {n}', { n: p.floor_id })} · {t('shelf {n}', { n: p.shrine_position + 1 })} · 🕯️ {p.candle_count} · 🌸 {p.flower_count}</p>
+                  <p className="text-xs text-[#8E8278]">{t('Dome {n}', { n: p.floor_id })} · {p.vip_position != null ? `✿ ${t('VIP niche {n}', { n: p.vip_position + 1 })}` : t('shelf {n}', { n: p.shrine_position + 1 })} · 🕯️ {p.candle_count} · 🌸 {p.flower_count}</p>
                 </div>
                 <div className="flex shrink-0 gap-2">
                   <button onClick={() => setEditing(p)} className="rounded-full border border-[#D4C9BF] px-3 py-1.5 text-xs font-semibold text-[#2A1E17] hover:bg-[#FAF7F2]">{t('Edit')}</button>
