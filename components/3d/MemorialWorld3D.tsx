@@ -12,7 +12,7 @@ import type * as THREE from 'three'
 import type { LocalSky, Season } from '@/lib/sky'
 import { AVATAR_EXPOSURE, AVATAR_FILL, RIM } from './look'
 import { CrowdAvatars, useCrowd, type Me } from './Crowd'
-import { crowdLimit, turnFactor, usePref, walkFactor, type CrowdPref, type SpeedPref } from '@/lib/settings'
+import { crowdLimit, turnFactor, usePref, walkFactor, type CrowdPref, type SpeedPref, type ViewPref } from '@/lib/settings'
 import { useT } from '@/lib/i18n'
 import { getVisitor } from '@/lib/visitor'
 import { saveSpot } from '@/lib/spot'
@@ -101,6 +101,7 @@ export default function MemorialWorld3D({ floorId, avatarName, avatarGender, ava
   }, [user?.id, avatarName, avatarGender, avatarLook])
   const crowdPref = usePref<CrowdPref>('pm-crowd')
   const walkSpeed = walkFactor(usePref<SpeedPref>('pm-walk')), turnSpeed = turnFactor(usePref<SpeedPref>('pm-turn'))
+  const firstPerson = usePref<ViewPref>('pm-view') === 'first'
   const crowd = useCrowd(floorId, me, pos, crowdLimit(crowdPref, low))
   useEffect(() => { onPeopleHere?.(crowd.count + 1, crowd.status) }, [crowd.count, crowd.status, onPeopleHere])
 
@@ -117,6 +118,34 @@ export default function MemorialWorld3D({ floorId, avatarName, avatarGender, ava
     }, 400)
     return () => clearInterval(id)
   }, [crowd.announce]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Keyboard (computers): W/S or ↑/↓ walk, A/D step sideways, ←/→ turn. Written into the same stick the on-screen one uses.
+  useEffect(() => {
+    const down = new Set<string>()
+    const KEYS = ['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright']
+    const apply = () => {
+      const has = (...k: string[]) => k.some(x => down.has(x))
+      stick.current.y = (has('s', 'arrowdown') ? 1 : 0) - (has('w', 'arrowup') ? 1 : 0)
+      stick.current.x = (has('d') ? 1 : 0) - (has('a') ? 1 : 0)
+      stick.current.turn = (has('arrowright') ? 1 : 0) - (has('arrowleft') ? 1 : 0)
+    }
+    const typing = (e: KeyboardEvent) => {
+      const el = e.target as HTMLElement | null
+      return !!el && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName))
+    }
+    const onDown = (e: KeyboardEvent) => {
+      const k = e.key.toLowerCase()
+      if (!KEYS.includes(k) || typing(e) || e.metaKey || e.ctrlKey || e.altKey) return
+      e.preventDefault() // arrows would scroll the page
+      down.add(k); apply()
+    }
+    const onUp = (e: KeyboardEvent) => { if (down.delete(e.key.toLowerCase())) apply() }
+    const clear = () => { if (down.size) { down.clear(); apply() } } // switched tab mid-step: don't keep walking
+    window.addEventListener('keydown', onDown)
+    window.addEventListener('keyup', onUp)
+    window.addEventListener('blur', clear)
+    return () => { window.removeEventListener('keydown', onDown); window.removeEventListener('keyup', onUp); window.removeEventListener('blur', clear) }
+  }, [])
 
   const walkTo = useCallback((to: P, onArrive?: () => void, face?: P) => {
     setNear(null)
@@ -171,12 +200,17 @@ export default function MemorialWorld3D({ floorId, avatarName, avatarGender, ava
         <PerformanceMonitor onDecline={() => setDpr(1)} onIncline={() => setDpr(1.5)} />
         <Suspense fallback={null}>
           <StatsProbe />
-          <SanctuaryWorld time={time} interior={inside} cutaway={inside} low={low} vip={vip} onFloor={p => walkTo(p)}>
+          <SanctuaryWorld time={time} interior={inside} cutaway={inside && !firstPerson /* first person: the glass roof stays on */} low={low} vip={vip} onFloor={p => walkTo(p)}>
             <GalleryShrines pets={pets} playerPos={pos} onOpen={(pet, slot) => walkTo(slot.standAt, () => setNear(pet), slot)} />
             {WEATHER[sky.season] && <Weather {...WEATHER[sky.season]!} count={Math.round(WEATHER[sky.season]!.count / (low ? 3 : 1))} />}
-            <Player name={avatarName} gender={avatarGender} look={avatarLook} pos={pos} route={route} onInsideChange={setInside} stick={stick} walkSpeed={walkSpeed} turnSpeed={turnSpeed} />
+            <Player name={avatarName} gender={avatarGender} look={avatarLook} pos={pos} route={route} onInsideChange={setInside} stick={stick} walkSpeed={walkSpeed} turnSpeed={turnSpeed} firstPerson={firstPerson} />
             <CrowdAvatars list={crowd.list} myPos={pos} radius={low ? 16 : 24} />
-            <OrbitControls makeDefault enablePan={false} enableZoom rotateSpeed={turnSpeed} minDistance={1.2} /* zooming stops at 3 m (Player); closer is only for the camera ducking in front of a wall */ maxDistance={inside ? 18 : 30} minPolarAngle={0.35} maxPolarAngle={Math.PI / 2.1} />
+            {/* One control for both views (a new one would start looking at the garden centre). First person: the view
+                turns around a pivot just in front of your eyes, no zoom, up or down up to 60°. Third person: zooming stops
+                at 3 m (Player); closer is only for the camera ducking in front of a wall. */}
+            <OrbitControls makeDefault enablePan={false} enableZoom={!firstPerson} rotateSpeed={turnSpeed * (firstPerson ? 0.6 : 1)}
+              minDistance={firstPerson ? 0.01 : 1.2} maxDistance={firstPerson ? 0.1 : inside ? 18 : 30}
+              minPolarAngle={firstPerson ? Math.PI / 2 - 1.05 : 0.35} maxPolarAngle={firstPerson ? Math.PI / 2 + 1.05 : Math.PI / 2.1} />
           </SanctuaryWorld>
         </Suspense>
       </Canvas>

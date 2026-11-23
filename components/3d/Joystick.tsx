@@ -5,7 +5,7 @@ import { useT } from '@/lib/i18n'
 
 import { useRef, useState } from 'react'
 
-export type Stick = { x: number; y: number }
+export type Stick = { x: number; y: number; turn?: number } // turn: ← → keys, -1…1
 
 const R = 44 // how far the knob travels (px)
 

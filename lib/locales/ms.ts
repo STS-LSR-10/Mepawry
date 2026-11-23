@@ -715,5 +715,7 @@ const t: string[] = [
   "Percuma buat masa ini",
   "Pindah ke sini",
   "VIP percuma buat masa ini. Log masuk dan tempat peringatannya akan diletakkan di sana.",
+  "Tukar ke paparan orang pertama",
+  "Tukar ke paparan orang ketiga",
 ]
 export default t

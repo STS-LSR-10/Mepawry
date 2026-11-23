@@ -715,5 +715,7 @@ const t: string[] = [
   "Şimdilik ücretsiz",
   "Buraya taşı",
   "VIP şimdilik ücretsiz. Giriş yap, anıtı oraya yerleştirilsin.",
+  "Birinci şahıs görünümüne geç",
+  "Üçüncü şahıs görünümüne geç",
 ]
 export default t

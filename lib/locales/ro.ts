@@ -715,5 +715,7 @@ const t: string[] = [
   "Gratuit deocamdată",
   "Mută aici",
   "VIP este gratuit deocamdată. Conectează-te și altarul va fi așezat acolo.",
+  "Comută la perspectiva persoanei întâi",
+  "Comută la perspectiva persoanei a treia",
 ]
 export default t

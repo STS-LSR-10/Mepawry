@@ -715,5 +715,7 @@ const t: string[] = [
   "Voorlopig gratis",
   "Hierheen verplaatsen",
   "VIP is voorlopig gratis. Log in en hun gedenkplekje wordt daar geplaatst.",
+  "Overschakelen naar eerstepersoonsweergave",
+  "Overschakelen naar derdepersoonsweergave",
 ]
 export default t

@@ -715,5 +715,7 @@ const t: string[] = [
   "Vorerst kostenlos",
   "Hierher verlegen",
   "VIP ist vorerst kostenlos. Melde dich an, dann wird der Schrein dort aufgestellt.",
+  "Zur Ego-Perspektive wechseln",
+  "Zur Third-Person-Ansicht wechseln",
 ]
 export default t

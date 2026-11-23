@@ -715,5 +715,7 @@ const t: string[] = [
   "Gratis just nu",
   "Flytta hit",
   "VIP är gratis just nu. Logga in så placeras minnesplatsen där.",
+  "Byt till förstapersonsvy",
+  "Byt till tredjepersonsvy",
 ]
 export default t

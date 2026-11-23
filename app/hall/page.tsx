@@ -9,6 +9,7 @@ import type { Pet } from '@/types'
 
 const PILL = 'glass rounded-full border border-white/20 px-4 py-2.5 text-sm text-[#FAF7F2] shadow-md hover:bg-white/20'
 import { loadSpot } from '@/lib/spot'
+import { setPref, usePref, type ViewPref } from '@/lib/settings'
 import { describe, getVisitor, useActivity, useOnlineCount } from '@/lib/visitor'
 import { useAccount } from '@/lib/account'
 import { BoardSheet } from '@/components/board/Board'
@@ -65,6 +66,7 @@ export default function HallPage() {
   const [newPetsOpen, setNewPetsOpen] = useState(false)
   const myLook = useMyLook()
   const t = useT()
+  const view = usePref<ViewPref>('pm-view')
   const { lang } = useLang()
   // '☀️ Day' → '☀️' + the word in the visitor's language
   const label = (s: string) => { const i = s.indexOf(' '); return `${s.slice(0, i)} ${t(s.slice(i + 1))}` }
@@ -225,6 +227,16 @@ export default function HallPage() {
           className={`${PILL} min-w-11 font-semibold`}
         >
           {toolsOpen ? '✕' : <>☰ <span className="ml-1 font-normal">🏛️ {currentFloor}</span></>}
+        </button>
+        {/* First- or third-person view */}
+        <button
+          onClick={() => setPref('pm-view', view === 'first' ? 'third' : 'first')}
+          aria-pressed={view === 'first'}
+          aria-label={t(view === 'first' ? 'Switch to third-person view' : 'Switch to first-person view')}
+          title={t(view === 'first' ? 'Switch to third-person view' : 'Switch to first-person view')}
+          className={`grid h-11 w-11 place-items-center glass rounded-full border text-lg shadow-md ${view === 'first' ? 'border-[#FFD9A8]/70 bg-[#D9823B]/40' : 'border-white/20'}`}
+        >
+          <span aria-hidden>{view === 'first' ? '👁️' : '🧍'}</span>
         </button>
         {/* Local time and season, under the dome button */}
         {sky && (

@@ -1,5 +1,6 @@
 'use client'
-// components/3d/Player.tsx — Walks the avatar along a route and keeps the camera following it
+// components/3d/Player.tsx — Walks the avatar along a route and keeps the camera following it: behind and above
+// (third person), or at its eyes with the avatar hidden (first person; dragging looks around).
 
 import { useEffect, useRef } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
@@ -14,6 +15,10 @@ import { DOME, VIP_CENTER } from './sanctuary/plan'
 const SPEED = 3.2 // world units per second
 const aim = new THREE.Vector3()
 const MIN_INDOOR_TILT = 0.87 // radians above the horizon (~50°): indoors the camera looks down over the cabinets
+const EYE = 1.4 // m: first-person eye height (a little above the avatar's head, level with the shrine photos)
+const PIVOT = 0.05 // m: first person, OrbitControls turns the view around a point this far in front of your eyes
+const KEY_TURN = 1.8 // rad/s: ← → turn the view
+const wrap = (a: number) => ((a + Math.PI) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2) - Math.PI
 
 export interface Route { points: P[]; onArrive?: () => void; face?: P }
 
@@ -27,9 +32,10 @@ interface PlayerProps {
   stick?: React.RefObject<Stick>   // the on-screen walking stick
   walkSpeed?: number               // × normal walking speed (Settings → Walking speed)
   turnSpeed?: number               // × how fast the camera swings round by itself (Settings → Turning speed)
+  firstPerson?: boolean            // the camera at the avatar's eyes (the 👁️ button)
 }
 
-export function Player({ name, gender, look, pos, route, onInsideChange, stick, walkSpeed = 1, turnSpeed = 1 }: PlayerProps) {
+export function Player({ name, gender, look, pos, route, onInsideChange, stick, walkSpeed = 1, turnSpeed = 1, firstPerson = false }: PlayerProps) {
   const group = useRef<THREE.Group>(null!)
   const marker = useRef<THREE.Mesh>(null!)
   const queue = useRef<P[]>([])
@@ -45,6 +51,7 @@ export function Player({ name, gender, look, pos, route, onInsideChange, stick, 
   const tiltUp = useRef(false)              // easing the camera up to look down into a room you just entered
   const follow = useRef<P | null>(null)    // where the camera is looking, trailing the avatar a little
   const blockedAt = useRef(-1e9)            // when a wall last pulled the camera in (seconds)
+  const mode = useRef<boolean | null>(null) // first person in the last frame (null: no frame yet)
 
   // Your own drag wins over an automatic camera swing
   const canvas = useThree(st => st.gl.domElement)
@@ -74,7 +81,9 @@ export function Player({ name, gender, look, pos, route, onInsideChange, stick, 
     const steering = push > 0.12
     if (steering) {
       q.length = 0; arrive.current = undefined; face.current = undefined; swing.current = null
-      let fx = p.x - camera.position.x, fz = p.z - camera.position.z
+      const o = (controls as unknown as { target: THREE.Vector3 } | null)?.target
+      let fx = firstPerson && o ? o.x - camera.position.x : p.x - camera.position.x
+      let fz = firstPerson && o ? o.z - camera.position.z : p.z - camera.position.z
       const fl = Math.hypot(fx, fz) || 1; fx /= fl; fz /= fl
       const mx = fx * -st!.y + -fz * st!.x, mz = fz * -st!.y + fx * st!.x, ml = Math.hypot(mx, mz) || 1
       const step = SPEED * walkSpeed * push * Math.min(dt, 0.1)
@@ -126,7 +135,41 @@ export function Player({ name, gender, look, pos, route, onInsideChange, stick, 
     // Camera keeps its angle and distance and slides along with the avatar
     // Camera trails the avatar with a little damping (smooth starts and stops, no rigid lock)
     const orbit = controls as unknown as { target: THREE.Vector3 } | null
-    if (orbit) {
+    if (orbit && mode.current !== firstPerson) {
+      // Switched view (or the first frame): keep facing the same way
+      const t = orbit.target, c = camera.position
+      const hx = t.x - c.x, hz = t.z - c.z, hl = Math.hypot(hx, hz) || 1
+      if (firstPerson) {
+        c.set(p.x, y + EYE, p.z)
+        t.set(p.x + (hx / hl) * PIVOT, y + EYE, p.z + (hz / hl) * PIVOT)
+        swing.current = null; tiltUp.current = false
+      } else if (mode.current) { // back to third person: behind you, looking the same way
+        t.set(p.x, y + 1.1, p.z)
+        c.set(p.x - (hx / hl) * 5, y + 5, p.z - (hz / hl) * 5)
+        follow.current = { ...p }; armSet.current = null; want.current = Math.hypot(5, 3.9)
+      }
+      mode.current = firstPerson
+      group.current.visible = !firstPerson // your own avatar and name tag
+      const cam = camera as THREE.PerspectiveCamera
+      cam.near = firstPerson ? 0.05 : 0.2; cam.updateProjectionMatrix() // up close to a cabinet, don't clip it away
+    }
+    const keyTurn = (stick?.current?.turn ?? 0) * KEY_TURN * turnSpeed * Math.min(dt, 0.1)
+    if (orbit && firstPerson) {
+      // First person: the camera is your eyes. OrbitControls swings the view around a pivot just in front of them,
+      // so dragging looks around; here it only moves with you, turns for ← → and turns to face a shrine you reach.
+      const t = orbit.target, c = camera.position
+      const ox = c.x - t.x, oy = c.y - t.y, oz = c.z - t.z, l = Math.hypot(ox, oy, oz) || 1, h = Math.hypot(ox, oz) / l
+      let a = Math.atan2(ox, oz)
+      if (swing.current != null) {
+        const turn = wrap(swing.current - a)
+        a += turn * (1 - Math.exp(-Math.min(dt, 0.25) * 4 * turnSpeed))
+        if (Math.abs(turn) < 0.02) swing.current = null
+      }
+      a -= keyTurn
+      c.set(p.x, y + EYE, p.z)
+      t.set(p.x - Math.sin(a) * h * PIVOT, y + EYE - (oy / l) * PIVOT, p.z - Math.cos(a) * h * PIVOT)
+      last.current = { ...p }
+    } else if (orbit) {
       if (!last.current || !follow.current) {
         // First frame: look at the avatar from behind, wherever it starts (a restored spot may be far from the entrance)
         orbit.target.set(p.x, y + 1.1, p.z)
@@ -164,6 +207,7 @@ export function Player({ name, gender, look, pos, route, onInsideChange, stick, 
         c.y += (t.y + Math.max(d, 3) - c.y) * (1 - Math.exp(-Math.min(dt, 0.25) * 4 * turnSpeed))
         if (Math.abs(turn) < 0.02) swing.current = null
       }
+      if (keyTurn) { const a = Math.atan2(c.x - t.x, c.z - t.z) - keyTurn, d = Math.hypot(c.x - t.x, c.z - t.z); c.x = t.x + Math.sin(a) * d; c.z = t.z + Math.cos(a) * d }
       const dx = c.x - t.x, dy = c.y - t.y, dz = c.z - t.z, len = Math.hypot(dx, dy, dz), flat = Math.hypot(dx, dz)
       // A distance we didn't set means you zoomed: that's the distance you want now
       if (armSet.current == null || Math.abs(len - armSet.current) > 0.01) want.current = Math.max(3, len)

@@ -717,4 +717,6 @@ export const KEYS = [
   "Free for now",
   "Move here",
   "VIP is free for now. Sign in and their shrine is placed there.",
+  "Switch to first-person view",
+  "Switch to third-person view",
 ] as const

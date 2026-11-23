@@ -715,5 +715,7 @@ const t: string[] = [
   "Bure kwa sasa",
   "Hamisha hapa",
   "VIP ni bure kwa sasa. Ingia na kaburi lake litawekwa hapo.",
+  "Badili hadi mwonekano wa nafsi ya kwanza",
+  "Badili hadi mwonekano wa nafsi ya tatu",
 ]
 export default t

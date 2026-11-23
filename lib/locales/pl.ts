@@ -715,5 +715,7 @@ const t: string[] = [
   "Na razie za darmo",
   "Przenieś tutaj",
   "VIP jest na razie za darmo. Zaloguj się, a kapliczka zostanie tam umieszczona.",
+  "Przełącz na widok pierwszoosobowy",
+  "Przełącz na widok trzecioosobowy",
 ]
 export default t
