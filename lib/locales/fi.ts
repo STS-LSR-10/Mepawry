@@ -717,5 +717,7 @@ const t: string[] = [
   "VIP on toistaiseksi ilmainen. Kirjaudu sisään, niin muistopaikka sijoitetaan sinne.",
   "Vaihda ensimmäisen persoonan näkymään",
   "Vaihda kolmannen persoonan näkymään",
+  "Käännä: {lang}",
+  "Käännetään…",
 ]
 export default t

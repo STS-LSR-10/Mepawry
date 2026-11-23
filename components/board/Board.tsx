@@ -13,6 +13,7 @@ import { photoToDataUrl } from '@/lib/photo'
 import { cn, flagEmoji, SPECIES_LOOK, timeAgo } from '@/lib/utils'
 import type { Pet } from '@/types'
 import type { Comment, Post, Sort } from '@/lib/board'
+import { Translatable } from '@/components/ui/Translatable'
 
 type Tab = 'stories' | 'today' | 'notes'
 const NOTE_COLORS = ['#FFF4C2', '#FFD9E2', '#D8EEFF', '#DDF5D8', '#FFE2C2', '#E8DDFF']
@@ -255,7 +256,7 @@ function StoryCard({ post, onDeleted }: { post: Post; onDeleted: () => void }) {
         // eslint-disable-next-line @next/next/no-img-element
         <img src={post.photo_url} alt={title} loading="lazy" className="mt-3 max-h-[420px] w-full rounded-2xl object-cover" />
       )}
-      <p className={cn('mt-3 whitespace-pre-line font-serif text-[16px] leading-relaxed text-[#2A1E17]', long && !expanded && 'line-clamp-6')}>{post.body}</p>
+      <Translatable text={post.body} className={cn('mt-3 whitespace-pre-line font-serif text-[16px] leading-relaxed text-[#2A1E17]', long && !expanded && 'line-clamp-6')} />
       {long && <button onClick={() => setExpanded(e => !e)} className="mt-1 text-xs font-semibold text-[#C67129]">{expanded ? t('Show less') : t('Read more')}</button>}
 
       <footer className="mt-3 flex items-center gap-2 border-t border-[#EFE4D4] pt-3">
@@ -305,7 +306,7 @@ function Comments({ postId, onCount }: { postId: string; onCount: (n: number) =>
           <p className="text-xs font-semibold text-[#2A1E17]">{c.author_name} {flagEmoji(c.author_country)} <span className="font-normal text-[#8E8278]">· {timeAgo(c.created_at, t)}</span>
             {user?.id === c.author_id && <button onClick={() => remove(c.id)} className="ml-2 font-normal text-[#C0392B] underline">{t('Delete')}</button>}
           </p>
-          <p className="whitespace-pre-line text-sm text-[#3A2E26]">{c.body}</p>
+          <Translatable text={c.body} className="whitespace-pre-line text-sm text-[#3A2E26]" />
         </div>
       ))}
       <form onSubmit={send} className="flex gap-2">

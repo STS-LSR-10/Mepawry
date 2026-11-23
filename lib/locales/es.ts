@@ -717,5 +717,7 @@ const t: string[] = [
   "El VIP es gratis por ahora. Inicia sesión y su altar se colocará allí.",
   "Cambiar a vista en primera persona",
   "Cambiar a vista en tercera persona",
+  "Traducir al {lang}",
+  "Traduciendo…",
 ]
 export default t

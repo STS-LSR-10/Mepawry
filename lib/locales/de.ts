@@ -717,5 +717,7 @@ const t: string[] = [
   "VIP ist vorerst kostenlos. Melde dich an, dann wird der Schrein dort aufgestellt.",
   "Zur Ego-Perspektive wechseln",
   "Zur Third-Person-Ansicht wechseln",
+  "Übersetzen: {lang}",
+  "Wird übersetzt…",
 ]
 export default t

@@ -717,5 +717,7 @@ const t: string[] = [
   "VIP jest na razie za darmo. Zaloguj się, a kapliczka zostanie tam umieszczona.",
   "Przełącz na widok pierwszoosobowy",
   "Przełącz na widok trzecioosobowy",
+  "Przetłumacz: {lang}",
+  "Tłumaczenie…",
 ]
 export default t

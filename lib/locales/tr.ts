@@ -717,5 +717,7 @@ const t: string[] = [
   "VIP şimdilik ücretsiz. Giriş yap, anıtı oraya yerleştirilsin.",
   "Birinci şahıs görünümüne geç",
   "Üçüncü şahıs görünümüne geç",
+  "{lang} diline çevir",
+  "Çevriliyor…",
 ]
 export default t

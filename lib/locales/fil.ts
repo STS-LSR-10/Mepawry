@@ -717,5 +717,7 @@ const t: string[] = [
   "Libre muna ang VIP. Mag-sign in at doon ilalagay ang kanilang dambana.",
   "Lumipat sa first-person view",
   "Lumipat sa third-person view",
+  "Isalin sa {lang}",
+  "Isinasalin…",
 ]
 export default t

@@ -717,5 +717,7 @@ const t: string[] = [
   "A VIP egyelőre ingyenes. Jelentkezz be, és az emlékhely oda kerül.",
   "Váltás belső nézetre",
   "Váltás külső nézetre",
+  "Fordítás: {lang}",
+  "Fordítás…",
 ]
 export default t

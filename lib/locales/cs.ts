@@ -717,5 +717,7 @@ const t: string[] = [
   "VIP je zatím zdarma. Přihlaste se a svatyně bude umístěna tam.",
   "Přepnout na pohled z první osoby",
   "Přepnout na pohled z třetí osoby",
+  "Přeložit do: {lang}",
+  "Překládám…",
 ]
 export default t

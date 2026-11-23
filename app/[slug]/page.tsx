@@ -10,6 +10,7 @@ import { Starfield } from '@/components/site/LandingFx'
 import { ShrineActions } from '@/components/shrine/ShrineActions'
 import { ShrineClientSection } from './ShrineClientSection'
 import { ChangePhotoButton } from './ChangePhotoButton'
+import { Translatable } from '@/components/ui/Translatable'
 
 interface ShrinePageProps {
   params: Promise<{ slug: string }>
@@ -78,7 +79,9 @@ export default async function ShrinePage({ params }: ShrinePageProps) {
         </p>
 
         {pet.epitaph && (
-          <p className="mx-auto mt-3 max-w-[40ch] font-serif text-lg italic text-[#FAF7F2]/85">&ldquo;{pet.epitaph}&rdquo;</p>
+          <div className="mx-auto mt-3 max-w-[40ch]">
+            <Translatable text={pet.epitaph} quote light className="font-serif text-lg italic text-[#FAF7F2]/85" />
+          </div>
         )}
 
         <ShrineClientSection pet={pet} candlesToday={await getCandlesToday(pet.id)} />

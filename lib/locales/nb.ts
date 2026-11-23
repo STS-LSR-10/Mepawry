@@ -717,5 +717,7 @@ const t: string[] = [
   "VIP er gratis foreløpig. Logg inn, så plasseres minnestedet der.",
   "Bytt til førstepersonsvisning",
   "Bytt til tredjepersonsvisning",
+  "Oversett til {lang}",
+  "Oversetter…",
 ]
 export default t

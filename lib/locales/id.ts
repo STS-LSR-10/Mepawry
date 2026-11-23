@@ -717,5 +717,7 @@ const t: string[] = [
   "VIP gratis untuk sekarang. Masuk dan makamnya akan ditempatkan di sana.",
   "Beralih ke tampilan orang pertama",
   "Beralih ke tampilan orang ketiga",
+  "Terjemahkan ke {lang}",
+  "Menerjemahkan…",
 ]
 export default t

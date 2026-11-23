@@ -16,6 +16,7 @@ import { timeAgo } from '@/lib/utils'
 import { k } from '@/lib/tkey'
 import { useT } from '@/lib/i18n'
 import type { Pet, GuestbookEntry } from '@/types'
+import { Translatable } from '@/components/ui/Translatable'
 
 // shortcut: the keepsake shop has no real checkout yet, so its buttons stay hidden; set true once Stripe orders work.
 const SHOP_OPEN = false
@@ -297,9 +298,7 @@ export function ShrineClientSection({ pet: initialPet, candlesToday: initialToda
                     </span>
                     <span className="text-[#8E8278]">{timeAgo(msg.created_at, t)}</span>
                   </div>
-                  <p className="text-sm text-[#5C5046] leading-relaxed pt-1">
-                    {msg.message}
-                  </p>
+                  <Translatable text={msg.message} className="text-sm text-[#5C5046] leading-relaxed pt-1" />
                 </div>
               ))
             )}
