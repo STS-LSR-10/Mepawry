@@ -719,5 +719,8 @@ const t: string[] = [
   "Chuyển sang góc nhìn thứ ba",
   "Dịch sang {lang}",
   "Đang dịch…",
+  "Tên bằng chữ cái Latinh",
+  "vd. Khao Suay",
+  "Hiển thị dưới tên cho khách không đọc được",
 ]
 export default t

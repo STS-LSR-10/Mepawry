@@ -719,5 +719,8 @@ const t: string[] = [
   "Skift til tredjepersonsvisning",
   "Oversæt til {lang}",
   "Oversætter…",
+  "Navn med engelske bogstaver",
+  "f.eks. Khao Suay",
+  "Vises under navnet for besøgende, der ikke kan læse det",
 ]
 export default t

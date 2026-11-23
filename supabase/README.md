@@ -11,6 +11,7 @@ SQL files are numbered in the order they were made. Run them in **Supabase → S
 | `004_vip.sql` | VIP Garden niche for a pet (big arched niches on every floor) |
 | `007_owned_gifts.sql` | Special gifts are bought once: who owns which |
 | `008_vip_frees_shelf.sql` | A VIP shrine gives its ordinary shelf back |
+| `009_name_latin.sql` | A pet's name in English letters (optional) |
 
 **Existing database:** run only the numbered files after the last one you ran.
 Every file is safe to run more than once.

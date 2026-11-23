@@ -72,7 +72,10 @@ export async function getMemorials(opts: { species?: string; waitingOnly?: boole
   if (opts.species && opts.species !== 'all') q = q.eq('species', opts.species)
   if (opts.waitingOnly) q = q.eq('candle_count', 0)
   if (opts.since) q = q.gte('created_at', opts.since)
-  if (opts.search) q = q.ilike('name', `%${opts.search.replace(/[\\%_]/g, '\\$&')}%`)
+  if (opts.search) {
+    const s = opts.search.replace(/[\\%_,()*"]/g, ' ').trim() // wildcards and the or() filter's own separators can't be in it
+    q = q.or(`name.ilike.%${s}%,name_latin.ilike.%${s}%`)
+  }
   const { data, count, error } = await q.range((page - 1) * limit, page * limit - 1)
   if (error) throw new Error(error.message)
   return { pets: data as Pet[], total: count ?? 0 }
@@ -117,6 +120,8 @@ export class SlotTakenError extends Error {}
 function petFields(data: Partial<Pet>) {
   return {
     name: String(data.name ?? '').trim().slice(0, 80),
+    // English letters only (accents allowed), e.g. "Khao Suay"; anything else is dropped
+    name_latin: /^[A-Za-zÀ-ɏ][A-Za-zÀ-ɏ .'-]{0,59}$/.test(String(data.name_latin ?? '').trim()) ? String(data.name_latin).trim().replace(/\s+/g, ' ') : null,
     species: SPECIES.includes(data.species as Species) ? data.species : 'other',
     birth_year: year(data.birth_year),
     death_year: year(data.death_year),

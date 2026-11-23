@@ -20,6 +20,8 @@ export interface Pet {
   id: string
   slug: string
   name: string
+  /** the name in English letters, written by the owner (for a name in another alphabet), or null */
+  name_latin?: string | null
   species: Species
   country_code: string
   primary_photo_url: string | null

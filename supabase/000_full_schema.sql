@@ -7,6 +7,7 @@ create table if not exists pets (
   id uuid primary key default gen_random_uuid(),
   slug text not null unique,
   name text not null,
+  name_latin text check (name_latin is null or char_length(name_latin) <= 60), -- the name in English letters (optional)
   species text not null check (species in ('dog', 'cat', 'other')),
   country_code text not null default 'XX',
   primary_photo_url text,

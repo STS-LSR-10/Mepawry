@@ -719,5 +719,8 @@ const t: string[] = [
   "Beralih ke tampilan orang ketiga",
   "Terjemahkan ke {lang}",
   "Menerjemahkan…",
+  "Nama dalam huruf Latin",
+  "mis. Khao Suay",
+  "Ditampilkan di bawah nama untuk pengunjung yang tidak bisa membacanya",
 ]
 export default t

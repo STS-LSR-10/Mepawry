@@ -149,3 +149,11 @@ export function Translatable({ text, className, quote = false, light = false }: 
     </>
   )
 }
+
+/** A pet's name in English letters (the owner's spelling), under the name, for readers whose language uses another alphabet. */
+export function NameInLatin({ name, latin, className }: { name: string; latin?: string | null; className?: string }) {
+  const { lang } = useLang()
+  const script = scriptOf(name)
+  if (!latin || !script || script === 'latin' || SCRIPT[lang] === script) return null
+  return <p className={className} lang="en">{latin}</p>
+}

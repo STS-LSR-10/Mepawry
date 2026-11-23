@@ -719,5 +719,8 @@ const t: string[] = [
   "Přepnout na pohled z třetí osoby",
   "Přeložit do: {lang}",
   "Překládám…",
+  "Jméno latinkou",
+  "např. Khao Suay",
+  "Zobrazí se pod jménem návštěvníkům, kteří ho nepřečtou",
 ]
 export default t

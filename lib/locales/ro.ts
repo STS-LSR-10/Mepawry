@@ -719,5 +719,8 @@ const t: string[] = [
   "Comută la perspectiva persoanei a treia",
   "Tradu în {lang}",
   "Se traduce…",
+  "Numele cu litere latine",
+  "ex. Khao Suay",
+  "Afișat sub nume pentru vizitatorii care nu îl pot citi",
 ]
 export default t

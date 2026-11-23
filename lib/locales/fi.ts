@@ -719,5 +719,8 @@ const t: string[] = [
   "Vaihda kolmannen persoonan näkymään",
   "Käännä: {lang}",
   "Käännetään…",
+  "Nimi latinalaisin kirjaimin",
+  "esim. Khao Suay",
+  "Näytetään nimen alla vierailijoille, jotka eivät osaa lukea sitä",
 ]
 export default t

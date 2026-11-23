@@ -719,5 +719,8 @@ const t: string[] = [
   "Lumipat sa third-person view",
   "Isalin sa {lang}",
   "Isinasalin…",
+  "Pangalan sa English na titik",
+  "hal. Khao Suay",
+  "Ipinapakita sa ilalim ng pangalan para sa mga bisitang hindi ito mabasa",
 ]
 export default t

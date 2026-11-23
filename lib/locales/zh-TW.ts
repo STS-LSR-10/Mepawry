@@ -719,5 +719,8 @@ const t: string[] = [
   "切換為第三人稱視角",
   "翻譯成{lang}",
   "翻譯中…",
+  "英文拼寫的名字",
+  "例如 Khao Suay",
+  "顯示在名字下方，方便看不懂的訪客",
 ]
 export default t

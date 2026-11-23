@@ -719,5 +719,8 @@ const t: string[] = [
   "Overschakelen naar derdepersoonsweergave",
   "Vertalen naar {lang}",
   "Vertalen…",
+  "Naam in Latijnse letters",
+  "bijv. Khao Suay",
+  "Wordt onder de naam getoond voor bezoekers die hem niet kunnen lezen",
 ]
 export default t

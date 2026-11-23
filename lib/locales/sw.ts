@@ -719,5 +719,8 @@ const t: string[] = [
   "Badili hadi mwonekano wa nafsi ya tatu",
   "Tafsiri kwa {lang}",
   "Inatafsiri…",
+  "Jina kwa herufi za Kiingereza",
+  "mf. Khao Suay",
+  "Huonyeshwa chini ya jina kwa wageni wasioweza kulisoma",
 ]
 export default t

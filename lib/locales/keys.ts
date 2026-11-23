@@ -721,4 +721,7 @@ export const KEYS = [
   "Switch to third-person view",
   "Translate to {lang}",
   "Translating…",
+  "Name in English letters",
+  "e.g. Khao Suay",
+  "Shown under their name for visitors who can’t read it",
 ] as const

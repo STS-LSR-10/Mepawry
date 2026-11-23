@@ -14,6 +14,7 @@ import { CountryPicker } from '@/components/shrine/CountryPicker'
 import { SlotPicker, type SlotChoice } from '@/components/shrine/SlotPicker'
 import { startCheckout } from '@/lib/checkout'
 import { VIP_PRICE_THB } from '@/lib/decor'
+import { scriptOf } from '@/components/ui/Translatable'
 
 // The form, kept while they pay for a VIP niche on Stripe, so the shrine is made when they come back
 const DRAFT = 'pm-vip-draft'
@@ -43,6 +44,7 @@ export function AddPetModal({ open, onClose }: AddPetModalProps) {
 
   const [form, setForm] = useState({
     name: '',
+    name_latin: '',
     species: 'dog' as Species,
     birth_year: '',
     death_year: '',
@@ -129,6 +131,7 @@ export function AddPetModal({ open, onClose }: AddPetModalProps) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: form.name.trim(),
+          name_latin: form.name_latin?.trim() || null,
           species: form.species,
           slot,
           country_code: country,
@@ -165,7 +168,7 @@ export function AddPetModal({ open, onClose }: AddPetModalProps) {
     setError(null)
     setCreatedSlug(null)
     setExpanded(false)
-    setForm({ name: '', species: 'dog', birth_year: '', death_year: '', epitaph: '' })
+    setForm({ name: '', name_latin: '', species: 'dog', birth_year: '', death_year: '', epitaph: '' })
     setSlot(null)
     setVipNiche(null)
     setNeedLogin(false)
@@ -245,6 +248,16 @@ export function AddPetModal({ open, onClose }: AddPetModalProps) {
               onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
               className="w-full rounded-xl border border-[#D4C9BF] bg-white px-4 py-2.5 text-[#2A1E17] placeholder:text-[#B5A99F] focus:outline-none focus:ring-2 focus:ring-[#D9823B] text-base"
             />
+          {/* only for a name in another alphabet (Thai, Japanese…): how to write it in English letters */}
+          {form.name.trim() && scriptOf(form.name) !== 'latin' && (
+            <div className="mt-2">
+              <label htmlFor="pet-name-latin" className="mb-1 block text-xs font-medium text-[#5C5046]">{t('Name in English letters')} <span className="font-normal text-[#8E8278]">({t('optional')})</span></label>
+              <input id="pet-name-latin" type="text" maxLength={60} lang="en" autoCapitalize="words" placeholder={t('e.g. Khao Suay')}
+                value={form.name_latin ?? ''} onChange={e => setForm(f => ({ ...f, name_latin: e.target.value.replace(/[^A-Za-zÀ-ɏ .'-]/g, '') }))}
+                className="w-full rounded-xl border border-[#D4C9BF] bg-white px-4 py-2 text-[#2A1E17] placeholder:text-[#B5A99F] focus:outline-none focus:ring-2 focus:ring-[#D9823B] text-base" />
+              <p className="mt-1 text-[11px] text-[#8E8278]">{t('Shown under their name for visitors who can’t read it')}</p>
+            </div>
+          )}
           </div>
 
           {/* Species */}

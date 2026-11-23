@@ -719,5 +719,8 @@ const t: string[] = [
   "Váltás külső nézetre",
   "Fordítás: {lang}",
   "Fordítás…",
+  "Név latin betűkkel",
+  "pl. Khao Suay",
+  "A név alatt jelenik meg azoknak, akik nem tudják elolvasni",
 ]
 export default t

@@ -10,7 +10,7 @@ import { Starfield } from '@/components/site/LandingFx'
 import { ShrineActions } from '@/components/shrine/ShrineActions'
 import { ShrineClientSection } from './ShrineClientSection'
 import { ChangePhotoButton } from './ChangePhotoButton'
-import { Translatable } from '@/components/ui/Translatable'
+import { NameInLatin, Translatable } from '@/components/ui/Translatable'
 
 interface ShrinePageProps {
   params: Promise<{ slug: string }>
@@ -70,6 +70,7 @@ export default async function ShrinePage({ params }: ShrinePageProps) {
 
         <ShrineActions pet={pet} />
         <h1 className="font-serif text-4xl font-medium sm:text-5xl">{pet.name}</h1>
+        <NameInLatin name={pet.name} latin={pet.name_latin} className="mt-1 font-serif text-lg italic text-[#FAF7F2]/70" />
         <p className="mt-2 text-sm text-[#FAF7F2]/70">
           {flag} {years}{age ? <> · <T text="{n} yrs" vars={{ n: age }} /></> : null} · <T text={look.label} />
         </p>

@@ -10,12 +10,13 @@ import { CountryPicker } from '@/components/shrine/CountryPicker'
 import type { Pet, Species } from '@/types'
 import { useT } from '@/lib/i18n'
 import { k } from '@/lib/tkey'
+import { scriptOf } from '@/components/ui/Translatable'
 
 const field = 'w-full rounded-xl border border-[#D4C9BF] bg-white px-3 py-2 text-sm text-[#2A1E17] placeholder:text-[#B5A99F] focus:outline-none focus:ring-2 focus:ring-[#D9823B]'
 
 export function EditPetModal({ pet, onClose, onSaved }: { pet: Pet | null; onClose: () => void; onSaved: (p: Pet) => void }) {
   const t = useT()
-  const [form, setForm] = useState({ name: '', species: 'dog' as Species, birth_year: '', death_year: '', epitaph: '', country_code: 'XX', show_flag: true })
+  const [form, setForm] = useState({ name: '', name_latin: '', species: 'dog' as Species, birth_year: '', death_year: '', epitaph: '', country_code: 'XX', show_flag: true })
   const [photo, setPhoto] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
@@ -23,7 +24,7 @@ export function EditPetModal({ pet, onClose, onSaved }: { pet: Pet | null; onClo
 
   useEffect(() => {
     if (!pet) return
-    setForm({ name: pet.name, species: pet.species, birth_year: pet.birth_year ? String(pet.birth_year) : '', death_year: pet.death_year ? String(pet.death_year) : '', epitaph: pet.epitaph ?? '', country_code: pet.country_code, show_flag: pet.show_flag !== false })
+    setForm({ name: pet.name, name_latin: pet.name_latin ?? '', species: pet.species, birth_year: pet.birth_year ? String(pet.birth_year) : '', death_year: pet.death_year ? String(pet.death_year) : '', epitaph: pet.epitaph ?? '', country_code: pet.country_code, show_flag: pet.show_flag !== false })
     setPhoto(null); setError('')
   }, [pet])
 
@@ -41,7 +42,7 @@ export function EditPetModal({ pet, onClose, onSaved }: { pet: Pet | null; onClo
     const res = await fetch(`/api/pets/${pet.id}`, {
       method: 'PATCH', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        name: form.name.trim(), species: form.species, epitaph: form.epitaph, country_code: form.country_code, show_flag: form.show_flag,
+        name: form.name.trim(), name_latin: form.name_latin.trim() || null, species: form.species, epitaph: form.epitaph, country_code: form.country_code, show_flag: form.show_flag,
         birth_year: form.birth_year ? Number(form.birth_year) : null,
         death_year: form.death_year ? Number(form.death_year) : null,
         photo,
@@ -70,6 +71,16 @@ export function EditPetModal({ pet, onClose, onSaved }: { pet: Pet | null; onClo
         <div>
           <label htmlFor="edit-name" className="mb-1 block text-xs font-medium text-[#2A1E17]">{t('Name')}</label>
           <input id="edit-name" required maxLength={80} value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} className={field} />
+          {/* only for a name in another alphabet (Thai, Japanese…): how to write it in English letters */}
+          {form.name.trim() && scriptOf(form.name) !== 'latin' && (
+            <div className="mt-2">
+              <label htmlFor="edit-name-latin" className="mb-1 block text-xs font-medium text-[#5C5046]">{t('Name in English letters')} <span className="font-normal text-[#8E8278]">({t('optional')})</span></label>
+              <input id="edit-name-latin" type="text" maxLength={60} lang="en" autoCapitalize="words" placeholder={t('e.g. Khao Suay')}
+                value={form.name_latin} onChange={e => setForm(f => ({ ...f, name_latin: e.target.value.replace(/[^A-Za-zÀ-ɏ .'-]/g, '') }))}
+                className={field} />
+              <p className="mt-1 text-[11px] text-[#8E8278]">{t('Shown under their name for visitors who can’t read it')}</p>
+            </div>
+          )}
         </div>
         <div role="group" aria-label={t('They were a…')} className="flex gap-2">
           {(['dog', 'cat', 'other'] as Species[]).map(s => (

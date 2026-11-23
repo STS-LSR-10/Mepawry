@@ -719,5 +719,8 @@ const t: string[] = [
   "Üçüncü şahıs görünümüne geç",
   "{lang} diline çevir",
   "Çevriliyor…",
+  "Latin harfleriyle ad",
+  "örn. Khao Suay",
+  "Adı okuyamayan ziyaretçiler için adın altında gösterilir",
 ]
 export default t

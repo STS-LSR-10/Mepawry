@@ -719,5 +719,8 @@ const t: string[] = [
   "Passer à la vue à la troisième personne",
   "Traduire en {lang}",
   "Traduction…",
+  "Nom en lettres latines",
+  "ex. Khao Suay",
+  "Affiché sous son nom pour les visiteurs qui ne peuvent pas le lire",
 ]
 export default t

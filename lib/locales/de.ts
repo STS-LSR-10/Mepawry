@@ -719,5 +719,8 @@ const t: string[] = [
   "Zur Third-Person-Ansicht wechseln",
   "Übersetzen: {lang}",
   "Wird übersetzt…",
+  "Name in lateinischen Buchstaben",
+  "z. B. Khao Suay",
+  "Wird unter dem Namen angezeigt, für Besucher, die ihn nicht lesen können",
 ]
 export default t
