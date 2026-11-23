@@ -6,6 +6,7 @@ import './globals.css'
 import { AccountProvider } from '@/lib/account'
 import { I18nProvider } from '@/lib/i18n'
 import { SettingsSheet } from '@/components/site/SettingsSheet'
+import { VisitBeacon } from '@/components/site/VisitBeacon'
 import { SITE } from '@/lib/utils'
 
 const serif = Lora({ subsets: ['latin'], style: ['normal', 'italic'], variable: '--font-serif' })
@@ -33,7 +34,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={`${serif.variable} ${sans.variable}`} suppressHydrationWarning>
       <head><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: SITE_JSON }} /></head>
-      <body className="antialiased"><I18nProvider><AccountProvider>{children}</AccountProvider><SettingsSheet /></I18nProvider></body>
+      <body className="antialiased"><I18nProvider><AccountProvider>{children}</AccountProvider><SettingsSheet /><VisitBeacon /></I18nProvider></body>
     </html>
   )
 }

@@ -37,7 +37,10 @@ export async function translateSaved(kind: Kind, id: string, to: string, fromHin
   const provider = process.env.TRANSLATE_PROVIDER === 'gemini' && process.env.GEMINI_API_KEY ? 'gemini' : 'workers-ai'
   let text: string | null
   try {
-    text = provider === 'gemini' ? await viaGemini(source, to) : await viaWorkersAi(source, from, to)
+    const out = provider === 'gemini' ? await viaGemini(source, to) : await viaWorkersAi(source, from, to)
+    text = out?.text ?? null
+    // what it used, for the admin page's monthly costs
+    if (out) await db().from('ai_usage').insert({ provider, model: out.model, input_tokens: out.input, output_tokens: out.output, estimated: out.estimated })
   } catch (e) {
     console.error(`[translate] ${provider} failed:`, e)
     return { error: 'Translation failed', status: 502 }
@@ -53,16 +56,26 @@ const M2M: Record<string, string> = { 'zh-TW': 'zh', fil: 'tl', nb: 'no' }
 
 type Ai = { run: (model: string, input: Record<string, unknown>) => Promise<{ translated_text?: string }> }
 
-async function viaWorkersAi(text: string, from: string | null, to: string): Promise<string | null> {
+type Used = { text: string; model: string; input: number; output: number; estimated: boolean }
+
+/** m2m100 doesn't report its tokens: about a token per 3 Latin characters, per 1.5 others (Thai, Chinese…) */
+const estimateTokens = (s: string) => {
+  const latin = (s.match(/[\x00-\x7F]/g) ?? []).length
+  return Math.ceil(latin / 3 + (s.length - latin) / 1.5)
+}
+
+async function viaWorkersAi(text: string, from: string | null, to: string): Promise<Used | null> {
   if (!from) return null // m2m100 must be told the source language
   let ai: Ai | undefined
   try { ai = (getCloudflareContext().env as { AI?: Ai }).AI } catch { /* not on Cloudflare */ }
   if (!ai) throw new Error('No Workers AI binding (local `next dev` has none; the live site does)')
-  const out = await ai.run('@cf/meta/m2m100-1.2b', { text, source_lang: M2M[from] ?? from, target_lang: M2M[to] ?? to })
-  return out.translated_text?.trim() || null
+  const model = '@cf/meta/m2m100-1.2b'
+  const out = await ai.run(model, { text, source_lang: M2M[from] ?? from, target_lang: M2M[to] ?? to })
+  const result = out.translated_text?.trim()
+  return result ? { text: result, model, input: estimateTokens(text), output: estimateTokens(result), estimated: true } : null
 }
 
-async function viaGemini(text: string, to: string): Promise<string | null> {
+async function viaGemini(text: string, to: string): Promise<Used | null> {
   const model = process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite'
   const language = new Intl.DisplayNames(['en'], { type: 'language' }).of(to === 'zh-TW' ? 'zh-Hant' : to) ?? to
   const prompt = `Translate this text, written in memory of a pet, into ${language}. Keep the warmth and tone. ` +
@@ -73,6 +86,12 @@ async function viaGemini(text: string, to: string): Promise<string | null> {
     body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.2, maxOutputTokens: 1024 } }),
   })
   if (!res.ok) throw new Error(`Gemini ${res.status}: ${(await res.text()).slice(0, 300)}`)
-  const data = await res.json() as { candidates?: { content?: { parts?: { text?: string }[] } }[] }
-  return data.candidates?.[0]?.content?.parts?.map(p => p.text ?? '').join('').trim() || null
+  const data = await res.json() as {
+    candidates?: { content?: { parts?: { text?: string }[] } }[]
+    usageMetadata?: { promptTokenCount?: number; candidatesTokenCount?: number; thoughtsTokenCount?: number }
+  }
+  const result = data.candidates?.[0]?.content?.parts?.map(p => p.text ?? '').join('').trim()
+  const u = data.usageMetadata ?? {}
+  // thinking tokens are billed as output
+  return result ? { text: result, model, input: u.promptTokenCount ?? 0, output: (u.candidatesTokenCount ?? 0) + (u.thoughtsTokenCount ?? 0), estimated: !data.usageMetadata } : null
 }
