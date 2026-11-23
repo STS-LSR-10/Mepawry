@@ -44,6 +44,7 @@ export function Player({ name, gender, look, pos, route, onInsideChange, stick, 
   const swing = useRef<number | null>(null) // camera heading to swing round to (after arriving at a shrine)
   const tiltUp = useRef(false)              // easing the camera up to look down into a room you just entered
   const follow = useRef<P | null>(null)    // where the camera is looking, trailing the avatar a little
+  const blockedAt = useRef(-1e9)            // when a wall last pulled the camera in (seconds)
 
   // Your own drag wins over an automatic camera swing
   const canvas = useThree(st => st.gl.domElement)
@@ -65,7 +66,7 @@ export function Player({ name, gender, look, pos, route, onInsideChange, stick, 
     if (end) marker.current.position.set(end.x, heightAt(end) + 0.02, end.z)
   }, [route])
 
-  useFrame(({ camera, controls, scene }, dt) => {
+  useFrame(({ camera, controls, scene, clock }, dt) => {
     const p = pos.current
     const q = queue.current
     // The walking stick: up walks the way the camera looks, sideways steps across; it overrides any tap-to-walk route
@@ -180,8 +181,12 @@ export function Player({ name, gender, look, pos, route, onInsideChange, stick, 
       }
       // Ease to your chosen distance (after a zoom it's already there)
       if (next !== len) next = len + (next - len) * (1 - Math.exp(-Math.min(dt, 0.25) * 3))
-      // Something in the way: small things fade, a wall brings the camera in front of it (and it eases back out after)
-      next = Math.min(next, clearView(scene, camera, t, aim.set(ux, uy, uz), next, group.current))
+      // Something in the way: small things fade, a wall brings the camera in front of it at once. It eases back out
+      // only once the view has stayed clear for a moment: walking past a row of cabinets, the gaps between them would
+      // otherwise let it bob out and snap back in every few steps (the camera "shaking" near walls).
+      const room = clearView(scene, camera, t, aim.set(ux, uy, uz), next, group.current)
+      if (room < next - 0.01) { next = room; blockedAt.current = clock.elapsedTime }
+      else if (clock.elapsedTime - blockedAt.current < 0.8 && next > len) next = len
       c.set(t.x + ux * next, t.y + uy * next, t.z + uz * next)
       armSet.current = next
       last.current = { ...p }
