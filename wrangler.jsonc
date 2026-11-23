@@ -12,7 +12,7 @@
   "ai": { "binding": "AI" },
   // Public settings (not secrets). keep_vars: deploys leave variables set in the dashboard alone
   "keep_vars": true,
-  "vars": { "GOOGLE_CLIENT_ID": "765592068822-3rjobs1k0ubkqea42tss9igfo7uo1bl2.apps.googleusercontent.com" },
+  "vars": { "GOOGLE_CLIENT_ID": "765592068822-3rjobs1k0ubkqea42tss9igfo7uo1bl2.apps.googleusercontent.com", "CF_ACCESS_TEAM": "patient-sky-98cd.cloudflareaccess.com" },
   // The site's own domain (registered with Cloudflare); the workers.dev address keeps working too
   "workers_dev": true,
   "routes": [

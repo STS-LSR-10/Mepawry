@@ -1,10 +1,12 @@
 // app/admin/page.tsx — The site owner's page: visitors (and their countries), purchases, and this month's AI costs.
-// Only admins (ADMIN_EMAILS, signed in) can open it; everyone else gets a 404. Written in Thai: it's for the owner.
+// Only admins can open it: an ADMIN_EMAILS email signed in on the site, or come in through Cloudflare Access
+// (lib/accessAuth.ts). Everyone else gets a 404. Written in Thai: it's for the owner.
 
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { SiteNav } from '@/components/site/SiteNav'
-import { getUser, isAdmin } from '@/lib/auth'
+import { getUser, isAdmin, isAdminEmail } from '@/lib/auth'
+import { accessEmail } from '@/lib/accessAuth'
 import { aiCosts, PERIODS, purchaseStats, range, visitorStats, WORKERS_FREE_NEURONS, type Period } from '@/lib/adminStats'
 import { flagEmoji } from '@/lib/utils'
 
@@ -21,7 +23,7 @@ const n0 = (n: number) => Math.round(n).toLocaleString('en-US')
 const usd = (n: number) => `$${n > 0 && n < 1 ? n.toFixed(4) : n.toFixed(2)}`
 
 export default async function AdminPage({ searchParams }: { searchParams: Promise<{ p?: string }> }) {
-  if (!isAdmin(await getUser())) notFound()
+  if (!isAdminEmail(await accessEmail()) && !isAdmin(await getUser())) notFound()
   const p: Period = PERIODS.includes((await searchParams).p as Period) ? ((await searchParams).p as Period) : 'day'
   const [visits, sales, ai] = await Promise.all([visitorStats(p), purchaseStats(p), aiCosts()])
   const { from, to } = range(p)

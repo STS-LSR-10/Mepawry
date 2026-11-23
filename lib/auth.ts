@@ -48,6 +48,11 @@ export async function postingAs(req: Request, guestName: unknown) {
 /** Site admins: emails listed in ADMIN_EMAILS (comma-separated), signed in with a real (not guest) account. */
 export function isAdmin(user: { email?: string | null; is_anonymous?: boolean } | null): boolean {
   if (!user?.email || user.is_anonymous) return false
+  return isAdminEmail(user.email)
+}
+
+/** Is this email in ADMIN_EMAILS? (also used for people who came in through Cloudflare Access) */
+export function isAdminEmail(email: string | null | undefined): boolean {
   const list = (process.env.ADMIN_EMAILS ?? '').toLowerCase().split(',').map(s => s.trim()).filter(Boolean)
-  return list.includes(user.email.toLowerCase())
+  return !!email && list.includes(email.toLowerCase())
 }
