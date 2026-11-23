@@ -21,9 +21,12 @@ export const isLang = (v: unknown): v is string => typeof v === 'string' && v in
 export async function translateSaved(kind: Kind, id: string, to: string, fromHint?: string):
   Promise<{ text: string; cached: boolean } | { error: string; status: number }> {
   const [table, column] = KINDS[kind]
-  const row = must(await db().from(table).select(column).eq('id', id).maybeSingle()) as Record<string, string | null> | null
-  const source = row?.[column]?.trim()
+  const row = must(await db().from(table).select(kind === 'epitaph' ? `${column}, name, name_latin` : column).eq('id', id).maybeSingle()) as Record<string, string | null> | null
+  let source = row?.[column]?.trim()
   if (!source) return { error: 'Not found', status: 404 }
+  // An epitaph: the pet's name in English letters (when the owner gave one) stands in for the name, so the
+  // translator keeps it as a name ("ข้าวสวย" would otherwise come out as "Beautiful rice")
+  if (kind === 'epitaph' && row?.name && row.name_latin) source = source.split(row.name).join(row.name_latin)
   if (source.length > MAX) return { error: 'Too long to translate here', status: 413 }
 
   const hash = createHash('sha256').update(source).digest('hex')
