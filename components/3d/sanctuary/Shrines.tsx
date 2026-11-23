@@ -50,7 +50,7 @@ function placer() {
 
 export function GalleryShrines({ pets, playerPos, onOpen }: { pets: Pet[]; playerPos: React.RefObject<P>; onOpen: (pet: Pet, slot: Slot) => void }) {
   // a VIP pet keeps its shelf in the database but stands only in the VIP pavilion
-  const placed = useMemo(() => pets.filter(p => p.vip_position == null && SLOTS[p.shrine_position]), [pets])
+  const placed = useMemo(() => pets.filter(p => p.vip_position == null && p.shrine_position != null && SLOTS[p.shrine_position]), [pets])
   const lit = useMemo(() => placed.filter(p => p.candle_count > 0), [placed])
   const refs = { frames: useRef<InstancedMesh>(null), mats: useRef<InstancedMesh>(null), cards: useRef<InstancedMesh>(null), candles: useRef<InstancedMesh>(null), flames: useRef<InstancedMesh>(null), halos: useRef<InstancedMesh>(null), hits: useRef<InstancedMesh>(null) }
   const flame = useMemo(() => new MeshStandardMaterial({ color: '#FFE0A0', emissive: '#FFB040', emissiveIntensity: 9, toneMapped: false }), [])
@@ -61,7 +61,7 @@ export function GalleryShrines({ pets, playerPos, onOpen }: { pets: Pet[]; playe
   useLayoutEffect(() => {
     const at = placer(), c = new Color()
     placed.forEach((pet, i) => {
-      const s = SLOTS[pet.shrine_position]
+      const s = SLOTS[pet.shrine_position!]
       refs.frames.current!.setMatrixAt(i, at(s, DX, -0.008, -0.02))
       refs.hits.current!.setMatrixAt(i, at(s, 0, 0, 0.12, 0))
       refs.mats.current!.setMatrixAt(i, at(s, DX, -0.008, 0.0))
@@ -70,7 +70,7 @@ export function GalleryShrines({ pets, playerPos, onOpen }: { pets: Pet[]; playe
       refs.candles.current!.setMatrixAt(i, at(s, CANDLE_X, -ROW_H / 2 + 0.09, 0.15, 0))
     })
     lit.forEach((pet, i) => {
-      const s = SLOTS[pet.shrine_position]
+      const s = SLOTS[pet.shrine_position!]
       refs.flames.current!.setMatrixAt(i, at(s, CANDLE_X, -ROW_H / 2 + 0.15, 0.15, 0, [1, 1.7, 1]))
       refs.halos.current!.setMatrixAt(i, at(s, CANDLE_X, -ROW_H / 2 + 0.15, 0.15, 0))
     })
@@ -93,7 +93,7 @@ export function GalleryShrines({ pets, playerPos, onOpen }: { pets: Pet[]; playe
     const p = playerPos.current
     if (!p) return
     const close = placed
-      .map(pet => { const s = SLOTS[pet.shrine_position]; return { pet, d: Math.hypot(s.x - p.x, s.z - p.z) } })
+      .map(pet => { const s = SLOTS[pet.shrine_position!]; return { pet, d: Math.hypot(s.x - p.x, s.z - p.z) } })
       .filter(x => x.d < NEAR).sort((a, b) => a.d - b.d).slice(0, MAX_NEAR).map(x => x.pet)
     if (close.length !== near.length || close.some((pet, i) => pet.id !== near[i]?.id)) setNear(close)
   })
@@ -101,7 +101,7 @@ export function GalleryShrines({ pets, playerPos, onOpen }: { pets: Pet[]; playe
   const click = (e: ThreeEvent<MouseEvent>) => {
     if (e.instanceId == null) return
     e.stopPropagation()
-    if (isTap(e)) { const pet = placed[e.instanceId]; onOpen(pet, SLOTS[pet.shrine_position]) }
+    if (isTap(e)) { const pet = placed[e.instanceId]; onOpen(pet, SLOTS[pet.shrine_position!]) }
   }
   const hover = (on: boolean) => () => { document.body.style.cursor = on ? 'pointer' : '' }
   const n = Math.max(1, placed.length), nl = Math.max(1, lit.length)
@@ -138,7 +138,7 @@ export function GalleryShrines({ pets, playerPos, onOpen }: { pets: Pet[]; playe
         <planeGeometry args={[0.26, 0.26]} />
         <meshBasicMaterial map={halo} color="#FFE2A8" transparent opacity={1} side={DoubleSide} blending={AdditiveBlending} depthWrite={false} toneMapped={false} />
       </instancedMesh>
-      {near.map(pet => <NearPhoto key={pet.id} pet={pet} slot={SLOTS[pet.shrine_position]} />)}
+      {near.map(pet => <NearPhoto key={pet.id} pet={pet} slot={SLOTS[pet.shrine_position!]} />)}
     </>
   )
 }

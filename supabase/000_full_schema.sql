@@ -16,7 +16,7 @@ create table if not exists pets (
   epitaph text,
   epitaph_translations jsonb not null default '{}',
   floor_id int not null,
-  shrine_position int not null,
+  shrine_position int, -- null: in the VIP pavilion (vip_position) instead of on a shelf
   candle_count int not null default 0,
   flower_count int not null default 0,
   visit_count int not null default 0,
@@ -112,7 +112,7 @@ $$;
 
 create or replace function floor_counts()
 returns table (floor_id int, n bigint) language sql stable as $$
-  select floor_id, count(*) from pets group by floor_id
+  select floor_id, count(*) from pets where shrine_position is not null group by floor_id
 $$;
 
 create or replace function top_names(p_limit int)

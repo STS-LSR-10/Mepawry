@@ -29,7 +29,7 @@ export interface Pet {
   epitaph: string | null
   epitaph_translations: Record<string, string>
   floor_id: number
-  shrine_position: number
+  shrine_position: number | null // null: in the VIP pavilion (vip_position) instead
   candle_count: number
   flower_count: number
   visit_count: number

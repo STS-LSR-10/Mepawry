@@ -138,7 +138,7 @@ export default function HallPage() {
   // Find my pet: ride to its floor (if needed), then walk to its shrine — its VIP niche if it has one
   const [guide, setGuide] = useState<{ pet: Pet; at: P; face: P; nonce: number } | null>(null)
   const findPet = (pet: Pet) => {
-    const slot = pet.vip_position != null ? VIP_SLOTS[pet.vip_position] : SLOTS[pet.shrine_position]
+    const slot = pet.vip_position != null ? VIP_SLOTS[pet.vip_position] : SLOTS[pet.shrine_position ?? 0]
     if (!slot) return
     const go = () => setGuide({ pet, at: slot.standAt, face: { x: slot.x, z: slot.z }, nonce: Date.now() })
     if (pet.floor_id === currentFloor) go()
@@ -328,7 +328,7 @@ function MyPetsMenu({ onPick, onClose }: { onPick: (pet: Pet) => void; onClose: 
                   <span className="min-w-0 flex-1">
                     <span className="block truncate font-semibold text-[#2A1E17]">{p.name}</span>
                     <span className="block text-xs text-[#8E8278]">
-                      {t('Dome {n}', { n: p.floor_id })} · {p.vip_position != null ? `✿ ${t('VIP niche {n}', { n: p.vip_position + 1 })}` : t('shelf {n}', { n: p.shrine_position + 1 })}
+                      {t('Dome {n}', { n: p.floor_id })} · {p.vip_position != null ? `✿ ${t('VIP niche {n}', { n: p.vip_position + 1 })}` : t('shelf {n}', { n: (p.shrine_position ?? 0) + 1 })}
                     </span>
                   </span>
                   <span className="text-sm text-[#C67129]">{t('Go →')}</span>

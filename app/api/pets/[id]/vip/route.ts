@@ -19,7 +19,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   }
   if (body?.action === 'remove') {
     const pet = await removeFromVip(id)
-    return pet ? NextResponse.json({ pet }) : NextResponse.json({ error: 'Memorial not found' }, { status: 404 })
+    if (!pet) return NextResponse.json({ error: 'Memorial not found' }, { status: 404 })
+    return 'error' in pet ? NextResponse.json(pet, { status: 409 }) : NextResponse.json({ pet })
   }
   const res = await placeInVip(id, typeof body?.position === 'number' ? body.position : undefined)
   if ('error' in res) return NextResponse.json(res, { status: 409 })

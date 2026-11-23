@@ -80,9 +80,10 @@ export async function getMemorials(opts: { species?: string; waitingOnly?: boole
 
 /** Neighbours on the shelves, for the ‹ › arrows on a shrine page (wraps around at the ends). */
 export async function getNeighbours(pet: Pet): Promise<{ prev: Pet | null; next: Pet | null }> {
-  const { floor_id: f, shrine_position: s } = pet
+  // a VIP shrine has no shelf: its neighbours are the shelves around the start of its dome
+  const { floor_id: f } = pet, s = pet.shrine_position ?? -1
   const one = async (cmp: 'lt' | 'gt', wrap: boolean) => {
-    let q = db().from('pets').select('*').neq('id', pet.id)
+    let q = db().from('pets').select('*').neq('id', pet.id).not('shrine_position', 'is', null)
     if (!wrap) q = q.or(`floor_id.${cmp}.${f},and(floor_id.eq.${f},shrine_position.${cmp}.${s})`)
     const asc = cmp === 'gt' ? !wrap : wrap
     return must(await q.order('floor_id', { ascending: asc }).order('shrine_position', { ascending: asc }).limit(1).maybeSingle()) as Pet | null
@@ -105,7 +106,7 @@ export async function getOpenSlots(want?: number): Promise<{ floor: number; open
   return {
     floor,
     openFloors,
-    taken: rows.map((r: { shrine_position: number }) => r.shrine_position),
+    taken: rows.filter((r: { shrine_position: number | null }) => r.shrine_position != null).map((r: { shrine_position: number }) => r.shrine_position),
     vipTaken: rows.filter((r: { vip_position: number | null }) => r.vip_position != null).map((r: { vip_position: number }) => r.vip_position),
   }
 }
@@ -477,15 +478,30 @@ export async function placeInVip(petId: string, want?: number): Promise<Pet | { 
   if (pos >= 0 && taken.has(pos)) return { error: 'That VIP niche is taken' }
   if (pos < 0) { pos = 0; while (taken.has(pos)) pos++ }
   if (pos >= VIP_CAPACITY) return { error: `The VIP pavilion in Dome ${pet.floor_id} is full` }
-  const { data, error } = await db().from('pets').update({ vip_position: pos }).eq('id', petId).select().single()
+  // the VIP niche replaces their shelf, which goes back for someone else
+  const { data, error } = await db().from('pets').update({ vip_position: pos, shrine_position: null }).eq('id', petId).select().single()
   if (error?.code === '23505') return { error: 'That VIP niche was just taken, please try again' }
   if (error) throw new Error(error.message)
   return data as Pet
 }
 
-export async function removeFromVip(petId: string): Promise<Pet | null> {
-  if (!/^[0-9a-f-]{36}$/i.test(petId)) return null
-  return must(await db().from('pets').update({ vip_position: null }).eq('id', petId).select().maybeSingle())
+/** Takes a shrine out of the VIP pavilion and back onto the first free shelf of its dome. */
+export async function removeFromVip(petId: string): Promise<Pet | { error: string } | null> {
+  const pet = await getPetById(petId)
+  if (!pet) return null
+  if (pet.vip_position == null) return pet
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const rows = (must(await db().from('pets').select('shrine_position').eq('floor_id', pet.floor_id).not('shrine_position', 'is', null))) ?? []
+    const used = new Set(rows.map((r: { shrine_position: number }) => r.shrine_position))
+    let position = 0
+    while (used.has(position)) position++
+    if (position >= FLOOR_CAPACITY) return { error: `Dome ${pet.floor_id} has no free shelf` }
+    const { data, error } = await db().from('pets').update({ vip_position: null, shrine_position: position }).eq('id', petId).select().single()
+    if (error?.code === '23505') continue // that shelf was just taken: try the next free one
+    if (error) throw new Error(error.message)
+    return data as Pet
+  }
+  return { error: 'The hall is busy, please try again' }
 }
 
 /** Gives a shrine a frame style and/or backdrop (they stay for good). Ids are checked against lib/decor.ts. */

@@ -160,7 +160,7 @@ function Cabinet({ d, pet, candlesToday, flowers, gifts, low }: { d: Dims; pet: 
   const nameplate = useTex(() => nameplateTexture(pet.name, sub), [pet.name, sub])
   // the plinth says where the shrine stands: dome, gallery and zone (VIP: the pavilion)
   const t = useT()
-  const room = SLOTS[pet.shrine_position]?.room.split(' · ') ?? []
+  const room = (pet.shrine_position != null ? SLOTS[pet.shrine_position]?.room.split(' · ') : null) ?? []
   const where = [t('Dome {n}', { n: pet.floor_id }), ...(pet.vip_position != null ? [t('VIP pavilion')]
     : room.length === 2 ? [t(room[0]), t('Zone {z}', { z: room[1].replace('Zone ', '') })] : [])].join(' · ')
   const plate = useTex(() => plaqueTexture(where, 'stone', 1470, 100, 0.6), [where]) // same shape as the plate below, so the letters aren't stretched
