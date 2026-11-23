@@ -52,11 +52,23 @@ function domeBlocked(p: P, cx: number, cz: number, r: number, doors: { at: numbe
   return !doors.some(dr => angDiff(la, dr.at) * d < dr.half - RADIUS)
 }
 
+/**
+ * The reception desk: a curved counter round the front of a circle (radius 1.05–1.72 m, 2.38 rad wide, centred on the
+ * front, +z; see ReceptionDesk), open behind. Blocks only the counter itself and its rounded ends, so you can walk
+ * right past its back and stand inside the curve.
+ */
+function deskBlocked(p: P): boolean {
+  const cx = DOME.x, cz = DOME.z - 0.6, R0 = 1.05, R1 = 1.72, HALF = 2.38 / 2, MID = (R0 + R1) / 2
+  const dx = p.x - cx, dz = p.z - cz, d = Math.hypot(dx, dz)
+  if (d > R0 - RADIUS && d < R1 + RADIUS && Math.abs(Math.atan2(dx, dz)) < HALF) return true
+  return [-HALF, HALF].some(a => near(p, cx + Math.sin(a) * MID, cz + Math.cos(a) * MID, (R1 - R0) / 2))
+}
+
 const Q = Math.PI / 2
 /** Reception: four doorways (front to the path, back to the garden, left and right into the outer gallery). */
 const receptionBlocked = (p: P) =>
   domeBlocked(p, DOME.x, DOME.z, DOME.r, [0, Q, Math.PI, -Q].map(at => ({ at, half: domeDoorHalf(DOME.r) }))) ||
-  near(p, DOME.x, DOME.z - 0.6, 1.75) ||               // the curved desk
+  deskBlocked(p) ||                                    // the curved desk
   near(p, -3.3, DOME.z + 3.0, 1.0) ||                  // lounge: armchairs round a coffee table (in the front-left corner, clear of the doorway and the desk)
   near(p, -3.3, DOME.z - 2.4, 0.95) ||                 // the sofa
   near(p, 3.2, DOME.z + 2.2, 0.55)                     // the directory board
