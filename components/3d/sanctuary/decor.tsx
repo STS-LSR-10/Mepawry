@@ -160,12 +160,12 @@ export function Roses({ at, r = 0.12, m }: { at: V3; r?: number; m: DMats }) {
   )
 }
 
-export function Candle({ at, m, h = 0.18 }: { at: V3; m: DMats; h?: number }) {
+export function Candle({ at, m, h = 0.18, lit = true }: { at: V3; m: DMats; h?: number; lit?: boolean }) {
   return (
     <group position={at}>
       <mesh position-y={0.015} material={m.gilt}><cylinderGeometry args={[0.06, 0.07, 0.03, 12]} /></mesh>
       <mesh position-y={0.03 + h / 2} material={m.wax}><cylinderGeometry args={[0.03, 0.03, h, 12]} /></mesh>
-      <mesh position-y={0.05 + h} scale={[1, 1.7, 1]} material={m.flame}><sphereGeometry args={[0.016, 8, 6]} /></mesh>
+      {lit && <mesh position-y={0.05 + h} scale={[1, 1.7, 1]} material={m.flame}><sphereGeometry args={[0.016, 8, 6]} /></mesh>}
     </group>
   )
 }
@@ -279,8 +279,10 @@ export function FlowerUrn({ at, m, scale = 1 }: { at: V3; m: DMats; scale?: numb
 }
 
 /** A recessed arch in the panelling, softly lit from inside, holding a large portrait above a little shelf. */
-export function PortraitAlcove({ m, photo, w = 1.3, h = 2.6, seat = false, onOpen }: {
+export function PortraitAlcove({ m, photo, w = 1.3, h = 2.6, seat = false, onOpen, candle = 'lit' }: {
   m: DMats; photo: Texture | null; w?: number; h?: number; seat?: boolean
+  /** a candle and roses below the portrait, the candle burning once someone has lit one; null: an empty niche, left bare */
+  candle?: 'lit' | 'unlit' | null
   /** tap the portrait (a VIP niche with a pet in it) */
   onOpen?: () => void
 }) {
@@ -304,16 +306,23 @@ export function PortraitAlcove({ m, photo, w = 1.3, h = 2.6, seat = false, onOpe
         <>
           <mesh position={[0, 0.25, 0.05]} material={m.panel} castShadow><boxGeometry args={[w, 0.5, 0.5]} /></mesh>
           <mesh position={[0, 0.56, 0.05]} material={m.cushion}><boxGeometry args={[w - 0.06, 0.12, 0.46]} /></mesh>
-          <mesh position={[-w / 3, 0.8, -0.12]} rotation-x={-0.2} material={m.velvet}><boxGeometry args={[0.36, 0.36, 0.1]} /></mesh>
+          {/* the cushion moves in from the candle's end */}
+          <mesh position={[candle ? -w * 0.12 : -w / 3, 0.8, -0.12]} rotation-x={-0.2} material={m.velvet}><boxGeometry args={[0.36, 0.36, 0.1]} /></mesh>
         </>
       ) : (
-        <>
-          <mesh position={[0, 1.05, 0]} material={m.panel} castShadow><boxGeometry args={[w * 0.9, 0.06, 0.3]} /></mesh>
-          <Candle at={[-w * 0.32, 1.08, 0.04]} m={m} />
-          <mesh position={[w * 0.28, 1.16, 0]} material={m.ceramic}><cylinderGeometry args={[0.05, 0.07, 0.18, 12]} /></mesh>
-          <Roses at={[w * 0.28, 1.3, 0]} r={0.11} m={m} />
-        </>
+        <mesh position={[0, 1.05, 0]} material={m.panel} castShadow><boxGeometry args={[w * 0.9, 0.06, 0.3]} /></mesh>
       )}
+      {/* candle on the left, roses on the right: on the shelf, or at the two ends of the window seat */}
+      {candle && (() => {
+        const top = seat ? 0.62 : 1.08, cx = seat ? -w * 0.38 : -w * 0.32, rx = seat ? w * 0.36 : w * 0.28, z = seat ? 0.08 : 0
+        return (
+          <>
+            <Candle at={[cx, top, z + 0.04]} m={m} lit={candle === 'lit'} />
+            <mesh position={[rx, top + 0.08, z]} material={m.ceramic}><cylinderGeometry args={[0.05, 0.07, 0.18, 12]} /></mesh>
+            <Roses at={[rx, top + 0.22, z]} r={0.11} m={m} />
+          </>
+        )
+      })()}
     </group>
   )
 }

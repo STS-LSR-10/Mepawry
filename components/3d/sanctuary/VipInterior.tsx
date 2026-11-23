@@ -22,11 +22,13 @@ import { VIP_DOME, VIP_PLANTER_R, VIP_WING } from './plan'
 /** The VIP pets in niche order (see VIP_SLOTS in plan.ts), and what to do when one is tapped. Without it: sample portraits. */
 export interface VipPets { pets: (Pet | null)[]; onOpen: (k: number) => void }
 
-/** A niche: the real pet's photo when there are real pets, otherwise a sample portrait. */
+/** A niche: the real pet's photo when there are real pets, otherwise a sample portrait. A pet's candle burns once
+ * someone has lit one; a niche waiting for a pet stands bare. */
 function Niche({ k, sample, vip, m, ...alcove }: { k: number; sample: Texture; vip?: VipPets; m: DMats; w?: number; h?: number; seat?: boolean }) {
   const real = useVipPhoto(vip?.pets[k] ?? null)
   const pet = vip?.pets[k]
-  return <PortraitAlcove m={m} photo={vip ? real : sample} onOpen={pet ? () => vip!.onOpen(k) : undefined} {...alcove} />
+  const candle = !vip ? 'lit' : !pet ? null : pet.candle_count > 0 ? 'lit' : 'unlit'
+  return <PortraitAlcove m={m} photo={vip ? real : sample} onOpen={pet ? () => vip!.onOpen(k) : undefined} candle={candle} {...alcove} />
 }
 
 export function VipInterior({ y, z, vip }: { y: number; z: number; vip?: VipPets }) {
